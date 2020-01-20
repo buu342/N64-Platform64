@@ -1,0 +1,7 @@
+bin/
+Release/
+*.o
+*.out
+*.elf
+*.n64
+*.exe

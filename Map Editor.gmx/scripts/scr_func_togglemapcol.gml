@@ -1,0 +1,1 @@
+obj_controller.settings_drawCollision = !obj_controller.settings_drawCollision

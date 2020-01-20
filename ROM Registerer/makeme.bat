@@ -1,0 +1,1 @@
+gcc -o nrdc.exe nrdc.c
