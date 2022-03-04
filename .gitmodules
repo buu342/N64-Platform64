@@ -1,3 +1,6 @@
 [submodule "Tools/NRDC"]
 	path = Tools/NRDC
 	url = https://github.com/buu342/N64-NRDC.git
+[submodule "Tools/UNFLoader"]
+	path = Tools/UNFLoader
+	url = https://github.com/buu342/N64-UNFLoader.git
