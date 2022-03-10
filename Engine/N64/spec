@@ -1,14 +1,16 @@
 #include "osconfig.h"
 
 beginseg
-	name "code"
-	flags BOOT OBJECT
-	entry boot
-	stack bootStack + BOOTSTACKSIZE
+	name    "code"
+	flags   BOOT OBJECT
+	entry   boot
+    address SEGMENTSTART_CODE
+    maxsize SEGMENTSIZE_CODE
+	stack   STACKSTART_BOOT + STACKSIZE_BOOT
 	include "codesegment.o"
 endseg
 
 beginwave
-	name "platform64"
+	name    "platform64"
 	include "code"
 endwave

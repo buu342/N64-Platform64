@@ -2,7 +2,7 @@
 #                    Code files and ROM name                   #
 ################################################################
 
-CODECFILES  = main.c stacks.c
+CODECFILES  = main.c
 CODEHFILES  =
 
 DEBUGFILES = debug.c usb.c

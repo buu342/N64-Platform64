@@ -6,7 +6,6 @@ Handles the boot process of the ROM.
 
 #include <ultra64.h>
 #include "usb.h"
-#include "graphics.h"
 #include "osconfig.h"
 
 
@@ -21,7 +20,6 @@ static void main(void *arg);
              Globals
 *********************************/
 
-u16* framebuffer = (u16*)0x80100000; // Put the framebuffer in the second RAM bank
 static OSThread	mainThread;
 
 
@@ -38,7 +36,7 @@ void boot()
 
     // Start the main thread
     // This is needed, otherwise the VI manager thread will take priority and stall
-    osCreateThread(&mainThread, 1, main, NULL, mainStack+MAINSTACKSIZE/sizeof(u64), 10);
+    osCreateThread(&mainThread, THREADID_MAIN, main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
     osStartThread(&mainThread);
 }
 
@@ -64,11 +62,11 @@ static void main(void *arg)
         osViSetMode(&osViModeMpalLan1);
     #endif
     
-    // Paint our framebuffer white
-    memset(framebuffer, 0xFF, SCREEN_WIDTH_SD*SCREEN_HEIGHT_SD*sizeof(u16));
+    // Paint our framebuffer green
+    memset(FRAMEBUFF_ADDR1_SD, 0x0F, FRAMEBUFF_SIZE_SD);
     
     // Display the framebuffer
-    osViSwapBuffer(framebuffer);
+    osViSwapBuffer(FRAMEBUFF_ADDR1_SD);
     
     // Loop forever, needed or the VI will not display correctly
     while (1)
