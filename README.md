@@ -19,6 +19,11 @@ Below are instructions for compiling different parts of Platform64.
 </details>
 
 ### Tools
+<details><summary>MemMapper</summary>
+
+Please consult the [MemMapper](https://github.com/buu342/CPP-MemMapper) repository for compilation instructions.
+</details>
+
 <details><summary>NRDC</summary>
 
 Please consult the [NRDC](https://github.com/buu342/N64-NRDC) repository for compilation instructions.

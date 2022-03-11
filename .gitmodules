@@ -4,3 +4,6 @@
 [submodule "Tools/UNFLoader"]
 	path = Tools/UNFLoader
 	url = https://github.com/buu342/N64-UNFLoader.git
+[submodule "Tools/MemMapper"]
+	path = Tools/MemMapper
+	url = https://github.com/buu342/CPP-MemMapper.git
