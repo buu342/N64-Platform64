@@ -1,9 +1,15 @@
 [submodule "Tools/NRDC"]
 	path = Tools/NRDC
 	url = https://github.com/buu342/N64-NRDC.git
+	branch = master
+    ignore = dirty
 [submodule "Tools/UNFLoader"]
 	path = Tools/UNFLoader
 	url = https://github.com/buu342/N64-UNFLoader.git
+	branch = master
+    ignore = dirty
 [submodule "Tools/MemMapper"]
 	path = Tools/MemMapper
 	url = https://github.com/buu342/CPP-MemMapper.git
+	branch = master
+    ignore = dirty
