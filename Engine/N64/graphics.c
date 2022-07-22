@@ -56,3 +56,21 @@ static void threadfunc_graphics(void *arg)
         osStopThread(&s_threadstruct_graphics);
     }
 }
+
+
+/*==============================
+    graphics_renderscene
+    Renders the scene
+    @param The color to set the framebuffer
+==============================*/
+
+void graphics_renderscene(const u8 a_color)
+{
+    debug_printf("Rendering scene\n");
+
+    // Paint our framebuffer green
+    memset(FRAMEBUFF_ADDR1_SD, a_color, FRAMEBUFF_SIZE_SD);
+    
+    // Display the framebuffer
+    osViSwapBuffer(FRAMEBUFF_ADDR1_SD);
+}

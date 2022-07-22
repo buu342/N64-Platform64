@@ -87,6 +87,7 @@ static void threadfunc_idle(void *arg)
 
 static void threadfunc_main(void *arg)
 {
+    u8 l_color = 0;
     debug_printf("Created main thread\n");
 
     // Initialize the TV
@@ -105,13 +106,9 @@ static void threadfunc_main(void *arg)
     graphics_initialize();
     audio_initialize();
     
-    // Paint our framebuffer green
-    memset(FRAMEBUFF_ADDR1_SD, 0x0F, FRAMEBUFF_SIZE_SD);
-    
-    // Display the framebuffer
-    osViSwapBuffer(FRAMEBUFF_ADDR1_SD);
-    
     // Loop forever, needed or the VI will not display correctly
     while (1)
-        ;
+    {
+        graphics_renderscene(l_color++);
+    }
 }
