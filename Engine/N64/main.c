@@ -5,22 +5,34 @@ Handles the boot process of the ROM.
 ***************************************************************/
 
 #include <ultra64.h>
-#include "usb.h"
+#include "debug.h"
 #include "osconfig.h"
+#include "controller.h"
+#include "scheduler.h"
+#include "graphics.h"
+#include "audio.h"
 
 
 /*********************************
         Function Prototypes
 *********************************/
 
-static void main(void *arg);
+static void threadfunc_idle(void *arg);
+static void threadfunc_main(void *arg);
 
 
 /*********************************
              Globals
 *********************************/
 
-static OSThread	mainThread;
+// Threads
+static OSThread	s_threadstruct_idle;
+static OSThread	s_threadstruct_main;
+
+// PI Messages
+static OSMesg s_pi_messages[NUM_PI_MSGS];
+static OSMesgQueue s_pi_queue;
+
 
 
 /*==============================
@@ -33,25 +45,50 @@ void boot()
 {
     // Initialize the hardware and software
     osInitialize();
-
-    // Start the main thread
-    // This is needed, otherwise the VI manager thread will take priority and stall
-    osCreateThread(&mainThread, THREADID_MAIN, main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
-    osStartThread(&mainThread);
+    
+    // Start the idle thread
+    osCreateThread(&s_threadstruct_idle, THREADID_IDLE, threadfunc_idle, NULL, STACKREALSTART_IDLE, THREADPRI_IDLE);
+    osStartThread(&s_threadstruct_idle);
 }
 
 
 /*==============================
-    main
+    threadfunc_idle
+    The idle thread
+    @param Argument passed to the thread
+==============================*/
+
+static void threadfunc_idle(void *arg)
+{
+    // Create the PI manager
+    osCreatePiManager((OSPri)OS_PRIORITY_PIMGR, &s_pi_queue, s_pi_messages, NUM_PI_MSGS);
+    
+    // Initialize debug mode
+    debug_initialize();
+    
+    // Start the main thread
+    osCreateThread(&s_threadstruct_main, THREADID_MAIN, threadfunc_main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
+    osStartThread(&s_threadstruct_main);
+    
+    // Reduce this thread's priority to the minimum possible, and spin forever
+    osSetThreadPri(0, 0);
+    while (1)
+    {
+        debug_printf("Idle thread spinning\n");
+    }
+}
+
+
+/*==============================
+    threadfunc_main
     The main thread loop
     @param Argument passed to the thread
 ==============================*/
-static void main(void *arg)
+
+static void threadfunc_main(void *arg)
 {
-    // Initialize the debug system, and print hello world.
-    usb_initialize();
-    usb_write(DATATYPE_TEXT, "Hello world!\n", 13+1);
-    
+    debug_printf("Created main thread\n");
+
     // Initialize the TV
     osCreateViManager(OS_PRIORITY_VIMGR);
     #if (TVMODE == TV_NTSC)
@@ -61,6 +98,12 @@ static void main(void *arg)
     #else
         osViSetMode(&osViModeMpalLan1);
     #endif
+    
+    // Initialize the rest of the game
+    controller_initialize();
+    scheduler_initialize();
+    graphics_initialize();
+    audio_initialize();
     
     // Paint our framebuffer green
     memset(FRAMEBUFF_ADDR1_SD, 0x0F, FRAMEBUFF_SIZE_SD);
