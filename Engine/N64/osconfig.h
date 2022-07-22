@@ -39,13 +39,38 @@
     #define STACKSTART_BOOT  RAMBANK_2
     #define	STACKSIZE_BOOT   0x2000
 
-    // Main stack
-    #define STACKSTART_MAIN  (STACKSTART_BOOT + STACKSIZE_BOOT)
+    // Idle thread stack
+    #define STACKSTART_IDLE  (STACKSTART_BOOT + STACKSIZE_BOOT)
+    #define	STACKSIZE_IDLE   0x2000
+
+    // Main thread stack
+    #define STACKSTART_MAIN  (STACKSTART_IDLE + STACKSIZE_IDLE)
     #define	STACKSIZE_MAIN   0x2000
+
+    // Controller thread stack
+    #define STACKSTART_CONTROLLER  (STACKSTART_MAIN + STACKSIZE_MAIN)
+    #define	STACKSIZE_CONTROLLER   0x2000
+
+    // Scheduler thread stack
+    #define STACKSTART_SCHEDULER  (STACKSTART_CONTROLLER + STACKSIZE_CONTROLLER)
+    #define	STACKSIZE_SCHEDULER   0x2000
+
+    // Graphics thread stack
+    #define STACKSTART_GRAPHICS  (STACKSTART_SCHEDULER + STACKSIZE_SCHEDULER)
+    #define	STACKSIZE_GRAPHICS   0x2000
+    
+    // Audio thread stack
+    #define STACKSTART_AUDIO  (STACKSTART_GRAPHICS + STACKSIZE_GRAPHICS)
+    #define	STACKSIZE_AUDIO   0x2000
     
     // Real stack starts (because the stacks grow backwards with the MIPS compiler tools)
-    #define	STACKREALSTART_BOOT  (u64*)(STACKSTART_BOOT + STACKSIZE_BOOT/sizeof(u64))
-    #define	STACKREALSTART_MAIN  (u64*)(STACKSTART_MAIN + STACKSIZE_MAIN/sizeof(u64))
+    #define	STACKREALSTART_BOOT        (u64*)(STACKSTART_BOOT + STACKSIZE_BOOT/sizeof(u64))
+    #define	STACKREALSTART_IDLE        (u64*)(STACKSTART_IDLE + STACKSIZE_IDLE/sizeof(u64))
+    #define	STACKREALSTART_MAIN        (u64*)(STACKSTART_MAIN + STACKSIZE_MAIN/sizeof(u64))
+    #define	STACKREALSTART_CONTROLLER  (u64*)(STACKSTART_CONTROLLER + STACKSIZE_CONTROLLER/sizeof(u64))
+    #define	STACKREALSTART_SCHEDULER   (u64*)(STACKSTART_SCHEDULER + STACKSIZE_SCHEDULER/sizeof(u64))
+    #define	STACKREALSTART_GRAPHICS    (u64*)(STACKSTART_GRAPHICS + STACKSIZE_GRAPHICS/sizeof(u64))
+    #define	STACKREALSTART_AUDIO       (u64*)(STACKSTART_AUDIO + STACKSIZE_AUDIO/sizeof(u64))
     
     
     /*********************************
@@ -90,14 +115,39 @@
     *********************************/
     
     // Thread ID's
-    #define THREADID_MAIN   1
-    #define THREADID_FAULT  13 // From debug.h, included here for completion sake
-    #define THREADID_USB    14 // From debug.h, included here for completion sake
+    #define THREADID_IDLE        1
+    #define THREADID_MAIN        2
+    #define THREADID_CONTROLLER  3
+    #define THREADID_SCHEDULER   4
+    #define THREADID_GRAPHICS    5
+    #define THREADID_AUDIO       6
+    #define THREADID_FAULT       13 // From debug.h, included here for completion sake
+    #define THREADID_USB         14 // From debug.h, included here for completion sake
     
     // Thread Priorities
-    #define THREADPRI_MAIN   10
-    #define THREADPRI_FAULT  125 // From debug.h, included here for completion sake
-    #define THREADPRI_USB    126 // From debug.h, included here for completion sake
+    #define THREADPRI_IDLE        1
+    #define THREADPRI_MAIN        10
+    #define THREADPRI_CONTROLLER  15
+    #define THREADPRI_SCHEDULER   100
+    #define THREADPRI_GRAPHICS    20
+    #define THREADPRI_AUDIO       25
+    #define THREADPRI_FAULT       125 // From debug.h, included here for completion sake
+    #define THREADPRI_USB         126 // From debug.h, included here for completion sake
+    
+    
+    /*********************************
+                   Heap
+    *********************************/
+    
+    #define HEAP_START  (FRAMEBUFF_ADDRZ_SD - 1)
+    #define HEAP_SIZE   0x080000 // Half a megabyte of heap memory
+    
+    
+    /*********************************
+                    PI
+    *********************************/
+    
+    #define NUM_PI_MSGS  32
     
     
     /*********************************
@@ -113,16 +163,46 @@
     #if (STACKSTART_BOOT%8 != 0)
         #error The boot stack must be 64-bit aligned
     #endif
+    #if (STACKSTART_IDLE%8 != 0)
+        #error The idle thread stack must be 64-bit aligned
+    #endif
     #if (STACKSTART_MAIN%8 != 0)
-        #error The main stack must be 64-bit aligned
+        #error The main thread stack must be 64-bit aligned
+    #endif
+    #if (STACKSTART_CONTROLLER%8 != 0)
+        #error The controller thread stack must be 64-bit aligned
+    #endif
+    #if (STACKSTART_SCHEDULER%8 != 0)
+        #error The scheduler thread stack must be 64-bit aligned
+    #endif
+    #if (STACKSTART_GRAPHICS%8 != 0)
+        #error The graphics thread stack must be 64-bit aligned
+    #endif
+    #if (STACKSTART_AUDIO%8 != 0)
+        #error The audio thread stack must be 64-bit aligned
     #endif
     
     // Ensure the stack sizes are valid
     #if (STACKSIZE_BOOT < OS_MIN_STACKSIZE)
         #error The boot stack size must be larger than OS_MIN_STACKSIZE
     #endif
+    #if (STACKSIZE_IDLE < OS_MIN_STACKSIZE)
+        #error The idle thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
     #if (STACKSIZE_MAIN < OS_MIN_STACKSIZE)
-        #error The main stack size must be larger than OS_MIN_STACKSIZE
+        #error The main thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
+    #if (STACKSIZE_CONTROLLER < OS_MIN_STACKSIZE)
+        #error The controller thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
+    #if (STACKSIZE_SCHEDULER < OS_MIN_STACKSIZE)
+        #error The scheduler thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
+    #if (STACKSIZE_GRAPHICS < OS_MIN_STACKSIZE)
+        #error The graphics thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
+    #if (STACKSIZE_AUDIO < OS_MIN_STACKSIZE)
+        #error The audio thread stack size must be larger than OS_MIN_STACKSIZE
     #endif
     
 #endif
