@@ -63,6 +63,15 @@
     #define STACKSTART_AUDIO  (STACKSTART_GRAPHICS + STACKSIZE_GRAPHICS)
     #define	STACKSIZE_AUDIO   0x2000
     
+    // RCP DRAM stack
+    #define STACKSTART_DRAM  (STACKSTART_AUDIO + STACKSIZE_AUDIO)
+    #define	STACKSIZE_DRAM   SP_DRAM_STACK_SIZE8
+    
+    // RDP FIFO buffer
+    #define STACKSTART_RDPFIFO  (STACKSTART_DRAM + STACKSIZE_DRAM)
+    #define	STACKSIZE_RDPFIFO   0x1000
+    #define	STACKEND_RDPFIFO   (u64*)(STACKSTART_RDPFIFO + STACKSIZE_RDPFIFO)
+    
     // Real stack starts (because the stacks grow backwards with the MIPS compiler tools)
     #define	STACKREALSTART_BOOT        (u64*)(STACKSTART_BOOT + STACKSIZE_BOOT/sizeof(u64))
     #define	STACKREALSTART_IDLE        (u64*)(STACKSTART_IDLE + STACKSIZE_IDLE/sizeof(u64))
@@ -71,6 +80,8 @@
     #define	STACKREALSTART_SCHEDULER   (u64*)(STACKSTART_SCHEDULER + STACKSIZE_SCHEDULER/sizeof(u64))
     #define	STACKREALSTART_GRAPHICS    (u64*)(STACKSTART_GRAPHICS + STACKSIZE_GRAPHICS/sizeof(u64))
     #define	STACKREALSTART_AUDIO       (u64*)(STACKSTART_AUDIO + STACKSIZE_AUDIO/sizeof(u64))
+    #define	STACKREALSTART_DRAM        (u64*)STACKSTART_DRAM
+    #define	STACKREALSTART_RDPFIFO     (u64*)STACKSTART_RDPFIFO
     
     
     /*********************************
@@ -92,8 +103,9 @@
         #define SCREEN_HEIGHT_HD  576
     #endif
     
-    // Framebuffer bit depth
+    // Framebuffer depth and count
     #define FRAMEBUFF_DEPTH  u16
+    #define FRAMEBUFF_COUNT  2
     
     // Framebuffer size
     #define FRAMEBUFF_SIZE_SD  (SCREEN_WIDTH_SD*SCREEN_WIDTH_SD*sizeof(FRAMEBUFF_DEPTH))
@@ -181,6 +193,12 @@
     #if (STACKSTART_AUDIO%8 != 0)
         #error The audio thread stack must be 64-bit aligned
     #endif
+    #if (STACKSTART_DRAM%16 != 0)
+        #error The DRAM stack must be 16-byte aligned
+    #endif
+    #if (STACKSTART_RDPFIFO%16 != 0)
+        #error The RDP FIFO buffer must be 16-byte aligned
+    #endif
     
     // Ensure the stack sizes are valid
     #if (STACKSIZE_BOOT < OS_MIN_STACKSIZE)
@@ -203,6 +221,12 @@
     #endif
     #if (STACKSIZE_AUDIO < OS_MIN_STACKSIZE)
         #error The audio thread stack size must be larger than OS_MIN_STACKSIZE
+    #endif
+    #if (STACKSIZE_DRAM < SP_DRAM_STACK_SIZE8)
+        #error The dram stack size must be larger than SP_DRAM_STACK_SIZE8
+    #endif
+    #if (STACKSIZE_RDPFIFO < 0x100)
+        #error The RDP FIFO buffer size must be larger than 256 bytes
     #endif
     
 #endif

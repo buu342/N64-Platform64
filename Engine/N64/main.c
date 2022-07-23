@@ -5,6 +5,7 @@ Handles the boot process of the ROM.
 ***************************************************************/
 
 #include <ultra64.h>
+#include "types.h"
 #include "debug.h"
 #include "osconfig.h"
 #include "controller.h"
@@ -19,6 +20,7 @@ Handles the boot process of the ROM.
 
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
+static void toggle_lag();
 
 
 /*********************************
@@ -32,6 +34,8 @@ static OSThread	s_threadstruct_main;
 // PI Messages
 static OSMesg s_pi_messages[NUM_PI_MSGS];
 static OSMesgQueue s_pi_queue;
+
+static bool s_shouldlag = FALSE;
 
 
 
@@ -65,6 +69,7 @@ static void threadfunc_idle(void *arg)
     
     // Initialize debug mode
     debug_initialize();
+    debug_64drivebutton(toggle_lag, TRUE);
     
     // Start the main thread
     osCreateThread(&s_threadstruct_main, THREADID_MAIN, threadfunc_main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
@@ -109,6 +114,29 @@ static void threadfunc_main(void *arg)
     // Loop forever, needed or the VI will not display correctly
     while (1)
     {
+        int i;
+        
+        // Render the scene
         graphics_renderscene(l_color++);
+        
+        // Check if the flashcart has incoming debug data
+        debug_pollcommands();
+        
+        // If enabled, crunch some numbers for a while to create "lag"
+        if (s_shouldlag)
+        {
+            for (i=0; i<1000000; i++)
+                ;
+        }
     }
+}
+
+/*==============================
+    toggle_lag
+    Toggles lag when called
+==============================*/
+
+static void toggle_lag()
+{
+    s_shouldlag = !s_shouldlag;
 }
