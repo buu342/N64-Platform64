@@ -7,7 +7,7 @@ CODEHFILES  =
 
 DEBUGFILES = debug.c usb.c
 
-TARGETS = platform.n64
+ROMNAME = platform.n64
 
 REGISTRATION = "PLATFORM64" B PF I
 
@@ -24,6 +24,12 @@ MAKEROM = mild
 ################################################################
 #                         Make Commands                        #
 ################################################################
+
+ifeq ($(DEBUG_MODE), 1)
+    TARGETS = $(ROMNAME:.n64=_d.n64)
+else
+    TARGETS = $(ROMNAME)
+endif
 
 default: $(TARGETS)
     
