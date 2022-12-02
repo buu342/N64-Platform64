@@ -9,6 +9,13 @@
     // The selected TV mode
     #define TVMODE  TV_PAL
     
+    // Target framerate
+    #if TVMODE == TV_PAL
+        #define TARGET_FRAMERATE 25
+    #else
+        #define TARGET_FRAMERATE 30
+    #endif
+    
     
     /*********************************
                  Segments

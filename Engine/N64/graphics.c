@@ -7,23 +7,19 @@ Handles graphics rendering
 #include <ultra64.h>
 #include "debug.h"
 #include "osconfig.h"
+#include "types.h"
+#include "scheduler.h"
 #include "graphics.h"
 
 /*********************************
-           Definitions
-*********************************/
-
-#define SIZE_MSGQUEUE_GRAPHICS  8
-    
-    
-/*********************************
              Structs
 *********************************/
-
-typedef struct 
+    
+typedef struct
 {
     u8 color;
-} ThreadMsg_Graphics;
+    bool swapbuffer;
+} RenderMessage;
 
 
 /*********************************
@@ -31,42 +27,30 @@ typedef struct
 *********************************/
 
 static void threadfunc_graphics(void *arg);
+static void graphics_renderscene(FrameBuffer* fb, u8 color);
 
 
 /*********************************
              Globals
 *********************************/
 
+// Framebuffers
+static FrameBuffer s_framebuffers_sd[FRAMEBUFF_COUNT] = {{FRAMEBUFF_ADDR1_SD}, {FRAMEBUFF_ADDR2_SD}};
+static FrameBuffer s_framebuffers_hd[FRAMEBUFF_COUNT] = {{FRAMEBUFF_ADDR1_HD}, {FRAMEBUFF_ADDR2_HD}};
+static FrameBuffer* s_lastrendered;
+
 // Thread
-static OSThread    s_threadstruct_graphics;
+static OSThread s_threadstruct_graphics;
 
 // Message queue
 static OSMesgQueue s_msgqueue_graphics;
-static OSMesg      s_msgbuffer_graphics[SIZE_MSGQUEUE_GRAPHICS];
+static OSMesg      s_msgbuffer_graphics[8];
 static OSMesgQueue s_msgqueue_rdp;
 static OSMesg      s_msgbuffer_rdp;
-static OSMesg      s_msgbuffer_dummy;
+static OSMesgQueue s_msgqueue_vsync;
+static OSMesg      s_msgbuffer_vsync;
 
-// RCP task
-static OSTask s_rcptask_render =
-{
-    M_GFXTASK,              // Task type
-    0,                      // Task flags
-    NULL,                   // RCP boot microcode pointer (fill in later)
-    0,                      // RCP boot microcode size (fill in later)
-    NULL,                   // Task microcode pointer (fill in later)
-    SP_UCODE_SIZE,          // Task microcode size
-    NULL,                   // Task microcode data pointer (fill in later)
-    SP_UCODE_DATA_SIZE,     // Task microcode data size
-    STACKREALSTART_DRAM,    // Task DRAM stack pointer
-    STACKSIZE_DRAM,         // Task DRAM stack size
-    STACKREALSTART_RDPFIFO, // Task FIFO buffer start pointer
-    STACKEND_RDPFIFO,       // Task FIFO buffer end pointer
-    NULL,                   // Task data pointer (fill in later)
-    0,                      // Task data size (fill in later)
-    NULL,                   // Task yield buffer pointer (unused)
-    0                       // Task yield buffer size (unused)
-};
+static Scheduler* s_scheduler;
 
 
 /*==============================
@@ -74,8 +58,21 @@ static OSTask s_rcptask_render =
     Launches the graphics thread
 ==============================*/
 
-void graphics_initialize()
+void graphics_initialize(Scheduler* scheduler)
 {
+    int i;
+    
+    // Initialize globals
+    s_lastrendered = NULL;
+    s_scheduler = scheduler;
+    
+    // Initialize framebuffers to their default state
+    for (i=0; i<FRAMEBUFF_COUNT; i++)
+    {
+        s_framebuffers_sd[i].displist = g_displists[i];
+        s_framebuffers_sd[i].status = FBSTATUS_FREE;
+    }
+    
     // Start the graphics thread
     osCreateThread(&s_threadstruct_graphics, THREADID_GRAPHICS, threadfunc_graphics, NULL, STACKREALSTART_GRAPHICS, THREADPRI_GRAPHICS);
     osStartThread(&s_threadstruct_graphics);
@@ -90,72 +87,150 @@ void graphics_initialize()
 
 static void threadfunc_graphics(void *arg)
 {
-    ThreadMsg_Graphics* task;
+    bool reuse = FALSE;
+    FrameBuffer* l_freebuff = NULL;
     
     // Initialize the thread
-    debug_printf("Created graphics thread\n");
-    osCreateMesgQueue(&s_msgqueue_graphics, s_msgbuffer_graphics, SIZE_MSGQUEUE_GRAPHICS);
+    debug_printf("Graphics Thread: Started\n");
+    osCreateMesgQueue(&s_msgqueue_graphics, s_msgbuffer_graphics, 8);
     osCreateMesgQueue(&s_msgqueue_rdp, &s_msgbuffer_rdp, 1);
-    osSetEventMesg(OS_EVENT_DP, &s_msgqueue_rdp, s_msgbuffer_dummy);
+    osCreateMesgQueue(&s_msgqueue_vsync, &s_msgbuffer_vsync, 1);
+    osSetEventMesg(OS_EVENT_DP, &s_msgqueue_rdp, NULL);
     
     // Spin this thread forever
     while (1)
     {
-        RenderTask render;
+        int i;
+        RenderMessage l_msg;
+        RenderMessage* l_msgp;
         
         // Wait for a graphics message to arrive
-        osRecvMesg(&s_msgqueue_graphics, (OSMesg *)&task, OS_MESG_BLOCK);
-        debug_printf("Graphics thread loop start\n");
+        debug_printf("Graphics Thread: Loop start. Waiting for render request.\n");
+        osRecvMesg(&s_msgqueue_graphics, (OSMesg*)&l_msgp, OS_MESG_BLOCK);
         
-        // Initialize our render task
-        render.displistp = g_displists[0];
-        render.framebuffer = FRAMEBUFF_ADDR1_SD;
-        #if (FRAMEBUFF_DEPTH == u16)
-            render.bufferdepth = G_IM_SIZ_16b;
-        #else
-            render.bufferdepth = G_IM_SIZ_32b;
-        #endif
-        render.color = task->color;
-    
-        // Use the RCP to render to the framebuffer
-        rcp_initialize_sd(&render);
-        rcp_finish(&render);
+        // Make a copy for safekeeping
+        l_msg.color = l_msgp->color;
+        l_msg.swapbuffer = l_msgp->swapbuffer;
         
-        // Setup the RCP task and send it
-        s_rcptask_render.t.ucode_boot      = (u64*)rspbootTextStart;
-        s_rcptask_render.t.ucode_boot_size = (u32)rspbootTextEnd-(u32)rspbootTextStart;
-        s_rcptask_render.t.ucode           = (u64*)gspF3DEX2_fifoTextStart;
-        s_rcptask_render.t.ucode_data      = (u64*)gspF3DEX2_fifoDataStart;
-        s_rcptask_render.t.data_ptr        = (u64*)g_displists[0];
-        s_rcptask_render.t.data_size       = (u32)((g_displistp - render.displistp)*sizeof(Gfx));
-        osSpTaskStart(&s_rcptask_render);
+        // We received a message, find an available framebuffer if we don't have one yet
+        debug_printf("Graphics Thread: Render request received %d %d.\n", l_msg.color, l_msg.swapbuffer);
+        if (!reuse)
+        {
+            for (i=0; i<FRAMEBUFF_COUNT; i++)
+            {
+                FrameBuffer* l_fb = &s_framebuffers_sd[i];
+                if (l_fb->status == FBSTATUS_FREE || (l_fb->status == FBSTATUS_READY && l_fb != s_lastrendered))
+                {
+                    l_freebuff = l_fb;
+                    break;
+                }
+            }
+        }
         
-        // Wait for the RCP to finish
-        debug_printf("\tSending render task\n");
+        // If none was found, drop this render request
+        if (l_freebuff == NULL)
+        {
+            debug_printf("Graphics Thread: No available buffer, dropping request.\n");
+            continue;
+        }
+        
+        // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
+        while (osViGetCurrentFramebuffer() == l_freebuff || osViGetNextFramebuffer() == l_freebuff)
+        {
+            debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
+            s_scheduler->gfx_notify = &s_msgqueue_vsync;
+            osRecvMesg(&s_msgqueue_vsync, NULL, OS_MESG_BLOCK);
+        }
+        
+        // Generate the display list for the scene
+        debug_printf("Graphics Thread: Found buffer '%d'.\n", i);
+        graphics_renderscene(l_freebuff, l_msg.color);
+        l_freebuff->status = FBSTATUS_RENDERING;
+        
+        // Wait for the render task to finish
         (void)osRecvMesg(&s_msgqueue_rdp, NULL, OS_MESG_BLOCK);
-        debug_printf("\tRDP finished task\n");
+        debug_printf("Graphics Thread: Render task finished.\n");
+        s_scheduler->task_gfx = NULL;
         
-        // Display the framebuffer
-        debug_printf("\tFramebuffer colored with %2x\n", task->color);
-        osViSwapBuffer(FRAMEBUFF_ADDR1_SD);
+        // If we're not meant to swap the framebuffer yet, then stop here
+        // The next loop should reuse this framebuffer if needed
+        if (!l_msg.swapbuffer)
+        {
+            debug_printf("Graphics Thread: Don't swap buffer yet.\n");
+            reuse = TRUE;
+            continue;
+        }
+        l_freebuff->status = FBSTATUS_READY;
+        debug_printf("Graphics Thread: Framebuffer ready.\n");
+            
+        // Mark the buffer as the last rendered and notify the scheduler if needed
+        s_lastrendered = l_freebuff;
+        l_freebuff = NULL;
+        reuse = FALSE;
+        if (s_scheduler->notify)
+        {
+            debug_printf("Graphics Thread: Notified scheduler.\n");
+            osSendMesg(&s_scheduler->queue, (OSMesg)MSG_SCHEDULER_READYFBUFFER, OS_MESG_BLOCK);
+        }
     }
 }
 
-
-/*==============================
-    graphics_renderscene
-    Queues a scene render
-    @param The color to set the framebuffer
-==============================*/
-
-void graphics_renderscene(const u8 a_color)
+static void graphics_renderscene(FrameBuffer* fb, u8 color)
 {
-    ThreadMsg_Graphics task;
-    debug_printf("Requesting scene render with color %2x\n", a_color);
+    RenderTask l_task;
     
-    // Specify the task for the graphics thread to execute
-    task.color = a_color;
+    // Initialize the render task
+    l_task.displistp = fb->displist;
+    l_task.framebuffer = fb->address;
+    #if (FRAMEBUFF_DEPTH == u16)
+        l_task.bufferdepth = G_IM_SIZ_16b;
+    #else
+        l_task.bufferdepth = G_IM_SIZ_32b;
+    #endif
+    l_task.color = color;
     
-    // Send the task to the graphics thread
-    osSendMesg(&s_msgqueue_graphics, (OSMesg *)&task, OS_MESG_BLOCK);
+    // Build the display list
+    rcp_initialize_sd(&l_task);
+    rcp_finish(&l_task);
+    
+    // Let the scheduler know the RCP is going to be busy
+    s_scheduler->task_gfx = l_task.task;
+    
+    // Send the render task to the RCP
+    debug_printf("Graphics Thread: Sending render task.\n");
+    osSpTaskStart(l_task.task);
+}
+
+void graphics_requestrender(u8 color, bool swapbuffer)
+{
+    RenderMessage l_msg = {color, swapbuffer};
+    osSendMesg(&s_msgqueue_graphics, (OSMesg)&l_msg, OS_MESG_BLOCK);
+}
+
+bool graphics_framebufferready()
+{
+    return s_lastrendered != NULL;
+}
+
+FrameBuffer* graphics_popframebuffer()
+{
+    int i;
+    FrameBuffer* l_consumed = s_lastrendered;
+    
+    // Mark the consumed framebuffer as displaying, and remove the last rendered buffer
+    l_consumed->status = FBSTATUS_DISPLAYING;
+    s_lastrendered = NULL;
+    
+    // See if we have another framebuffer marked as ready
+    for (i=0; i<FRAMEBUFF_COUNT; i++)
+    {
+        if (s_framebuffers_sd[i].status == FBSTATUS_READY)
+        {
+            s_lastrendered = &s_framebuffers_sd[i];
+            break;
+        }
+    }
+            
+    // Return the consumed framebuffer
+    return l_consumed;
 }

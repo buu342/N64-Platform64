@@ -8,6 +8,8 @@ RCP
 #include <ultra64.h>
 #include "debug.h"
 #include "osconfig.h"
+#include "types.h"
+#include "scheduler.h"
 #include "graphics.h"
 
 
@@ -18,6 +20,27 @@ RCP
 // Display lists
 Gfx  g_displists[FRAMEBUFF_COUNT][DISPLIST_SIZE];
 Gfx* g_displistp;
+
+// RCP task
+static OSTask s_rcptask_render =
+{
+    M_GFXTASK,              // Task type
+    0,                      // Task flags
+    NULL,                   // RCP boot microcode pointer (fill in later)
+    0,                      // RCP boot microcode size (fill in later)
+    NULL,                   // Task microcode pointer (fill in later)
+    SP_UCODE_SIZE,          // Task microcode size
+    NULL,                   // Task microcode data pointer (fill in later)
+    SP_UCODE_DATA_SIZE,     // Task microcode data size
+    STACKREALSTART_DRAM,    // Task DRAM stack pointer
+    STACKSIZE_DRAM,         // Task DRAM stack size
+    STACKREALSTART_RDPFIFO, // Task FIFO buffer start pointer
+    STACKEND_RDPFIFO,       // Task FIFO buffer end pointer
+    NULL,                   // Task data pointer (fill in later)
+    0,                      // Task data size (fill in later)
+    NULL,                   // Task yield buffer pointer (unused)
+    0                       // Task yield buffer size (unused)
+};
 
 
 /*********************************
@@ -102,6 +125,7 @@ void rcp_initialize_sd(RenderTask* task)
     gSPSegment(g_displistp++, 0, 0x0);
     
     // Set the framebuffer that the RDP will draw onto
+    debug_printf("\t%p\n", task->framebuffer);
     gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_SD, OS_K0_TO_PHYSICAL(task->framebuffer));
     
     // Initialize the RSP and RDP with our initialization display lists
@@ -166,4 +190,13 @@ void rcp_finish(RenderTask* task)
     
     // Writeback cache lines so that the RCP can read the up-to-date data
     osWritebackDCacheAll();
+        
+    // Setup the RCP task
+    s_rcptask_render.t.ucode_boot      = (u64*)rspbootTextStart;
+    s_rcptask_render.t.ucode_boot_size = (u32)rspbootTextEnd-(u32)rspbootTextStart;
+    s_rcptask_render.t.ucode           = (u64*)gspF3DEX2_fifoTextStart;
+    s_rcptask_render.t.ucode_data      = (u64*)gspF3DEX2_fifoDataStart;
+    s_rcptask_render.t.data_ptr        = (u64*)task->displistp;
+    s_rcptask_render.t.data_size       = (u32)((g_displistp - task->displistp)*sizeof(Gfx));
+    task->task = &s_rcptask_render;
 }
