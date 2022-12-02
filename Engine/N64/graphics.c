@@ -135,7 +135,7 @@ static void threadfunc_graphics(void *arg)
         }
         
         // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
-        while (osViGetCurrentFramebuffer() == l_freebuff || osViGetNextFramebuffer() == l_freebuff)
+        while (osViGetCurrentFramebuffer() == l_freebuff->address || osViGetNextFramebuffer() == l_freebuff->address)
         {
             debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
             s_scheduler->gfx_notify = &s_msgqueue_vsync;
