@@ -21,6 +21,7 @@ Handles the boot process of the ROM.
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
+static void advance_step();
 
 
 /*********************************
@@ -35,6 +36,7 @@ static OSThread	s_threadstruct_main;
 static OSMesg s_pi_messages[NUM_PI_MSGS];
 static OSMesgQueue s_pi_queue;
 
+// Lag switch for demonstrations
 static bool s_shouldlag = FALSE;
 
 
@@ -79,7 +81,7 @@ static void threadfunc_idle(void *arg)
     osSetThreadPri(0, 0);
     while (1)
     {
-        debug_printf("Idle thread spinning\n");
+        debug_printf("Idle Thread: Spinning\n");
     }
 }
 
@@ -92,23 +94,14 @@ static void threadfunc_idle(void *arg)
 
 static void threadfunc_main(void *arg)
 {
+    Scheduler* l_scheduler;
     u8 l_color = 0;
-    debug_printf("Created main thread\n");
-
-    // Initialize the TV
-    osCreateViManager(OS_PRIORITY_VIMGR);
-    #if (TVMODE == TV_NTSC)
-        osViSetMode(&osViModeNtscLan1);
-    #elif (TVMODE == TV_PAL)
-        osViSetMode(&osViModeFpalLan1);
-    #else
-        osViSetMode(&osViModeMpalLan1);
-    #endif
+    debug_printf("Main Thread: Started\n");
     
     // Initialize the rest of the game
     controller_initialize();
-    scheduler_initialize();
-    graphics_initialize();
+    l_scheduler = scheduler_initialize();
+    graphics_initialize(l_scheduler);
     audio_initialize();
     
     // Loop forever, needed or the VI will not display correctly
@@ -117,7 +110,8 @@ static void threadfunc_main(void *arg)
         int i;
         
         // Render the scene
-        graphics_renderscene(l_color++);
+        debug_printf("Main Thread: Sending render request %d %d\n", l_color, TRUE);
+        graphics_requestrender(l_color++, TRUE);
         
         // Check if the flashcart has incoming debug data
         debug_pollcommands();

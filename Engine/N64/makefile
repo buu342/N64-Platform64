@@ -11,6 +11,8 @@ ROMNAME = platform.n64
 
 REGISTRATION = "PLATFORM64" B PF I
 
+PADDING = 8
+
 
 ################################################################
 #                       Compiler Settings                      #
@@ -93,7 +95,7 @@ $(CODESEGMENT): $(CODEOBJECTS)
     $(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)
 
 $(TARGETS): $(OBJECTS)
-    $(MAKEROM) spec $(MAKEROMFLAGS) -r $(TARGETS) -e $(APP)
+    $(MAKEROM) spec $(MAKEROMFLAGS) -r $(TARGETS) -e $(APP) -s $(PADDING)
     @makemask $(TARGETS)
 ifeq ($(ALLOWREGISTER), 1)
     @nrdc $(TARGETS) $(REGISTRATION)
