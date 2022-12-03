@@ -125,7 +125,6 @@ void rcp_initialize_sd(RenderTask* task)
     gSPSegment(g_displistp++, 0, 0x0);
     
     // Set the framebuffer that the RDP will draw onto
-    debug_printf("\t%p\n", task->framebuffer);
     gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_SD, OS_K0_TO_PHYSICAL(task->framebuffer));
     
     // Initialize the RSP and RDP with our initialization display lists

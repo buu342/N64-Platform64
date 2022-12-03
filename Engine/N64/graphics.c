@@ -11,6 +11,8 @@ Handles graphics rendering
 #include "scheduler.h"
 #include "graphics.h"
 
+#define VERBOSE  TRUE
+
 /*********************************
              Structs
 *********************************/
@@ -44,7 +46,7 @@ static OSThread s_threadstruct_graphics;
 
 // Message queue
 static OSMesgQueue s_msgqueue_graphics;
-static OSMesg      s_msgbuffer_graphics[8];
+static OSMesg      s_msgbuffer_graphics;
 static OSMesgQueue s_msgqueue_rdp;
 static OSMesg      s_msgbuffer_rdp;
 static OSMesgQueue s_msgqueue_vsync;
@@ -87,12 +89,11 @@ void graphics_initialize(Scheduler* scheduler)
 
 static void threadfunc_graphics(void *arg)
 {
-    bool reuse = FALSE;
     FrameBuffer* l_freebuff = NULL;
     
     // Initialize the thread
     debug_printf("Graphics Thread: Started\n");
-    osCreateMesgQueue(&s_msgqueue_graphics, s_msgbuffer_graphics, 8);
+    osCreateMesgQueue(&s_msgqueue_graphics, &s_msgbuffer_graphics, 1);
     osCreateMesgQueue(&s_msgqueue_rdp, &s_msgbuffer_rdp, 1);
     osCreateMesgQueue(&s_msgqueue_vsync, &s_msgbuffer_vsync, 1);
     osSetEventMesg(OS_EVENT_DP, &s_msgqueue_rdp, NULL);
@@ -105,7 +106,9 @@ static void threadfunc_graphics(void *arg)
         RenderMessage* l_msgp;
         
         // Wait for a graphics message to arrive
-        debug_printf("Graphics Thread: Loop start. Waiting for render request.\n");
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Loop start. Waiting for render request.\n"); 
+        #endif
         osRecvMesg(&s_msgqueue_graphics, (OSMesg*)&l_msgp, OS_MESG_BLOCK);
         
         // Make a copy for safekeeping
@@ -113,8 +116,10 @@ static void threadfunc_graphics(void *arg)
         l_msg.swapbuffer = l_msgp->swapbuffer;
         
         // We received a message, find an available framebuffer if we don't have one yet
-        debug_printf("Graphics Thread: Render request received %d %d.\n", l_msg.color, l_msg.swapbuffer);
-        if (!reuse)
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Render request received %d %d.\n", l_msg.color, l_msg.swapbuffer);
+        #endif
+        if (l_freebuff == NULL)
         {
             for (i=0; i<FRAMEBUFF_COUNT; i++)
             {
@@ -125,53 +130,58 @@ static void threadfunc_graphics(void *arg)
                     break;
                 }
             }
-        }
-        
-        // If none was found, drop this render request
-        if (l_freebuff == NULL)
-        {
-            debug_printf("Graphics Thread: No available buffer, dropping request.\n");
-            continue;
+            
+            // If none was found, drop this render request
+            if (l_freebuff == NULL)
+            {
+                #if VERBOSE 
+                    debug_printf("Graphics Thread: No available buffer, dropping request.\n");
+                #endif
+                continue;
+            }
         }
         
         // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
         while (osViGetCurrentFramebuffer() == l_freebuff->address || osViGetNextFramebuffer() == l_freebuff->address)
         {
-            debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
+            #if VERBOSE 
+                debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
+            #endif
             s_scheduler->gfx_notify = &s_msgqueue_vsync;
             osRecvMesg(&s_msgqueue_vsync, NULL, OS_MESG_BLOCK);
         }
         
         // Generate the display list for the scene
-        debug_printf("Graphics Thread: Found buffer '%d'.\n", i);
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Found buffer '%d'.\n", i);
+        #endif
         graphics_renderscene(l_freebuff, l_msg.color);
         l_freebuff->status = FBSTATUS_RENDERING;
         
         // Wait for the render task to finish
         (void)osRecvMesg(&s_msgqueue_rdp, NULL, OS_MESG_BLOCK);
-        debug_printf("Graphics Thread: Render task finished.\n");
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Render task finished.\n");
+        #endif
         s_scheduler->task_gfx = NULL;
         
         // If we're not meant to swap the framebuffer yet, then stop here
         // The next loop should reuse this framebuffer if needed
         if (!l_msg.swapbuffer)
         {
-            debug_printf("Graphics Thread: Don't swap buffer yet.\n");
-            reuse = TRUE;
+            #if VERBOSE 
+                debug_printf("Graphics Thread: Don't swap buffer yet.\n");
+            #endif
             continue;
         }
         l_freebuff->status = FBSTATUS_READY;
-        debug_printf("Graphics Thread: Framebuffer ready.\n");
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Framebuffer ready.\n");
+        #endif
             
-        // Mark the buffer as the last rendered and notify the scheduler if needed
+        // Mark the buffer as the last rendered
         s_lastrendered = l_freebuff;
         l_freebuff = NULL;
-        reuse = FALSE;
-        if (s_scheduler->notify)
-        {
-            debug_printf("Graphics Thread: Notified scheduler.\n");
-            osSendMesg(&s_scheduler->queue, (OSMesg)MSG_SCHEDULER_READYFBUFFER, OS_MESG_BLOCK);
-        }
     }
 }
 
@@ -197,7 +207,9 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     s_scheduler->task_gfx = l_task.task;
     
     // Send the render task to the RCP
-    debug_printf("Graphics Thread: Sending render task.\n");
+    #if VERBOSE 
+        debug_printf("Graphics Thread: Sending render task.\n");
+    #endif
     osSpTaskStart(l_task.task);
 }
 

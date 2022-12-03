@@ -12,6 +12,8 @@ audio tasks, as well as handles PreNMI interrupts (Reset Button)
 #include "scheduler.h"
 #include "graphics.h"
 
+#define VERBOSE  TRUE
+
 
 /*********************************
         Function Prototypes
@@ -44,7 +46,6 @@ Scheduler* scheduler_initialize()
     
     // Initialize the scheduler
     s_scheduler.tvblack = TRUE;
-    s_scheduler.notify = TRUE;
     s_scheduler.task_gfx = NULL;
     s_scheduler.task_audio = NULL;
     s_scheduler.gfx_notify = NULL;
@@ -86,29 +87,31 @@ Scheduler* scheduler_initialize()
 
 static void threadfunc_scheduler(void *arg)
 {
-    debug_printf("Scheduler Thread: Started\n");
+    #if VERBOSE 
+        debug_printf("Scheduler Thread: Started\n");
+    #endif
     
     // Spin this thread forever
     while (1)
     {
         OSMesg l_msg;
-        debug_printf("Scheduler Thread: Loop start, waiting for message\n");
+        #if VERBOSE 
+            debug_printf("Scheduler Thread: Loop start, waiting for message\n");
+        #endif
         osRecvMesg(&s_scheduler.queue, (OSMesg *)&l_msg, OS_MESG_BLOCK);
         
         // At this point, a message has been received from another thread
-        debug_printf("Scheduler Thread: Message '%d' received\n", (s32)l_msg);
+        #if VERBOSE 
+            debug_printf("Scheduler Thread: Message '%d' received\n", (s32)l_msg);
+        #endif
         
         // Pick what to do based on the message value:
         switch ((s32)l_msg)
         {
-            case MSG_SCHEDULER_READYFBUFFER:
-                s_scheduler.notify = FALSE;
-                break;
-                // Intentional fallthrough
             case MSG_SCHEDULER_VSYNC:
                 if (s_scheduler.gfx_notify != NULL)
                 {
-                    osSendMesg(s_scheduler.gfx_notify, NULL, OS_MESG_NOBLOCK);
+                    osSendMesg(s_scheduler.gfx_notify, NULL, OS_MESG_BLOCK);
                     s_scheduler.gfx_notify = NULL;
                 }
                 scheduler_handledisplay();
@@ -117,7 +120,9 @@ static void threadfunc_scheduler(void *arg)
             //    scheduler_handlenmi();
             //    break;
             default:
-                debug_printf("Scheduler Thread: Bad message '0x%2x' received\n", (s32)l_msg);
+                #if VERBOSE 
+                    debug_printf("Scheduler Thread: Bad message '0x%2x' received\n", (s32)l_msg);
+                #endif
                 break;
         }
     }
@@ -133,29 +138,36 @@ static void scheduler_handledisplay()
 {
     FrameBuffer* l_fb;
     
-    // Check if a framebuffer that is ready exists, if not then wait to be notified of one
+    // Check if a framebuffer that is ready exists, if not then we have to wait for the next retrace
     if (!graphics_framebufferready())
     {
-        s_scheduler.notify = TRUE;
-        debug_printf("Scheduler Thread: No framebuffer available.\n");
+        #if VERBOSE 
+            debug_printf("Scheduler Thread: No framebuffer available.\n");
+        #endif
         return;
     }
     
     // We have a framebuffer available, pop it from the ready stack
     l_fb = graphics_popframebuffer();
-    debug_printf("Scheduler Thread: Popped a framebuffer.\n");
+    #if VERBOSE 
+        debug_printf("Scheduler Thread: Popped a framebuffer.\n");
+    #endif
     
     // Mark the old framebuffer as free, and swap with the new one
     if (s_displayingfb != NULL)
         s_displayingfb->status = FBSTATUS_FREE;
     s_displayingfb = l_fb;
     osViSwapBuffer(l_fb->address);
-    debug_printf("Scheduler Thread: Swapped framebuffer.\n");
+    #if VERBOSE 
+        debug_printf("Scheduler Thread: Swapped framebuffer.\n");
+    #endif
     
     // Turn the TV on if it isn't
     if (s_scheduler.tvblack)
     {
-        debug_printf("Scheduler Thread: TV Turned on.\n");
+        #if VERBOSE 
+            debug_printf("Scheduler Thread: TV Turned on.\n");
+        #endif
         s_scheduler.tvblack = FALSE;
         osViBlack(FALSE);
     }
