@@ -1,5 +1,9 @@
 #ifndef PLATFORM64_OSCONFIG_H
 #define PLATFORM64_OSCONFIG_H
+    
+    /*********************************
+                TV Config
+    *********************************/
 
     // TV mode ID's
     #define TV_NTSC  0

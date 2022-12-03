@@ -36,6 +36,7 @@ static OSThread	s_threadstruct_main;
 static OSMesg s_pi_messages[NUM_PI_MSGS];
 static OSMesgQueue s_pi_queue;
 
+// Lag switch for demonstrations
 static bool s_shouldlag = FALSE;
 
 

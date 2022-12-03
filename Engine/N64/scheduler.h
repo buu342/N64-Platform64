@@ -1,7 +1,6 @@
 #ifndef PLATFORM64_SCHEDULER_H
 #define PLATFORM64_SCHEDULER_H
 
-
     /*********************************
                Definitions
     *********************************/
@@ -11,7 +10,8 @@
     
     // Scheduler messages
     #define MSG_SCHEDULER_VSYNC        1
-    #define MSG_SCHEDULER_PRENMI       2
+    #define MSG_SCHEDULER_AUDIOREQ     2
+    #define MSG_SCHEDULER_PRENMI       3
 
 
     /*********************************
@@ -21,6 +21,7 @@
     typedef struct 
     {
         bool         tvblack;    // Whether the TV is blacked or not
+        bool         reset;      // Whether the reset button was recently pressed
         OSTask*      task_gfx;   // Current executing graphics task
         OSTask*      task_audio; // Current executing audio task
         OSMesgQueue  queue;

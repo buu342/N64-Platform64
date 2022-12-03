@@ -1,15 +1,15 @@
 #ifndef PLATFORM64_GRAPHICS_H
 #define PLATFORM64_GRAPHICS_H
 
-    #include "osconfig.h"
-    
-    
     /*********************************
                Definitions
     *********************************/
 
+    // The size of a single display list
+    // Increase this value if the assertion in rcp.c fails
     #define DISPLIST_SIZE  1024
 
+    // Framebuffer status variables
     #define FBSTATUS_FREE       0
     #define FBSTATUS_RENDERING  1
     #define FBSTATUS_READY      2
@@ -20,13 +20,15 @@
                  Structs
     *********************************/
 
+    // Struct that describes a framebuffer
     typedef struct 
     {
         void* address;
-        Gfx* displist;
-        u32 status;
+        Gfx*  displist;
+        u32   status;
     } FrameBuffer;
     
+    // Struct that describes a render task for the RCP
     typedef struct 
     {
         Gfx*    displistp;
@@ -41,6 +43,7 @@
                  Globals
     *********************************/
 
+    // Display list pointers
     extern Gfx  g_displists[FRAMEBUFF_COUNT][DISPLIST_SIZE];
     extern Gfx* g_displistp;
     
@@ -53,5 +56,6 @@
     void graphics_requestrender(u8 color, bool swapbuffer);
     bool graphics_framebufferready();
     FrameBuffer* graphics_popframebuffer();
+    void graphics_stopthread();
 
 #endif

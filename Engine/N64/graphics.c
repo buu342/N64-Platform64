@@ -11,12 +11,20 @@ Handles graphics rendering
 #include "scheduler.h"
 #include "graphics.h"
 
+
+/*********************************
+           Definitions
+*********************************/
+
+// Enable this to see how the graphics thread is behaving with prints
 #define VERBOSE  TRUE
+
 
 /*********************************
              Structs
 *********************************/
-    
+
+// A struct which describes the render task from the main thread
 typedef struct
 {
     u8 color;
@@ -44,7 +52,7 @@ static FrameBuffer* s_lastrendered;
 // Thread
 static OSThread s_threadstruct_graphics;
 
-// Message queue
+// Message queues for thread communication
 static OSMesgQueue s_msgqueue_graphics;
 static OSMesg      s_msgbuffer_graphics;
 static OSMesgQueue s_msgqueue_rdp;
@@ -52,6 +60,7 @@ static OSMesg      s_msgbuffer_rdp;
 static OSMesgQueue s_msgqueue_vsync;
 static OSMesg      s_msgbuffer_vsync;
 
+// The scheduler
 static Scheduler* s_scheduler;
 
 
@@ -112,8 +121,7 @@ static void threadfunc_graphics(void *arg)
         osRecvMesg(&s_msgqueue_graphics, (OSMesg*)&l_msgp, OS_MESG_BLOCK);
         
         // Make a copy for safekeeping
-        l_msg.color = l_msgp->color;
-        l_msg.swapbuffer = l_msgp->swapbuffer;
+        memcpy(&l_msg, l_msgp, sizeof(RenderMessage));
         
         // We received a message, find an available framebuffer if we don't have one yet
         #if VERBOSE 
@@ -185,6 +193,14 @@ static void threadfunc_graphics(void *arg)
     }
 }
 
+
+/*==============================
+    graphics_renderscene
+    Creates a display list and render task for the RCP
+    @param The framebuffer to use
+    @param The color to wipe the screen with
+==============================*/
+
 static void graphics_renderscene(FrameBuffer* fb, u8 color)
 {
     RenderTask l_task;
@@ -213,16 +229,41 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     osSpTaskStart(l_task.task);
 }
 
+
+/*==============================
+    graphics_requestrender
+    Requests a scene render from the main thread
+    @param The color to wipe the screen with
+    @param Whether the framebuffer should be swapped 
+           when the render is finished
+==============================*/
+
 void graphics_requestrender(u8 color, bool swapbuffer)
 {
     RenderMessage l_msg = {color, swapbuffer};
     osSendMesg(&s_msgqueue_graphics, (OSMesg)&l_msg, OS_MESG_BLOCK);
 }
 
+
+/*==============================
+    graphics_framebufferready
+    Checks if a framebuffer is ready to be consumed
+    by the VI
+    @returns Whether a framebuffer is available
+==============================*/
+
 bool graphics_framebufferready()
 {
     return s_lastrendered != NULL;
 }
+
+
+/*==============================
+    graphics_popframebuffer
+    Pops the last rendered framebuffer from the queue
+    of rendered buffers
+    @returns The popped framebuffer
+==============================*/
 
 FrameBuffer* graphics_popframebuffer()
 {
@@ -245,4 +286,15 @@ FrameBuffer* graphics_popframebuffer()
             
     // Return the consumed framebuffer
     return l_consumed;
+}
+
+
+/*==============================
+    graphics_stopthread
+    Stops the graphics thread
+==============================*/
+
+void graphics_stopthread()
+{
+    osStopThread(&s_threadstruct_graphics);
 }

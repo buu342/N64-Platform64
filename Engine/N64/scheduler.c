@@ -12,6 +12,12 @@ audio tasks, as well as handles PreNMI interrupts (Reset Button)
 #include "scheduler.h"
 #include "graphics.h"
 
+
+/*********************************
+           Definitions
+*********************************/
+
+// Enable this to see how the scheduler is behaving with prints
 #define VERBOSE  TRUE
 
 
@@ -21,17 +27,17 @@ audio tasks, as well as handles PreNMI interrupts (Reset Button)
 
 static void threadfunc_scheduler(void *arg);
 static void scheduler_handledisplay();
+static void scheduler_handlenmi();
+static void scheduler_doresetwipe();
 
 
 /*********************************
              Globals
 *********************************/
 
-static OSThread	s_threadstruct_scheduler;
-
-static Scheduler s_scheduler;
-
-static FrameBuffer* s_displayingfb;
+static OSThread	s_threadstruct_scheduler; // The thread stucture
+static Scheduler s_scheduler; // The scheduler itself
+static FrameBuffer* s_displayingfb; // The current displaying framebuffer
 
 
 /*==============================
@@ -46,6 +52,7 @@ Scheduler* scheduler_initialize()
     
     // Initialize the scheduler
     s_scheduler.tvblack = TRUE;
+    s_scheduler.reset = FALSE;
     s_scheduler.task_gfx = NULL;
     s_scheduler.task_audio = NULL;
     s_scheduler.gfx_notify = NULL;
@@ -116,9 +123,9 @@ static void threadfunc_scheduler(void *arg)
                 }
                 scheduler_handledisplay();
                 break;
-            //case MSG_SCHEDULER_PRENMI:
-            //    scheduler_handlenmi();
-            //    break;
+            case MSG_SCHEDULER_PRENMI:
+                scheduler_handlenmi();
+                break;
             default:
                 #if VERBOSE 
                     debug_printf("Scheduler Thread: Bad message '0x%2x' received\n", (s32)l_msg);
@@ -144,6 +151,10 @@ static void scheduler_handledisplay()
         #if VERBOSE 
             debug_printf("Scheduler Thread: No framebuffer available.\n");
         #endif
+        
+        // If the reset button was pressed recently, we can do some silly screen wipe
+        if (s_scheduler.reset)
+            scheduler_doresetwipe();
         return;
     }
     
@@ -170,5 +181,83 @@ static void scheduler_handledisplay()
         #endif
         s_scheduler.tvblack = FALSE;
         osViBlack(FALSE);
+    }
+}
+
+
+/*==============================
+    scheduler_handlenmi
+    Handles Pre-NMI (reset button).
+    Reset process is described in Developer News 1.5
+==============================*/
+
+static void scheduler_handlenmi()
+{
+    osViSetYScale(1.0);
+    audio_stopthread();
+    graphics_stopthread();
+    osSpTaskYield();
+    osAfterPreNMI();
+    s_scheduler.reset = TRUE;
+}
+
+
+/*==============================
+    scheduler_doresetwipe
+    Do some fancy effect on the CPU to the framebuffer
+    while the reset button is down
+==============================*/
+
+#define COLUMNWIDTH  2
+#define MELTSPEED    8
+
+static void scheduler_doresetwipe()
+{
+    int i = 0;
+    FRAMEBUFF_DEPTH* l_frame = s_displayingfb->address;
+    static bool l_initialized = FALSE;
+    static s32 l_columnstate[SCREEN_WIDTH_SD/COLUMNWIDTH];
+    #if VERBOSE
+        debug_printf("Scheduler Thread: Doing fizzle\n");
+    #endif
+    
+    // Initialize the melt effect
+    // This is done by initializing each column based on the previous value
+    // If I were to use pure random, it'd look like garbage unfortunately
+    if (!l_initialized)
+    {
+        l_columnstate[0] = MELTSPEED*(guRandom()%16);
+        for (i=1; i<SCREEN_WIDTH_SD/COLUMNWIDTH; i++)
+        {
+            u32 l_val = MELTSPEED*((guRandom()%3) - 1);
+            l_columnstate[i] = l_columnstate[i-1] + l_val;
+            if (l_columnstate[i] < 0) 
+                l_columnstate[i] = 0;
+            else if (l_columnstate[i] == 16*MELTSPEED)
+                l_columnstate[i] = 15*MELTSPEED;
+        }
+        l_initialized = TRUE;
+    }
+    
+    // Perform the melt effect
+    // The column state tells us how far down a specific column of pixels should be
+    for (i=0; i<SCREEN_WIDTH_SD/COLUMNWIDTH; i++)
+    {
+        if (l_columnstate[i] < 0)
+        {
+            int j, k;
+            for (j=SCREEN_HEIGHT_SD; j>0; j--)
+            {
+                for (k=0; k<COLUMNWIDTH; k++)
+                {
+                    int l_ipos = i*COLUMNWIDTH+k;
+                    if (j > -l_columnstate[i] && (j-MELTSPEED) > 0) // Copy pixels above the melt effect
+                        l_frame[l_ipos + SCREEN_WIDTH_SD*j] = l_frame[l_ipos + SCREEN_WIDTH_SD*(j-MELTSPEED)];
+                    else if (j < -l_columnstate[i]-MELTSPEED) // Blacken pixels which haven't been yet (no need to re-blacken)
+                        l_frame[l_ipos + SCREEN_WIDTH_SD*j] = 0;
+                }
+            }
+        }
+        l_columnstate[i] -= MELTSPEED;
     }
 }

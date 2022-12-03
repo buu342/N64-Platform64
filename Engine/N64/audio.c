@@ -56,3 +56,14 @@ static void threadfunc_audio(void *arg)
         osStopThread(&s_threadstruct_audio);
     }
 }
+
+
+/*==============================
+    audio_stopthread
+    Stops the audio thread
+==============================*/
+
+void audio_stopthread()
+{
+    osStopThread(&s_threadstruct_audio);
+}
