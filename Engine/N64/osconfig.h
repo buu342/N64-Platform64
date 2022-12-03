@@ -115,8 +115,8 @@
     #endif
     
     // Framebuffer depth and count
-    #define FRAMEBUFF_DEPTH  u16
-    #define FRAMEBUFF_COUNT  2
+    #define FRAMEBUFF_DEPTH     u16
+    #define FRAMEBUFF_MAXCOUNT  3
     
     // Framebuffer size
     #define FRAMEBUFF_SIZE_SD  (SCREEN_WIDTH_SD*SCREEN_WIDTH_SD*sizeof(FRAMEBUFF_DEPTH))

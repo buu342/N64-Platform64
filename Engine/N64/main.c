@@ -104,7 +104,16 @@ static void threadfunc_main(void *arg)
     graphics_initialize(l_scheduler);
     audio_initialize();
     
-    // Loop forever, needed or the VI will not display correctly
+    // Register framebuffers we are going to use
+    graphics_register_fbuffer(FALSE, FRAMEBUFF_ADDR1_SD);
+    graphics_register_fbuffer(FALSE, FRAMEBUFF_ADDR2_SD);
+    if (osGetMemSize() == 0x00800000) // Only register HD addresses if a memory pak is present
+    {
+        graphics_register_fbuffer(TRUE, FRAMEBUFF_ADDR1_HD);
+        graphics_register_fbuffer(TRUE, FRAMEBUFF_ADDR2_HD);
+    }
+    
+    // And now, perform the game main
     while (1)
     {
         int i;

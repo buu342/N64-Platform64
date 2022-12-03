@@ -44,7 +44,7 @@
     *********************************/
 
     // Display list pointers
-    extern Gfx  g_displists[FRAMEBUFF_COUNT][DISPLIST_SIZE];
+    extern Gfx  g_displists[FRAMEBUFF_MAXCOUNT][DISPLIST_SIZE];
     extern Gfx* g_displistp;
     
     
@@ -56,6 +56,11 @@
     void graphics_requestrender(u8 color, bool swapbuffer);
     bool graphics_framebufferready();
     FrameBuffer* graphics_popframebuffer();
+    void graphics_register_fbuffer(bool ishd, void* address);
+    void graphics_unregister_fbuffer(bool ishd, void* address);
+    void graphics_set_hd(bool enable);
+    u32 graphics_get_screenw();
+    u32 graphics_get_screenh();
     void graphics_stopthread();
 
 #endif

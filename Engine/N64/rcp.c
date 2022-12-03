@@ -18,7 +18,7 @@ RCP
 *********************************/
 
 // Display lists
-Gfx  g_displists[FRAMEBUFF_COUNT][DISPLIST_SIZE];
+Gfx  g_displists[FRAMEBUFF_MAXCOUNT][DISPLIST_SIZE];
 Gfx* g_displistp;
 
 // RCP task

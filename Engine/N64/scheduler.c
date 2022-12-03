@@ -216,7 +216,9 @@ static void scheduler_doresetwipe()
     int i = 0;
     FRAMEBUFF_DEPTH* l_frame = s_displayingfb->address;
     static bool l_initialized = FALSE;
-    static s32 l_columnstate[SCREEN_WIDTH_SD/COLUMNWIDTH];
+    static s32 l_columnstate[SCREEN_WIDTH_HD/COLUMNWIDTH];
+    u32 l_screenw = graphics_get_screenw();
+    u32 l_screenh = graphics_get_screenh();
     #if VERBOSE
         debug_printf("Scheduler Thread: Doing fizzle\n");
     #endif
@@ -227,7 +229,7 @@ static void scheduler_doresetwipe()
     if (!l_initialized)
     {
         l_columnstate[0] = MELTSPEED*(guRandom()%16);
-        for (i=1; i<SCREEN_WIDTH_SD/COLUMNWIDTH; i++)
+        for (i=1; i<l_screenw/COLUMNWIDTH; i++)
         {
             u32 l_val = MELTSPEED*((guRandom()%3) - 1);
             l_columnstate[i] = l_columnstate[i-1] + l_val;
@@ -241,20 +243,20 @@ static void scheduler_doresetwipe()
     
     // Perform the melt effect
     // The column state tells us how far down a specific column of pixels should be
-    for (i=0; i<SCREEN_WIDTH_SD/COLUMNWIDTH; i++)
+    for (i=0; i<l_screenw/COLUMNWIDTH; i++)
     {
         if (l_columnstate[i] < 0)
         {
             int j, k;
-            for (j=SCREEN_HEIGHT_SD; j>0; j--)
+            for (j=l_screenh; j>0; j--)
             {
                 for (k=0; k<COLUMNWIDTH; k++)
                 {
                     int l_ipos = i*COLUMNWIDTH+k;
                     if (j > -l_columnstate[i] && (j-MELTSPEED) > 0) // Copy pixels above the melt effect
-                        l_frame[l_ipos + SCREEN_WIDTH_SD*j] = l_frame[l_ipos + SCREEN_WIDTH_SD*(j-MELTSPEED)];
+                        l_frame[l_ipos + l_screenw*j] = l_frame[l_ipos + l_screenw*(j-MELTSPEED)];
                     else if (j < -l_columnstate[i]-MELTSPEED) // Blacken pixels which haven't been yet (no need to re-blacken)
-                        l_frame[l_ipos + SCREEN_WIDTH_SD*j] = 0;
+                        l_frame[l_ipos + l_screenw*j] = 0;
                 }
             }
         }

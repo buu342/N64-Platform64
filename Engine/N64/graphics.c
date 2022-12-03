@@ -45,9 +45,16 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color);
 *********************************/
 
 // Framebuffers
-static FrameBuffer s_framebuffers_sd[FRAMEBUFF_COUNT] = {{FRAMEBUFF_ADDR1_SD}, {FRAMEBUFF_ADDR2_SD}};
-static FrameBuffer s_framebuffers_hd[FRAMEBUFF_COUNT] = {{FRAMEBUFF_ADDR1_HD}, {FRAMEBUFF_ADDR2_HD}};
+static FrameBuffer s_framebuffers_sd[FRAMEBUFF_MAXCOUNT] = {{NULL}, {NULL}, {NULL}};
+static FrameBuffer s_framebuffers_hd[FRAMEBUFF_MAXCOUNT] = {{NULL}, {NULL}, {NULL}};
 static FrameBuffer* s_lastrendered;
+static u8 s_framebuffcount_sd;
+static u8 s_framebuffcount_hd;
+static bool s_ishd;
+
+// Active framebuffer trackers
+static FrameBuffer* s_framebuffers_active;
+static u8 s_framebuffers_activecount;
 
 // Thread
 static OSThread s_threadstruct_graphics;
@@ -74,14 +81,19 @@ void graphics_initialize(Scheduler* scheduler)
     int i;
     
     // Initialize globals
+    s_ishd = FALSE;
     s_lastrendered = NULL;
     s_scheduler = scheduler;
+    s_framebuffcount_sd = 0;
+    s_framebuffcount_hd = 0;
+    s_framebuffers_active = s_framebuffers_sd;
+    s_framebuffers_activecount = s_framebuffcount_sd;
     
     // Initialize framebuffers to their default state
-    for (i=0; i<FRAMEBUFF_COUNT; i++)
+    for (i=0; i<s_framebuffers_activecount; i++)
     {
-        s_framebuffers_sd[i].displist = g_displists[i];
-        s_framebuffers_sd[i].status = FBSTATUS_FREE;
+        s_framebuffers_active[i].displist = g_displists[i];
+        s_framebuffers_active[i].status = FBSTATUS_FREE;
     }
     
     // Start the graphics thread
@@ -111,6 +123,7 @@ static void threadfunc_graphics(void *arg)
     while (1)
     {
         int i;
+        int l_buffcount;
         RenderMessage l_msg;
         RenderMessage* l_msgp;
         
@@ -129,9 +142,9 @@ static void threadfunc_graphics(void *arg)
         #endif
         if (l_freebuff == NULL)
         {
-            for (i=0; i<FRAMEBUFF_COUNT; i++)
+            for (i=0; i<s_framebuffers_activecount; i++)
             {
-                FrameBuffer* l_fb = &s_framebuffers_sd[i];
+                FrameBuffer* l_fb = &s_framebuffers_active[i];
                 if (l_fb->status == FBSTATUS_FREE || (l_fb->status == FBSTATUS_READY && l_fb != s_lastrendered))
                 {
                     l_freebuff = l_fb;
@@ -161,7 +174,7 @@ static void threadfunc_graphics(void *arg)
         
         // Generate the display list for the scene
         #if VERBOSE 
-            debug_printf("Graphics Thread: Found buffer '%d'.\n", i);
+            debug_printf("Graphics Thread: Found buffer '%d' at %4p.\n", i, l_freebuff->address);
         #endif
         graphics_renderscene(l_freebuff, l_msg.color);
         l_freebuff->status = FBSTATUS_RENDERING;
@@ -216,7 +229,10 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     l_task.color = color;
     
     // Build the display list
-    rcp_initialize_sd(&l_task);
+    if (s_ishd)
+        rcp_initialize_hd(&l_task);
+    else
+        rcp_initialize_sd(&l_task);
     rcp_finish(&l_task);
     
     // Let the scheduler know the RCP is going to be busy
@@ -275,7 +291,7 @@ FrameBuffer* graphics_popframebuffer()
     s_lastrendered = NULL;
     
     // See if we have another framebuffer marked as ready
-    for (i=0; i<FRAMEBUFF_COUNT; i++)
+    for (i=0; i<s_framebuffers_activecount; i++)
     {
         if (s_framebuffers_sd[i].status == FBSTATUS_READY)
         {
@@ -286,6 +302,239 @@ FrameBuffer* graphics_popframebuffer()
             
     // Return the consumed framebuffer
     return l_consumed;
+}
+
+
+/*==============================
+    graphics_register_fbuffer
+    Registers a new framebuffer that the graphics thread can use
+    @param Whether this is an HD framebuffer or not
+    @param The address to register the new framebuffer to
+==============================*/
+
+void graphics_register_fbuffer(bool ishd, void* address)
+{
+    #if DEBUG_MODE
+        int i;
+    #endif
+    FrameBuffer* l_targetbuffers;
+    u8 l_targetcount;
+    u8* l_targetcount_pointer;
+
+    // Initialize our target variables to point to the correct globals
+    if (ishd)
+    {
+        l_targetbuffers = s_framebuffers_hd;
+        l_targetcount = s_framebuffcount_hd;
+        l_targetcount_pointer = &s_framebuffcount_hd;
+    }
+    else
+    {
+        l_targetbuffers = s_framebuffers_sd;
+        l_targetcount = s_framebuffcount_sd;
+        l_targetcount_pointer = &s_framebuffcount_sd;
+    }
+    
+    #if DEBUG_MODE
+        // Prevent registering more framebuffers than the max
+        if (l_targetcount == FRAMEBUFF_MAXCOUNT)
+        {
+            debug_printf("Error: attempted to register more %s framebuffers than the max!\n", (ishd ? "HD" : "SD"));
+            debug_assert(FALSE);
+            return;
+        }
+        
+        // Prevent duplicate framebuffers
+        for (i=0; i<l_targetcount; i++)
+        {
+            if (l_targetbuffers[i].address == address)
+            {
+                debug_printf("Error: duplicate %s framebuffer %4p registered!\n", (ishd ? "HD" : "SD"), address);
+                debug_assert(FALSE);
+                return;
+            }
+        }
+    #endif
+    
+    // Register the new framebuffer and initialize it
+    (*l_targetcount_pointer)++;
+    l_targetcount = (*l_targetcount_pointer) - 1;
+    l_targetbuffers[l_targetcount].address = address;
+    l_targetbuffers[l_targetcount].displist = g_displists[l_targetcount];
+    l_targetbuffers[l_targetcount].status = FBSTATUS_FREE;
+    
+    // Decrease the number of active framebuffers if applicable
+    if (s_framebuffers_active == l_targetbuffers)
+        s_framebuffers_activecount++;
+    debug_printf("Successfully registered a new %s framebuffer at address %4p\n", (ishd ? "HD" : "SD"), address);
+}
+
+
+/*==============================
+    graphics_unregister_fbuffer
+    Unregisters a framebuffer that the graphics thread can use
+    Note: Calling this in the graphics thread may cause a stall due to
+    the while loop.
+    @param Whether this is an HD framebuffer or not
+    @param The address to register the new framebuffer to
+==============================*/
+
+void graphics_unregister_fbuffer(bool ishd, void* address)
+{
+    int i;
+    #if DEBUG_MODE
+        bool l_found = FALSE;
+    #endif
+    FrameBuffer* l_targetbuffers;
+    u8 l_targetcount;
+    u8* l_targetcount_pointer;
+    
+    // Initialize our target variables to point to the correct globals
+    if (ishd)
+    {
+        l_targetbuffers = s_framebuffers_hd;
+        l_targetcount = s_framebuffcount_hd;
+        l_targetcount_pointer = &s_framebuffcount_hd;
+    }
+    else
+    {
+        l_targetbuffers = s_framebuffers_sd;
+        l_targetcount = s_framebuffcount_sd;
+        l_targetcount_pointer = &s_framebuffcount_sd;
+    }
+    
+    // Find the requested framebuffer
+    for (i=0; i<l_targetcount; i++)
+    {
+        if (l_targetbuffers[i].address == address)
+        {                
+            // If the RDP is currently drawing to this buffer, stall until it's finished
+            while (l_targetbuffers[i].status == FBSTATUS_RENDERING)
+                ;
+                
+            // If this was the last rendered framebuffer, pop the framebuffer stack
+            if (s_lastrendered == &l_targetbuffers[i])
+                graphics_popframebuffer();
+                
+            // Swap this framebuffer's data with the last one
+            memcpy(&l_targetbuffers[i], &l_targetbuffers[l_targetcount-1], sizeof(FrameBuffer));
+            
+            // Unregister
+            l_targetbuffers[l_targetcount-1].address = NULL;    
+            (*l_targetcount_pointer)--;
+            #if DEBUG_MODE
+                l_found = TRUE;
+            #endif
+            break;
+        }
+    }
+    
+    // Complain if the address wasn't found
+    #if DEBUG_MODE
+        if (!l_found)
+        {
+            debug_printf("Attempted to unregister nonexistent %s framebuffer %4p\n", (ishd ? "HD" : "SD"), address); 
+            return;
+        }
+    #endif
+    
+    // Decrease the number of active framebuffers if applicable
+    if (s_framebuffers_active == l_targetbuffers)
+    {
+        s_framebuffers_activecount--;
+        #if DEBUG_MODE
+            if (s_framebuffers_activecount < 2)
+                debug_printf("Warning: Only %d %s framebuffers are registered.\n\tI hope you know what you're doing.\n", s_framebuffers_activecount, (ishd ? "HD" : "SD"));
+        #endif
+    }
+    debug_printf("Successfully unregistered %s framebuffer at address %4p.\n", (ishd ? "HD" : "SD"), address);
+}
+
+
+/*==============================
+    graphics_set_hd
+    Enables or disables the use of HD
+    mode.
+    @param Whether or not to enable HD mode
+==============================*/
+
+void graphics_set_hd(bool enable)
+{
+    int i;
+    
+    // Set the VI mode to 480p or 240p
+    if (enable)
+    {
+        // If no HD framebuffers are registered, stop
+        #if DEBUG_MODE
+            if (s_framebuffcount_hd == 0)
+            {
+                debug_printf("Error: Attempted to set HD mode without any HD buffers registered\n");
+                debug_assert(FALSE);
+                return;
+            }
+        #endif
+        
+        // Set the VI to HD mode and initialize active globals
+        #if (TVMODE == TV_NTSC)
+            osViSetMode(&osViModeNtscHan1);
+        #elif (TVMODE == TV_PAL)
+            osViSetMode(&osViModeFpalHan1);
+        #else
+            osViSetMode(&osViModeMpalHan1);
+        #endif
+        s_framebuffers_active = s_framebuffers_hd;
+        s_framebuffers_activecount = s_framebuffcount_hd;
+    }
+    else
+    {
+        // Set the VI to SD mode and initialize active globals
+        #if (TVMODE == TV_NTSC)
+            osViSetMode(&osViModeNtscLan1);
+        #elif (TVMODE == TV_PAL)
+            osViSetMode(&osViModeFpalLan1);
+        #else
+            osViSetMode(&osViModeMpalLan1);
+        #endif
+        s_framebuffers_active = s_framebuffers_sd;
+        s_framebuffers_activecount = s_framebuffcount_sd;
+    }
+    s_ishd = enable;
+    
+    // Blacken the TV
+    osViBlack(TRUE);
+    s_scheduler->tvblack = TRUE;
+    
+    // Re-Initialize the framebuffers
+    for (i=0; i<s_framebuffers_activecount; i++)
+    {
+        s_framebuffers_active[i].displist = g_displists[i];
+        s_framebuffers_active[i].status = FBSTATUS_FREE;
+    }
+}
+
+
+/*==============================
+    graphics_get_screenw
+    Returns the width of the screen
+    @returns The screen width
+==============================*/
+
+u32 graphics_get_screenw()
+{
+    return s_ishd ? SCREEN_WIDTH_HD : SCREEN_WIDTH_SD;
+}
+
+
+/*==============================
+    graphics_get_screenh
+    Returns the height of the screen
+    @returns The screen height
+==============================*/
+
+u32 graphics_get_screenh()
+{
+    return s_ishd ? SCREEN_HEIGHT_HD : SCREEN_HEIGHT_SD;
 }
 
 
