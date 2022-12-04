@@ -161,7 +161,7 @@ static void scheduler_handledisplay()
     // We have a framebuffer available, pop it from the ready stack
     l_fb = graphics_popframebuffer();
     #if VERBOSE 
-        debug_printf("Scheduler Thread: Popped a framebuffer.\n");
+        debug_printf("Scheduler Thread: Popped a framebuffer at %p.\n", l_fb->address);
     #endif
     
     // Mark the old framebuffer as free, and swap with the new one
@@ -217,8 +217,8 @@ static void scheduler_doresetwipe()
     FRAMEBUFF_DEPTH* l_frame = s_displayingfb->address;
     static bool l_initialized = FALSE;
     static s32 l_columnstate[SCREEN_WIDTH_HD/COLUMNWIDTH];
-    u32 l_screenw = graphics_get_screenw();
-    u32 l_screenh = graphics_get_screenh();
+    const u32 l_screenw = graphics_get_screenw();
+    const u32 l_screenh = graphics_get_screenh();
     #if VERBOSE
         debug_printf("Scheduler Thread: Doing fizzle\n");
     #endif
