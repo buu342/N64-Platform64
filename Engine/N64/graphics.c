@@ -61,7 +61,7 @@ static OSThread s_threadstruct_graphics;
 
 // Message queues for thread communication
 static OSMesgQueue s_msgqueue_graphics;
-static OSMesg      s_msgbuffer_graphics;
+static OSMesg      s_msgbuffer_graphics[FRAMEBUFF_MAXCOUNT];
 static OSMesgQueue s_msgqueue_rdp;
 static OSMesg      s_msgbuffer_rdp;
 static OSMesgQueue s_msgqueue_vsync;
@@ -114,7 +114,7 @@ static void threadfunc_graphics(void *arg)
     
     // Initialize the thread
     debug_printf("Graphics Thread: Started\n");
-    osCreateMesgQueue(&s_msgqueue_graphics, &s_msgbuffer_graphics, 1);
+    osCreateMesgQueue(&s_msgqueue_graphics, s_msgbuffer_graphics, FRAMEBUFF_MAXCOUNT);
     osCreateMesgQueue(&s_msgqueue_rdp, &s_msgbuffer_rdp, 1);
     osCreateMesgQueue(&s_msgqueue_vsync, &s_msgbuffer_vsync, 1);
     osSetEventMesg(OS_EVENT_DP, &s_msgqueue_rdp, NULL);
@@ -147,6 +147,8 @@ static void threadfunc_graphics(void *arg)
                 FrameBuffer* l_fb = &s_framebuffers_active[i];
                 if (l_fb->status == FBSTATUS_FREE || (l_fb->status == FBSTATUS_READY && l_fb != s_lastrendered))
                 {
+                    if (s_framebuffers_activecount > 2 && (osViGetCurrentFramebuffer() == l_fb->address || osViGetNextFramebuffer() == l_freebuff->address)) // If we have triple buffering, no need to use a framebuffer that's busy
+                        continue;
                     l_freebuff = l_fb;
                     break;
                 }
@@ -174,7 +176,7 @@ static void threadfunc_graphics(void *arg)
         
         // Generate the display list for the scene
         #if VERBOSE 
-            debug_printf("Graphics Thread: Found buffer '%d' at %4p.\n", i, l_freebuff->address);
+            debug_printf("Graphics Thread: Found buffer '%d' at %p.\n", i, l_freebuff->address);
         #endif
         graphics_renderscene(l_freebuff, l_msg.color);
         l_freebuff->status = FBSTATUS_RENDERING;
@@ -197,7 +199,7 @@ static void threadfunc_graphics(void *arg)
         }
         l_freebuff->status = FBSTATUS_READY;
         #if VERBOSE 
-            debug_printf("Graphics Thread: Framebuffer ready.\n");
+            debug_printf("Graphics Thread: Framebuffer %d ready.\n", i);
         #endif
             
         // Mark the buffer as the last rendered
@@ -293,9 +295,9 @@ FrameBuffer* graphics_popframebuffer()
     // See if we have another framebuffer marked as ready
     for (i=0; i<s_framebuffers_activecount; i++)
     {
-        if (s_framebuffers_sd[i].status == FBSTATUS_READY)
+        if (s_framebuffers_active[i].status == FBSTATUS_READY)
         {
-            s_lastrendered = &s_framebuffers_sd[i];
+            s_lastrendered = &s_framebuffers_active[i];
             break;
         }
     }
@@ -349,7 +351,7 @@ void graphics_register_fbuffer(bool ishd, void* address)
         {
             if (l_targetbuffers[i].address == address)
             {
-                debug_printf("Error: duplicate %s framebuffer %4p registered!\n", (ishd ? "HD" : "SD"), address);
+                debug_printf("Error: duplicate %s framebuffer %p registered!\n", (ishd ? "HD" : "SD"), address);
                 debug_assert(FALSE);
                 return;
             }
@@ -366,7 +368,7 @@ void graphics_register_fbuffer(bool ishd, void* address)
     // Decrease the number of active framebuffers if applicable
     if (s_framebuffers_active == l_targetbuffers)
         s_framebuffers_activecount++;
-    debug_printf("Successfully registered a new %s framebuffer at address %4p\n", (ishd ? "HD" : "SD"), address);
+    debug_printf("Successfully registered a new %s framebuffer at address %p\n", (ishd ? "HD" : "SD"), address);
 }
 
 
@@ -433,7 +435,7 @@ void graphics_unregister_fbuffer(bool ishd, void* address)
     #if DEBUG_MODE
         if (!l_found)
         {
-            debug_printf("Attempted to unregister nonexistent %s framebuffer %4p\n", (ishd ? "HD" : "SD"), address); 
+            debug_printf("Attempted to unregister nonexistent %s framebuffer %p\n", (ishd ? "HD" : "SD"), address); 
             return;
         }
     #endif
@@ -447,7 +449,7 @@ void graphics_unregister_fbuffer(bool ishd, void* address)
                 debug_printf("Warning: Only %d %s framebuffers are registered.\n\tI hope you know what you're doing.\n", s_framebuffers_activecount, (ishd ? "HD" : "SD"));
         #endif
     }
-    debug_printf("Successfully unregistered %s framebuffer at address %4p.\n", (ishd ? "HD" : "SD"), address);
+    debug_printf("Successfully unregistered %s framebuffer at address %p.\n", (ishd ? "HD" : "SD"), address);
 }
 
 
