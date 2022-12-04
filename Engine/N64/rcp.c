@@ -132,11 +132,19 @@ void rcp_initialize_sd(RenderTask* task)
     gSPDisplayList(g_displistp++, s_dl_rspinit_sd);
     
     // Clear the framebuffer
-    gDPPipeSync(g_displistp++);
     gDPSetCycleType(g_displistp++, G_CYC_FILL);
     gDPSetFillColor(g_displistp++, GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1) << 16 | GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1));
     gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
     gDPPipeSync(g_displistp++);
+    
+    // Clear the Z-buffer
+    if (task->zbuffer != NULL)
+    {
+        gDPSetDepthImage(g_displistp++, task->zbuffer);
+        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_SD, task->zbuffer);
+        gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
+        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+    }
 }
 
 
@@ -164,11 +172,19 @@ void rcp_initialize_hd(RenderTask* task)
     gSPDisplayList(g_displistp++, s_dl_rspinit_hd);
     
     // Clear the framebuffer
-    gDPPipeSync(g_displistp++);
     gDPSetCycleType(g_displistp++, G_CYC_FILL);
     gDPSetFillColor(g_displistp++, GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1) << 16 | GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1));
     gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_HD-1, SCREEN_HEIGHT_HD-1);
     gDPPipeSync(g_displistp++);
+    
+    // Clear the Z-buffer
+    if (task->zbuffer != NULL)
+    {
+        gDPSetDepthImage(g_displistp++, task->zbuffer);
+        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_SD, task->zbuffer);
+        gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
+        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+    }
 }
 
 

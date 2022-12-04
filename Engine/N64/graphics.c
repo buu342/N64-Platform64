@@ -51,6 +51,8 @@ static FrameBuffer s_framebuffers_hd[FRAMEBUFF_MAXCOUNT] = {{NULL}, {NULL}, {NUL
 static FrameBuffer* s_lastrendered;
 static u8 s_framebuffcount_sd;
 static u8 s_framebuffcount_hd;
+static u32* s_zbuffer_sd;
+static u32* s_zbuffer_hd;
 static bool s_ishd;
 
 // Active framebuffer trackers
@@ -94,6 +96,8 @@ void graphics_initialize(Scheduler* scheduler)
     s_framebuffcount_hd = 0;
     s_framebuffers_active = s_framebuffers_sd;
     s_framebuffers_activecount = s_framebuffcount_sd;
+    s_zbuffer_sd = NULL;
+    s_zbuffer_hd = NULL;
     
     // Initialize framebuffers to their default state
     for (i=0; i<s_framebuffers_activecount; i++)
@@ -234,6 +238,10 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     // Initialize the render task
     l_task.displistp = fb->displist;
     l_task.framebuffer = fb->address;
+    if (s_ishd)
+        l_task.zbuffer = s_zbuffer_hd;
+    else
+        l_task.zbuffer = s_zbuffer_sd;
     #if (FRAMEBUFF_DEPTH == u16)
         l_task.bufferdepth = G_IM_SIZ_16b;
     #else
@@ -385,6 +393,21 @@ void graphics_register_fbuffer(bool ishd, void* address)
     if (s_framebuffers_active == l_targetbuffers)
         s_framebuffers_activecount++;
     debug_printf("Successfully registered a new %s framebuffer at address %p\n", (ishd ? "HD" : "SD"), address);
+}
+
+
+/*==============================
+    graphics_register_zbuffer
+    Registers the Z-buffer address
+    @param Whether this is an HD zbuffer or not
+    @param The address to register the new Z-buffer to.
+           Use NULL to disable the Z-buffer
+==============================*/
+
+void graphics_register_zbuffer(bool ishd, void* address)
+{
+    ishd ? (s_zbuffer_hd = address) : (s_zbuffer_sd = address);
+    debug_printf("Successfully registered %s Z-buffer to address %p\n", (ishd ? "HD" : "SD"), address);
 }
 
 
