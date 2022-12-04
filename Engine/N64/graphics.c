@@ -10,6 +10,7 @@ Handles graphics rendering
 #include "types.h"
 #include "scheduler.h"
 #include "graphics.h"
+#include "rcp.h"
 
 
 /*********************************
@@ -69,6 +70,11 @@ static OSMesg      s_msgbuffer_vsync;
 
 // The scheduler
 static Scheduler* s_scheduler;
+
+// RCP hang detection timer
+#if DEBUG_MODE
+    OSTimer s_rcptime;
+#endif
 
 
 /*==============================
@@ -188,6 +194,11 @@ static void threadfunc_graphics(void *arg)
         #endif
         s_scheduler->task_gfx = NULL;
         
+        // If we got here, the RCP did not hang, hooray!
+        #if DEBUG_MODE
+            osStopTimer(&s_rcptime);
+        #endif
+        
         // If we're not meant to swap the framebuffer yet, then stop here
         // The next loop should reuse this framebuffer if needed
         if (!l_msg.swapbuffer)
@@ -239,6 +250,11 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     
     // Let the scheduler know the RCP is going to be busy
     s_scheduler->task_gfx = l_task.task;
+    
+    // Start a timer to see how long it took to render. If it took too long, the RCP is hung
+    #if DEBUG_MODE
+        osSetTimer(&s_rcptime, OS_USEC_TO_CYCLES(SEC_TO_USEC(RCP_HUNGIME)), 0, &s_scheduler->queue, (OSMesg)MSG_SCHEDULER_RCPHANG);
+    #endif
     
     // Send the render task to the RCP
     #if VERBOSE 
@@ -547,5 +563,8 @@ u32 graphics_get_screenh()
 
 void graphics_stopthread()
 {
+    #if DEBUG_MODE
+        osStopTimer(&s_rcptime);
+    #endif
     osStopThread(&s_threadstruct_graphics);
 }

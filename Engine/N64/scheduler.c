@@ -126,6 +126,10 @@ static void threadfunc_scheduler(void *arg)
             case MSG_SCHEDULER_PRENMI:
                 scheduler_handlenmi();
                 break;
+            case MSG_SCHEDULER_RCPHANG:
+                debug_printf("RCP is HUNG UP!!\noh! MY GOD!!\n");
+                debug_assert(FALSE);
+                break;
             default:
                 #if VERBOSE 
                     debug_printf("Scheduler Thread: Bad message '0x%2x' received\n", (s32)l_msg);

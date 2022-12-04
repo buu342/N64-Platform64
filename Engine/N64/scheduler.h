@@ -12,6 +12,7 @@
     #define MSG_SCHEDULER_VSYNC        1
     #define MSG_SCHEDULER_AUDIOREQ     2
     #define MSG_SCHEDULER_PRENMI       3
+    #define MSG_SCHEDULER_RCPHANG      4
 
 
     /*********************************
