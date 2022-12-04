@@ -54,8 +54,6 @@
 
     void graphics_initialize(Scheduler* scheduler);
     void graphics_requestrender(u8 color, bool swapbuffer);
-    bool graphics_framebufferready();
-    FrameBuffer* graphics_popframebuffer();
     void graphics_register_fbuffer(bool ishd, void* address);
     void graphics_unregister_fbuffer(bool ishd, void* address);
     void graphics_set_hd(bool enable);

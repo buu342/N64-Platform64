@@ -30,6 +30,10 @@ static void scheduler_handledisplay();
 static void scheduler_handlenmi();
 static void scheduler_doresetwipe();
 
+// Unexposed graphics.c functions
+extern bool graphics_framebufferready();
+extern FrameBuffer* graphics_popframebuffer();
+
 
 /*********************************
              Globals
