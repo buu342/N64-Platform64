@@ -450,6 +450,10 @@ void graphics_unregister_fbuffer(bool ishd, void* address)
         if (l_targetbuffers[i].address == address)
         {                
             // If the RDP is currently drawing to this buffer, stall until it's finished
+            #if DEBUG_MODE
+                if (l_targetbuffers[i].status == FBSTATUS_RENDERING)
+                    debug_printf("Warning: Framebuffer to unregister in use by RCP. Stalling...\n");
+            #endif
             while (l_targetbuffers[i].status == FBSTATUS_RENDERING)
                 ;
                 
