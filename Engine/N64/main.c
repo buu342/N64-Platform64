@@ -99,10 +99,10 @@ static void threadfunc_main(void *arg)
     debug_printf("Main Thread: Started\n");
     
     // Initialize the rest of the game
-    controller_initialize();
     l_scheduler = scheduler_initialize();
     graphics_initialize(l_scheduler);
     audio_initialize();
+    controller_initialize();
     
     // Register framebuffers we are going to use
     graphics_register_fbuffer(FALSE, FRAMEBUFF_ADDR1_SD);
