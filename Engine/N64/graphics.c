@@ -18,7 +18,7 @@ Handles graphics rendering
 *********************************/
 
 // Enable this to see how the graphics thread is behaving with prints
-#define VERBOSE  TRUE
+#define VERBOSE  FALSE
 
 
 /*********************************

@@ -18,7 +18,7 @@ audio tasks, as well as handles PreNMI interrupts (Reset Button)
 *********************************/
 
 // Enable this to see how the scheduler is behaving with prints
-#define VERBOSE  TRUE
+#define VERBOSE  FALSE
 
 
 /*********************************
@@ -116,7 +116,7 @@ static void threadfunc_scheduler(void *arg)
             debug_printf("Scheduler Thread: Message '%d' received\n", (s32)l_msg);
         #endif
         
-        // Pick what to do based on the message value:
+        // Pick what to do based on the message value
         switch ((s32)l_msg)
         {
             case MSG_SCHEDULER_VSYNC:

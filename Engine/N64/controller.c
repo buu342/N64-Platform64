@@ -7,6 +7,7 @@ player inputs.
 
 #include <ultra64.h>
 #include "debug.h"
+#include "types.h"
 #include "osconfig.h"
 #include "controller.h"
 
@@ -35,6 +36,7 @@ static void threadfunc_controller(void *arg);
 
 // Controller data
 static OSContPad	s_contdata[MAXCONTROLLERS];
+static OSContPad	s_contdata_old[MAXCONTROLLERS];
 static OSContStatus	s_contstat[MAXCONTROLLERS];
 static OSPfs		s_contrumble[MAXCONTROLLERS];
 
@@ -49,6 +51,7 @@ static OSMesg      s_msgbuffer_si;
 
 // Player data
 static u8  s_playerindex[MAXCONTROLLERS];
+static u16 s_playeractions[MAXCONTROLLERS][MAX_ACTIONS];
 
 
 /*==============================
@@ -87,6 +90,7 @@ static void threadfunc_controller(void *arg)
     
     // Initialize the controllers
     osContInit(&s_msgqueue_si, &l_pattern, s_contstat);
+    memset(s_playeractions, 0, sizeof(u16)*MAXCONTROLLERS*MAX_ACTIONS);
     
     // Find out what player corresponds to what controller
     memset(s_playerindex, 0, sizeof(u8)*MAXCONTROLLERS);
@@ -137,6 +141,7 @@ static void threadfunc_controller(void *arg)
                 #endif
                 osContStartReadData(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
+                memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
                 #if VERBOSE 
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
@@ -217,6 +222,68 @@ s32 controller_playercount()
         if (s_playerindex[i] != 0)
             return i+1;
     return 0;
+}
+
+
+/*==============================
+    controller_register_action
+    Registers an action to a specific set of buttons
+    on a player's controller.
+    @param The player to register the action. Ranges from 1 to 4.
+    @param The action to register
+    @param The buttons to register. This should be a combination of
+           Libultra button macros, like A_BUTTON.
+==============================*/
+
+void controller_register_action(u8 player, u8 action, u16 buttons)
+{
+    s_playeractions[player-1][action] |= buttons;
+}
+
+
+/*==============================
+    controller_unregister_action
+    Unregisters an action from a specific set of buttons
+    on a player's controller.
+    @param The player to unregister the action. Ranges from 1 to 4.
+    @param The action to unregister
+    @param The buttons to unregister. This should be a combination of
+           Libultra button macros, like A_BUTTON.
+==============================*/
+
+void controller_unregister_action(u8 player, u8 action, u16 buttons)
+{
+    s_playeractions[player-1][action] &= ~buttons;
+}
+
+
+/*==============================
+    controller_action_pressed
+    Checks if a specific action button was pressed *this frame*
+    on a player's controller. 
+    @param The player to check
+    @param The action to check
+==============================*/
+
+bool controller_action_pressed(u8 player, u8 action)
+{
+    u8 l_index = s_playerindex[player-1];
+    u16 l_action = s_playeractions[player-1][action];
+    return (s_contdata[l_index].button & l_action) != 0 && (s_contdata_old[l_index].button & l_action) == 0;
+}
+
+
+/*==============================
+    controller_action_down
+    Checks if a specific action button is down on a player's
+    controller. 
+    @param The player to check
+    @param The action to check
+==============================*/
+
+bool controller_action_down(u8 player, u8 action)
+{
+    return (s_contdata[s_playerindex[player-1]].button & s_playeractions[player-1][action]) != 0;
 }
 
 
