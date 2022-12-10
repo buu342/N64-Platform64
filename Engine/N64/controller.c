@@ -59,7 +59,7 @@ static OSMesgQueue s_msgqueue_si;
 static OSMesg      s_msgbuffer_si;
 
 // Player data
-static u8      s_playerindex[MAXCONTROLLERS];
+static s8      s_playerindex[MAXCONTROLLERS];
 static u16     s_playeractions[MAXCONTROLLERS][MAX_ACTIONS];
 static Octagon s_playerzone_min[MAXCONTROLLERS] = {CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN};
 static Octagon s_playerzone_max[MAXCONTROLLERS] = {CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX};
@@ -106,7 +106,7 @@ static void threadfunc_controller(void *arg)
     memset(s_playerstick, 0, sizeof(Vector2D)*MAXCONTROLLERS);
     
     // Find out what player corresponds to what controller
-    memset(s_playerindex, 0, sizeof(u8)*MAXCONTROLLERS);
+    memset(s_playerindex, -1, sizeof(s8)*MAXCONTROLLERS);
     debug_printf("Controller Thread: Querying controllers.\n");
     for (i=0; i<MAXCONTROLLERS; i++)
     {
@@ -158,7 +158,7 @@ static void threadfunc_controller(void *arg)
                 memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
                 for (i=0; i<MAXCONTROLLERS; i++)
-                    if (s_playerindex[i] != 0 && s_contdata[i].stick_x != s_contdata_old[i].stick_x && s_contdata[i].stick_y != s_contdata_old[i].stick_y)
+                    if (s_playerindex[i] != -1 && s_contdata[i].stick_x != s_contdata_old[i].stick_x && s_contdata[i].stick_y != s_contdata_old[i].stick_y)
                         controller_calcstick(i);
                 #if VERBOSE 
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
@@ -185,7 +185,7 @@ void controller_reinitialize_all()
     osContReset(&s_msgqueue_si, s_contstat);
     
     // Find out what player corresponds to what controller
-    memset(s_playerindex, 0, sizeof(u8)*MAXCONTROLLERS);
+    memset(s_playerindex, -1, sizeof(u8)*MAXCONTROLLERS);
     debug_printf("Controller Thread: Querying controllers.\n");
     for (i=0; i<MAXCONTROLLERS; i++)
     {
@@ -232,11 +232,11 @@ void controller_read_all()
 s32 controller_playercount()
 {
     s32 i;
-    // Since the last non zero value in s_playerindex is equivalent to our player count
-    // (for example, if there's two players, then [0] and [1] will be non zero)
-    // we can just iterate backwards and return the first non-zero index (plus 1).
+    // Since the last non negative value in s_playerindex is equivalent to our player count
+    // (for example, if there's two players, then [0] and [1] will be non negative)
+    // we can just iterate backwards and return the first non-negative index (plus 1).
     for (i=MAXCONTROLLERS-1; i>=0; i--)
-        if (s_playerindex[i] != 0)
+        if (s_playerindex[i] != -1)
             return i+1;
     return 0;
 }
@@ -334,7 +334,7 @@ void controller_set_stickmax(u8 player, Octagon oct)
 
 /*==============================
     controller_set_stickmax
-    Normalizes a player's stick range to fit between [-1, 1],
+    Normalizes a player's stick coordinates to fit between [-1, 1],
     using their preconfigured stick deadzone and maximum range
     profiles.
 ==============================*/
@@ -450,7 +450,7 @@ f32 controller_get_y(u8 player)
 
 s32 controller_rumble_init(u8 player)
 {
-    if (s_playerindex[player] != 0)
+    if (s_playerindex[player] != -1)
         return osMotorInit(&s_msgqueue_si, s_contrumble, player);
     return PFS_ERR_NOPACK;
 }
