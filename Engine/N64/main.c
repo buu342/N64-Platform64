@@ -113,14 +113,26 @@ static void threadfunc_main(void *arg)
         graphics_register_fbuffer(TRUE, FRAMEBUFF_ADDR2_HD);
     }
     
+    // Register controller actions
+    controller_register_action(PLAYER_1, ACTION_JUMP, A_BUTTON);
+    
     // And now, perform the game main
     while (1)
     {
         int i;
         
+        // Print controller data to show it's working
+        if (controller_action_pressed(PLAYER_1, ACTION_JUMP))
+            debug_printf("Jump button pressed\n");
+        if (controller_action_down(PLAYER_1, ACTION_JUMP))
+            debug_printf("Jump button down\n");
+        debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
+        
         // Render the scene
-        debug_printf("Main Thread: Sending render request %d %d\n", l_color, TRUE);
         graphics_requestrender(l_color++, TRUE);
+        
+        // Read control stick data
+        controller_read_all();
         
         // Check if the flashcart has incoming debug data
         debug_pollcommands();
