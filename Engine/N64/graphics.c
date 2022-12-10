@@ -8,6 +8,7 @@ Handles graphics rendering
 #include "debug.h"
 #include "osconfig.h"
 #include "types.h"
+#include "helper.h"
 #include "scheduler.h"
 #include "graphics.h"
 #include "rcp.h"
