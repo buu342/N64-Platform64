@@ -11,5 +11,5 @@ Contains a set of small but useful functions
 float clampf(float val, float min, float max) 
 {
   const float t = MAX(val, min);
-  return MIN(val, max);
+  return MIN(t, max);
 }
