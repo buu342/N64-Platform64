@@ -158,7 +158,7 @@ static void threadfunc_controller(void *arg)
                 memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
                 for (i=0; i<MAXCONTROLLERS; i++)
-                    if (s_playerindex[i] != -1 && s_contdata[i].stick_x != s_contdata_old[i].stick_x && s_contdata[i].stick_y != s_contdata_old[i].stick_y)
+                    if (s_playerindex[i] != -1 && (s_contdata[i].stick_x != s_contdata_old[i].stick_x || s_contdata[i].stick_y != s_contdata_old[i].stick_y))
                         controller_calcstick(i);
                 #if VERBOSE 
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
