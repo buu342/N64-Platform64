@@ -37,7 +37,7 @@ static OSMesg s_pi_messages[NUM_PI_MSGS];
 static OSMesgQueue s_pi_queue;
 
 // Lag switch for demonstrations
-static bool s_shouldlag = FALSE;
+static bool s_shouldlag = TRUE;
 
 
 
@@ -81,7 +81,7 @@ static void threadfunc_idle(void *arg)
     osSetThreadPri(0, 0);
     while (1)
     {
-        debug_printf("Idle Thread: Spinning\n");
+        //debug_printf("Idle Thread: Spinning\n");
     }
 }
 
@@ -126,7 +126,7 @@ static void threadfunc_main(void *arg)
             debug_printf("Jump button pressed\n");
         if (controller_action_down(PLAYER_1, ACTION_JUMP))
             debug_printf("Jump button down\n");
-        debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
+        //debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
         
         // Render the scene
         graphics_requestrender(l_color++, TRUE);
