@@ -4,18 +4,25 @@
     /*********************************
                Definitions
     *********************************/
-    
-    // Player helper macros. Don't touch
-    #define PLAYER_1  0
-    #define PLAYER_2  1
-    #define PLAYER_3  2
-    #define PLAYER_4  3
 
     // The total number of actions
     #define MAX_ACTIONS 1
     
     // The list of registerable actions
     #define ACTION_JUMP 0
+    
+
+    /*********************************
+                 Typedefs             
+    *********************************/
+    
+    // Player numbers
+    typedef enum {
+        PLAYER_1 = 0,
+        PLAYER_2 = 1,
+        PLAYER_3 = 2,
+        PLAYER_4 = 3
+    } plynum;
     
     
     /*********************************
@@ -27,19 +34,19 @@
     void controller_query_all();
     void controller_read_all();
     
-    s32 controller_playercount();
+    inline s32 controller_playercount();
     
-    void controller_register_action(u8 player, u8 action, u16 buttons);
-    void controller_unregister_action(u8 player, u8 action, u16 buttons);
-    bool controller_action_pressed(u8 player, u8 action);
-    bool controller_action_down(u8 player, u8 action);
-    void controller_set_stickmin(u8 player, Octagon oct);
-    void controller_set_stickmax(u8 player, Octagon oct);
-    f32  controller_get_x(u8 player);
-    f32  controller_get_y(u8 player);
+    void controller_register_action(plynum player, u8 action, u16 buttons);
+    void controller_unregister_action(plynum player, u8 action, u16 buttons);
+    bool controller_action_pressed(plynum player, u8 action);
+    bool controller_action_down(plynum player, u8 action);
+    void controller_set_stickmin(plynum player, Octagon oct);
+    void controller_set_stickmax(plynum player, Octagon oct);
+    f32  controller_get_x(plynum player);
+    f32  controller_get_y(plynum player);
     
-    s32  controller_rumble_init(u8 player);
-    void controller_rumble_start(u8 player);
-    void controller_rumble_stop(u8 player);
+    s32  controller_rumble_init(plynum player);
+    void controller_rumble_start(plynum player);
+    void controller_rumble_stop(plynum player);
     
 #endif

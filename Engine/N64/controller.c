@@ -21,14 +21,15 @@ player inputs.
 #define SIZE_MSGQUEUE_CONTROLLER  8
 
 // Controller messages
-#define MSG_CONTROLLER_QUERY  1
-#define MSG_CONTROLLER_READ   2
+#define MSG_CONTROLLER_QUERY         1
+#define MSG_CONTROLLER_READ          2
+#define MSG_CONTROLLER_RUMBLE_START  3
+#define MSG_CONTROLLER_RUMBLE_STOP   4
 
 // Controller distances
 #define CONTROLLER_DEFAULT_MIN  {{0, 5},  {3, 3},   {4, 0},  {3, -3},   {0, -5},  {-3, -3},   {-4, 0},  {-3, 3}}
-#define CONTROLLER_DEFAULT_MAX  {{0, 63}, {46, 46}, {61, 0}, {46, -46}, {0, -63}, {-46, -46}, {-61, 0}, {-46, 46}} // Nintendo recommended values
-//#define CONTROLLER_DEFAULT_MAX  {{0, 83}, {64, 64}, {74, 0}, {64, -64}, {0, -83}, {-64, -64}, {-74, 0}, {-64, 64}} // My personal controller profile
-
+#define CONTROLLER_DEFAULT_MAX  {{0, 83}, {64, 64}, {74, 0}, {64, -64}, {0, -83}, {-64, -64}, {-74, 0}, {-64, 64}} // My personal controller profile
+//#define CONTROLLER_DEFAULT_MAX  {{0, 63}, {46, 46}, {61, 0}, {46, -46}, {0, -63}, {-46, -46}, {-61, 0}, {-46, 46}} // Nintendo recommended values
 
 
 /*********************************
@@ -36,7 +37,7 @@ player inputs.
 *********************************/
 
 static void threadfunc_controller(void *arg);
-static void controller_calcstick(u8 player);
+static void controller_calcstick(plynum player);
 
 
 /*********************************
@@ -59,6 +60,7 @@ static OSMesgQueue s_msgqueue_si;
 static OSMesg      s_msgbuffer_si;
 
 // Player data
+static u8      s_playercount = 0;
 static s8      s_playerindex[MAXCONTROLLERS];
 static u16     s_playeractions[MAXCONTROLLERS][MAX_ACTIONS];
 static Octagon s_playerzone_min[MAXCONTROLLERS] = {CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN};
@@ -94,7 +96,6 @@ static void threadfunc_controller(void *arg)
 {
     int i;
     u8 l_pattern;
-    u8 l_foundcount = 0;
     debug_printf("Created Controller thread\n");
     
     // Initialize the thread's message queue
@@ -108,13 +109,14 @@ static void threadfunc_controller(void *arg)
     // Find out what player corresponds to what controller
     memset(s_playerindex, -1, sizeof(s8)*MAXCONTROLLERS);
     debug_printf("Controller Thread: Querying controllers.\n");
+    s_playercount = 0;
     for (i=0; i<MAXCONTROLLERS; i++)
     {
         if ((l_pattern & (0x01 << i)) && s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
         {
-            s_playerindex[l_foundcount] = i;
-            l_foundcount++;
-            debug_printf("Controller Thread: Player %d found in port %d.\n", l_foundcount, i+1);
+            s_playerindex[s_playercount] = i;
+            s_playercount++;
+            debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
         }
     }
     debug_printf("Controller Thread: Finished querying controllers.\n");
@@ -149,20 +151,44 @@ static void threadfunc_controller(void *arg)
                 #if VERBOSE 
                     debug_printf("Controller Thread: Query finished\n", (s32)l_msg);
                 #endif
+                break;
             case MSG_CONTROLLER_READ:
                 #if VERBOSE 
                     debug_printf("Controller Thread: Starting read\n", (s32)l_msg);
                 #endif
                 osContStartReadData(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
-                memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
+                memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*s_playercount);
                 osContGetReadData(s_contdata);
-                for (i=0; i<MAXCONTROLLERS; i++)
-                    if (s_playerindex[i] != -1 && (s_contdata[i].stick_x != s_contdata_old[i].stick_x || s_contdata[i].stick_y != s_contdata_old[i].stick_y))
-                        controller_calcstick(i);
+                for (i=0; i<s_playercount; i++)
+                {
+                    plynum player = s_playerindex[i];
+                    if (s_contdata[player].stick_x != s_contdata_old[player].stick_x || s_contdata[player].stick_y != s_contdata_old[player].stick_y)
+                    {
+                        debug_printf("*****\n");
+                        debug_printf("Input -> {%d, %d}\n", s_contdata[player].stick_x, s_contdata[player].stick_y);                    
+                        controller_calcstick(player);
+                        debug_printf("Output -> {%.4f, %.4f}\n", s_playerstick[player].x, s_playerstick[player].y);
+                    }
+                }
                 #if VERBOSE 
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
                 #endif
+                break;
+            case MSG_CONTROLLER_RUMBLE_START:
+                for (i=0; i<s_playercount; i++)
+                {
+                    plynum player = s_playerindex[i];
+                    osMotorStart(&s_contrumble[player]);
+                }
+                break;
+            case MSG_CONTROLLER_RUMBLE_STOP:
+                for (i=0; i<s_playercount; i++)
+                {
+                    plynum player = s_playerindex[i];
+                    osMotorStop(&s_contrumble[s_playerindex[player]]);
+                }
+                break;
             default:
                 #if VERBOSE 
                     debug_printf("Controller Thread: Bad message '0x%2x' received\n", (s32)l_msg);
@@ -181,19 +207,21 @@ static void threadfunc_controller(void *arg)
 void controller_reinitialize_all()
 {
     int i;
-    u8 l_foundcount = 0;
+    
+    // Reset the controllers
     osContReset(&s_msgqueue_si, s_contstat);
+    memset(s_playerindex, -1, sizeof(u8)*MAXCONTROLLERS);
+    s_playercount = 0;
     
     // Find out what player corresponds to what controller
-    memset(s_playerindex, -1, sizeof(u8)*MAXCONTROLLERS);
     debug_printf("Controller Thread: Querying controllers.\n");
     for (i=0; i<MAXCONTROLLERS; i++)
     {
         if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
         {
-            s_playerindex[l_foundcount] = i;
-            l_foundcount++;
-            debug_printf("Controller Thread: Player %d found in port %d.\n", l_foundcount, i+1);
+            s_playerindex[s_playercount] = i;
+            s_playercount++;
+            debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
         }
     }
     debug_printf("Controller Thread: Finished querying controllers.\n");
@@ -229,16 +257,9 @@ void controller_read_all()
     @returns The number of players
 ==============================*/
 
-s32 controller_playercount()
+inline s32 controller_playercount()
 {
-    s32 i;
-    // Since the last non negative value in s_playerindex is equivalent to our player count
-    // (for example, if there's two players, then [0] and [1] will be non negative)
-    // we can just iterate backwards and return the first non-negative index (plus 1).
-    for (i=MAXCONTROLLERS-1; i>=0; i--)
-        if (s_playerindex[i] != -1)
-            return i+1;
-    return 0;
+    return s_playercount;
 }
 
 
@@ -246,13 +267,13 @@ s32 controller_playercount()
     controller_register_action
     Registers an action to a specific set of buttons
     on a player's controller.
-    @param The player to register the action. Use the PLAYER_X macros.
+    @param The player to register the action.
     @param The action to register
     @param The buttons to register. This should be a combination of
            Libultra button macros, like A_BUTTON.
 ==============================*/
 
-void controller_register_action(u8 player, u8 action, u16 buttons)
+void controller_register_action(plynum player, u8 action, u16 buttons)
 {
     s_playeractions[player][action] |= buttons;
 }
@@ -262,13 +283,13 @@ void controller_register_action(u8 player, u8 action, u16 buttons)
     controller_unregister_action
     Unregisters an action from a specific set of buttons
     on a player's controller.
-    @param The player to unregister the action. Use the PLAYER_X macros.
+    @param The player to unregister the action.
     @param The action to unregister
     @param The buttons to unregister. This should be a combination of
            Libultra button macros, like A_BUTTON.
 ==============================*/
 
-void controller_unregister_action(u8 player, u8 action, u16 buttons)
+void controller_unregister_action(plynum player, u8 action, u16 buttons)
 {
     s_playeractions[player][action] &= ~buttons;
 }
@@ -278,11 +299,11 @@ void controller_unregister_action(u8 player, u8 action, u16 buttons)
     controller_action_pressed
     Checks if a specific action button was pressed *this frame*
     on a player's controller. 
-    @param The player to check. Use the PLAYER_X macros.
+    @param The player to check.
     @param The action to check
 ==============================*/
 
-bool controller_action_pressed(u8 player, u8 action)
+bool controller_action_pressed(plynum player, u8 action)
 {
     u8 l_index = s_playerindex[player];
     u16 l_action = s_playeractions[player][action];
@@ -294,11 +315,11 @@ bool controller_action_pressed(u8 player, u8 action)
     controller_action_down
     Checks if a specific action button is down on a player's
     controller. 
-    @param The player to check. Use the PLAYER_X macros.
+    @param The player to check.
     @param The action to check
 ==============================*/
 
-bool controller_action_down(u8 player, u8 action)
+bool controller_action_down(plynum player, u8 action)
 {
     return (s_contdata[s_playerindex[player]].button & s_playeractions[player][action]) != 0;
 }
@@ -308,11 +329,10 @@ bool controller_action_down(u8 player, u8 action)
     controller_set_stickmin
     Sets a player's stick deadzone profile
     @param The player whos profile we want to modify.
-           Use the PLAYER_X macros.
     @param The octagon that represents the deadzone
 ==============================*/
 
-void controller_set_stickmin(u8 player, Octagon oct)
+void controller_set_stickmin(plynum player, Octagon oct)
 {
     s_playerzone_min[player] = oct;
 }
@@ -322,11 +342,10 @@ void controller_set_stickmin(u8 player, Octagon oct)
     controller_set_stickmax
     Sets a player's stick maximum range profile
     @param The player whos profile we want to modify.
-           Use the PLAYER_X macros.
     @param The octagon that represents the maximum range.
 ==============================*/
 
-void controller_set_stickmax(u8 player, Octagon oct)
+void controller_set_stickmax(plynum player, Octagon oct)
 {
     s_playerzone_max[player] = oct;
 }
@@ -337,9 +356,10 @@ void controller_set_stickmax(u8 player, Octagon oct)
     Normalizes a player's stick coordinates to fit between [-1, 1],
     using their preconfigured stick deadzone and maximum range
     profiles.
+    @param The player who's stick we should normalize
 ==============================*/
 
-static void controller_calcstick(u8 player)
+static void controller_calcstick(plynum player)
 {
     s32 l_x, l_y, l_xp, l_yp;
     u32 l_xa, l_ya;
@@ -400,11 +420,11 @@ static void controller_calcstick(u8 player)
     // That gives us how far the X and Y values are from the circumference of the circle (as a percentage)
     // Then multiply by the angle to get the final XY value mapped to [-1, 1]
     if (l_intmax_x - l_intmin_x != 0)
-        s_playerstick[player].x = clampf((l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
+        s_playerstick[player].x = clampf(((float)l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
     else
         s_playerstick[player].x = 0;
     if (l_intmax_y - l_intmin_y != 0)
-        s_playerstick[player].y = clampf((l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
+        s_playerstick[player].y = clampf(((float)l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
     else
         s_playerstick[player].y = 0;
 }
@@ -415,11 +435,10 @@ static void controller_calcstick(u8 player)
     Gets the X value of a player's stick, normalized
     to -1 and 1 based on their stick profile.
     @param The player to get the stick X of.
-           Use the PLAYER_X macros.
     @returns The normalized stick X value.
 ==============================*/
 
-f32 controller_get_x(u8 player)
+f32 controller_get_x(plynum player)
 {
     return s_playerstick[player].x;
 }
@@ -430,11 +449,10 @@ f32 controller_get_x(u8 player)
     Gets the Y value of a player's stick, normalized
     to -1 and 1 based on their stick profile.
     @param The player to get the stick Y of.
-           Use the PLAYER_X macros.
     @returns The normalized stick Y value.
 ==============================*/
 
-f32 controller_get_y(u8 player)
+f32 controller_get_y(plynum player)
 {
     return s_playerstick[player].y;
 }
@@ -444,15 +462,12 @@ f32 controller_get_y(u8 player)
     controller_rumble_init
     Initializes the Rumble Pak for a specific player
     @param The player to initialize the Rumble Pak of.
-           Use the PLAYER_X macros.
     @returns Any errors that ocurred, or zero
 ==============================*/
 
-s32 controller_rumble_init(u8 player)
+s32 controller_rumble_init(plynum player)
 {
-    if (s_playerindex[player] != -1)
-        return osMotorInit(&s_msgqueue_si, s_contrumble, player);
-    return PFS_ERR_NOPACK;
+    return osMotorInit(&s_msgqueue_si, s_contrumble, s_playerindex[player]);
 }
 
 
@@ -460,12 +475,11 @@ s32 controller_rumble_init(u8 player)
     controller_rumble_start
     Starts the motor on a player's Rumble Pak
     @param The player to start the Rumble Pak of.
-           Use the PLAYER_X macros.
 ==============================*/
 
-void controller_rumble_start(u8 player)
+void controller_rumble_start(plynum player)
 {
-    osMotorStart(&s_contrumble[player]);
+    osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_RUMBLE_START, OS_MESG_BLOCK);
 }
 
 
@@ -473,10 +487,9 @@ void controller_rumble_start(u8 player)
     controller_rumble_start
     Stops the motor on a player's Rumble Pak
     @param The player to stop the Rumble Pak of.
-           Use the PLAYER_X macros.
 ==============================*/
 
-void controller_rumble_stop(u8 player)
+void controller_rumble_stop(plynum player)
 {
-    osMotorStop(&s_contrumble[player]);
+    osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_RUMBLE_STOP, OS_MESG_BLOCK);
 }

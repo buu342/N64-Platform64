@@ -21,6 +21,7 @@ Handles the boot process of the ROM.
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
+static char* toggle_rumble();
 static void advance_step();
 
 
@@ -38,6 +39,7 @@ static OSMesgQueue s_pi_queue;
 
 // Lag switch for demonstrations
 static bool s_shouldlag = TRUE;
+static bool s_shouldrubmle = FALSE;
 
 
 
@@ -72,6 +74,8 @@ static void threadfunc_idle(void *arg)
     // Initialize debug mode
     debug_initialize();
     debug_64drivebutton(toggle_lag, TRUE);
+    debug_addcommand("rumble", "Start the rumble pak on Player 1", toggle_rumble);
+    debug_printcommands();
     
     // Start the main thread
     osCreateThread(&s_threadstruct_main, THREADID_MAIN, threadfunc_main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
@@ -94,8 +98,9 @@ static void threadfunc_idle(void *arg)
 
 static void threadfunc_main(void *arg)
 {
-    Scheduler* l_scheduler;
+    int i;
     u8 l_color = 0;
+    Scheduler* l_scheduler;
     debug_printf("Main Thread: Started\n");
     
     // Initialize the rest of the game
@@ -116,17 +121,27 @@ static void threadfunc_main(void *arg)
     // Register controller actions
     controller_register_action(PLAYER_1, ACTION_JUMP, A_BUTTON);
     
+    // Initialize rumble
+    for (i=(int)PLAYER_1; i<controller_playercount(); i++)
+        if (controller_rumble_init(i) == 0)
+            debug_printf("Found rumble on Player %d\n", i+1);
+    
     // And now, perform the game main
     while (1)
     {
-        int i;
+        static oldx = 0, oldy = 0;
         
         // Print controller data to show it's working
         if (controller_action_pressed(PLAYER_1, ACTION_JUMP))
             debug_printf("Jump button pressed\n");
         if (controller_action_down(PLAYER_1, ACTION_JUMP))
             debug_printf("Jump button down\n");
-        //debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
+        if (controller_get_x(PLAYER_1) != oldx || controller_get_y(PLAYER_1) != oldy)
+        {
+            debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
+            oldx = controller_get_x(PLAYER_1);
+            oldy = controller_get_y(PLAYER_1);
+        }
         
         // Render the scene
         graphics_requestrender(l_color++, TRUE);
@@ -154,4 +169,19 @@ static void threadfunc_main(void *arg)
 static void toggle_lag()
 {
     s_shouldlag = !s_shouldlag;
+}
+
+/*==============================
+    toggle_lag
+    Toggles lag when called
+==============================*/
+
+static char* toggle_rumble()
+{
+    s_shouldrubmle = !s_shouldrubmle;
+    if (s_shouldrubmle)
+        controller_rumble_start(PLAYER_1);
+    else
+        controller_rumble_stop(PLAYER_1);
+    return "Penis";
 }
