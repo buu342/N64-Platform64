@@ -40,6 +40,7 @@
     void controller_unregister_action(plynum player, u8 action, u16 buttons);
     bool controller_action_pressed(plynum player, u8 action);
     bool controller_action_down(plynum player, u8 action);
+    bool controller_action_released(plynum player, u8 action);
     void controller_set_stickmin(plynum player, Octagon oct);
     void controller_set_stickmax(plynum player, Octagon oct);
     f32  controller_get_x(plynum player);

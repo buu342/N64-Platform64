@@ -34,8 +34,9 @@ player inputs.
 //#define CONTROLLER_DEFAULT_MAX  {{0, 63}, {46, 46}, {61, 0}, {46, -46}, {0, -63}, {-46, -46}, {-61, 0}, {-46, 46}} // Nintendo recommended values
 
 // Rumble flags
-#define RUMBLE_OFF 0
+#define RUMBLE_ERR 0
 #define RUMBLE_ON  1
+#define RUMBLE_OFF 2
 
 
 /*********************************
@@ -185,15 +186,15 @@ static void threadfunc_controller(void *arg)
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
-                for (i=0; i<s_playercount; i++)
+                for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
                 {
-                    u32 l_contindex = s_playercont[i].contindex;
+                    u32 l_contindex = s_playercont[l_ply].contindex;
                     if (s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
                     {
                         debug_printf("*****\n");
                         debug_printf("Input -> {%d, %d}\n", s_contdata[l_contindex].stick_x, s_contdata[l_contindex].stick_y);                    
-                        controller_calcstick((plynum)i);
-                        debug_printf("Output -> {%.4f, %.4f}\n", s_playercont[i].stick.x, s_playercont[i].stick.y);
+                        controller_calcstick(l_ply);
+                        debug_printf("Output -> {%.4f, %.4f}\n", s_playercont[l_ply].stick.x, s_playercont[l_ply].stick.y);
                     }
                 }
                 #if VERBOSE 
@@ -208,6 +209,9 @@ static void threadfunc_controller(void *arg)
                 #if VERBOSE 
                     debug_printf("Controller Thread: Trauma at %f %ld\n", s_playercont[l_ply].trauma);
                 #endif
+                
+                // Handle rumble cycle
+                // Since we only have on or off functions, we need to use timers to simulate intensity
                 if (s_playercont[l_ply].trauma > 0.0f || s_playercont[l_ply].rumblestat == RUMBLE_ON)
                 {
                     osStopTimer(&s_playercont[l_ply].rumbletimer);
@@ -220,17 +224,25 @@ static void threadfunc_controller(void *arg)
                             s_playercont[l_ply].trauma = 0.0f;
                         s_playercont[l_ply].rumblestat = RUMBLE_OFF;
                         osMotorStop(&s_playercont[l_ply].rumble);
-                        if (s_playercont[l_ply].trauma == 0) // Call it multiple times because one might not be enough, according to Nintendo
-                        {
-                            osMotorStop(&s_playercont[l_ply].rumble);
-                            osMotorStop(&s_playercont[l_ply].rumble);
-                        }
                     }
                     else
                     {
                         osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(s_playercont[l_ply].trauma*100000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
                         s_playercont[l_ply].rumblestat = RUMBLE_ON;
                         osMotorStart(&s_playercont[l_ply].rumble);
+                    }
+                }
+                
+                // Handle rumble motor shutdown
+                // The rumble pak must be shut down 3 times or more in order to guarantee it stopped
+                if (s_playercont[l_ply].rumblestat != RUMBLE_ERR && s_playercont[l_ply].trauma == 0)
+                {
+                    if (s_playercont[l_ply].rumblestat >= RUMBLE_OFF && s_playercont[l_ply].rumblestat < RUMBLE_OFF+3)
+                    {
+                        s_playercont[l_ply].rumblestat++;
+                        osMotorStop(&s_playercont[l_ply].rumble);
+                        osStopTimer(&s_playercont[l_ply].rumbletimer);
+                        osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES(100000.0f), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
                     }
                 }
                 break;
@@ -367,6 +379,22 @@ bool controller_action_pressed(plynum player, u8 action)
 bool controller_action_down(plynum player, u8 action)
 {
     return (s_contdata[s_playercont[player].contindex].button & s_playercont[player].actions[action]) != 0;
+}
+
+
+/*==============================
+    controller_action_released
+    Checks if a specific action button was released *this frame*
+    on a player's controller. 
+    @param The player to check.
+    @param The action to check
+==============================*/
+
+bool controller_action_released(plynum player, u8 action)
+{
+    u8 l_index = s_playercont[player].contindex;
+    u16 l_action = s_playercont[player].actions[action];
+    return (s_contdata[l_index].button & l_action) == 0 && (s_contdata_old[l_index].button & l_action) != 0;
 }
 
 
@@ -512,7 +540,10 @@ f32 controller_get_y(plynum player)
 
 s32 controller_rumble_init(plynum player)
 {
-    return osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, s_playercont[player].contindex);
+    u32 ret = osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, s_playercont[player].contindex);
+    if (ret == 0)
+        s_playercont[player].rumblestat = RUMBLE_OFF;
+    return ret;
 }
 
 
@@ -525,6 +556,8 @@ s32 controller_rumble_init(plynum player)
 
 void controller_rumble_addtrauma(plynum player, f32 trauma)
 {
+    if (s_playercont[player].rumblestat == RUMBLE_ERR)
+        return;
     s_playercont[player].trauma = clampf(s_playercont[player].trauma + trauma, 0.0f, 1.0f);
     osSendMesg(&s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+player), OS_MESG_BLOCK);
 }
@@ -539,6 +572,10 @@ void controller_rumble_addtrauma(plynum player, f32 trauma)
 
 void controller_rumble_settrauma(plynum player, f32 trauma)
 {
+    if (s_playercont[player].rumblestat == RUMBLE_ERR)
+        return;
     s_playercont[player].trauma = clampf(trauma, 0.0f, 1.0f);
+    if (s_playercont[player].trauma == 0)
+        s_playercont[player].rumblestat = RUMBLE_OFF;
     osSendMesg(&s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+player), OS_MESG_BLOCK);
 }

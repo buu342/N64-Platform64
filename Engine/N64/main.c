@@ -132,6 +132,8 @@ static void threadfunc_main(void *arg)
             debug_printf("Jump button pressed\n");
         if (controller_action_down(PLAYER_1, ACTION_JUMP))
             debug_printf("Jump button down\n");
+        if (controller_action_released(PLAYER_1, ACTION_JUMP))
+            debug_printf("Jump button released\n");
         if (controller_get_x(PLAYER_1) != oldx || controller_get_y(PLAYER_1) != oldy)
         {
             debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
