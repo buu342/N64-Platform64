@@ -4,6 +4,9 @@
     /*********************************
                Definitions
     *********************************/
+    
+    // Max number of supported players in this game
+    #define MAXPLAYERS  2
 
     // The total number of actions
     #define MAX_ACTIONS 1

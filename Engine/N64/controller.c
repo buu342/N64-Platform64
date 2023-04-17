@@ -133,11 +133,11 @@ static void threadfunc_controller(void *arg)
     #endif
     for (i=0; i<MAXCONTROLLERS; i++)
     {
-        const Octagon l_contstick_min = CONTROLLER_DEFAULT_MIN;
-        const Octagon l_contstick_max = CONTROLLER_DEFAULT_MAX;
+        const Octagon l_contstick_defmin = CONTROLLER_DEFAULT_MIN;
+        const Octagon l_contstick_defmax = CONTROLLER_DEFAULT_MAX;
         
         // Check if we have a controller on port 'i'
-        if ((l_pattern & (0x01 << i)) && s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
+        if ((l_pattern & (0x01 << i)) && s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL && s_playercount < MAXPLAYERS)
         {
             s_playercont[s_playercount].portindex = i+1;
             s_playercount++;
@@ -147,8 +147,8 @@ static void threadfunc_controller(void *arg)
         }
         
         // Set the default stick profile
-        s_playercont[i].stickprof_min = l_contstick_min;
-        s_playercont[i].stickprof_max = l_contstick_max;
+        s_playercont[i].stickprof_min = l_contstick_defmin;
+        s_playercont[i].stickprof_max = l_contstick_defmax;
     }
     #if VERBOSE 
         debug_printf("Controller Thread: Finished querying controllers.\n");
@@ -200,7 +200,7 @@ static void threadfunc_controller(void *arg)
                 }
                 
                 // Detect controller reconnects
-                for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
+                for (l_ply=PLAYER_1; l_ply<MAXPLAYERS; l_ply++)
                 {
                     // If a previously connected player is not connected
                     if (s_playercont[l_ply].portindex == 0)
@@ -215,7 +215,7 @@ static void threadfunc_controller(void *arg)
                                 bool empty = TRUE;
                                 
                                 // And said controller is unused by another player
-                                for (j=PLAYER_1; j<s_playercount; j++)
+                                for (j=PLAYER_1; j<MAXPLAYERS; j++)
                                 {
                                     if (s_playercont[j].portindex == i+1)
                                     {
@@ -265,7 +265,7 @@ static void threadfunc_controller(void *arg)
                 #endif
                 for (i=0; i<MAXCONTROLLERS; i++)
                 {
-                    if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
+                    if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL && s_playercount < MAXPLAYERS)
                     {
                         s_playercont[s_playercount].portindex = i+1;
                         s_playercount++;

@@ -96,6 +96,7 @@ static void threadfunc_main(void *arg)
 {
     int i;
     u8 l_color = 0;
+    Vector2D l_oldstick[MAXCONTROLLERS];
     Scheduler* l_scheduler;
     debug_printf("Main Thread: Started\n");
     
@@ -104,6 +105,7 @@ static void threadfunc_main(void *arg)
     graphics_initialize(l_scheduler);
     audio_initialize();
     controller_initialize();
+    memset(l_oldstick, 0, sizeof(Vector2D)*MAXCONTROLLERS);
     
     // Register framebuffers we are going to use
     graphics_register_fbuffer(FALSE, FRAMEBUFF_ADDR1_SD);
@@ -116,6 +118,7 @@ static void threadfunc_main(void *arg)
     
     // Register controller actions
     controller_register_action(PLAYER_1, ACTION_JUMP, A_BUTTON);
+    controller_register_action(PLAYER_2, ACTION_JUMP, A_BUTTON);
     
     // Initialize rumble
     for (i=(int)PLAYER_1; i<controller_playercount(); i++)
@@ -125,21 +128,24 @@ static void threadfunc_main(void *arg)
     // And now, perform the game main
     while (1)
     {
-        static f32 oldx = 0, oldy = 0;
+        plynum l_ply;
         
         // Print controller data to show it's working
-        if (controller_action_pressed(PLAYER_1, ACTION_JUMP))
-            debug_printf("Jump button pressed\n");
-        if (controller_action_down(PLAYER_1, ACTION_JUMP))
-            debug_printf("Jump button down\n");
-        if (controller_action_released(PLAYER_1, ACTION_JUMP))
-            debug_printf("Jump button released\n");
-        if (controller_get_x(PLAYER_1) != oldx || controller_get_y(PLAYER_1) != oldy)
+        for (l_ply=PLAYER_1; l_ply<controller_playercount(); l_ply++)
         {
-            debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
-            controller_rumble_settrauma(PLAYER_1, controller_get_y(PLAYER_1));
-            oldx = controller_get_x(PLAYER_1);
-            oldy = controller_get_y(PLAYER_1);
+            if (controller_action_pressed(l_ply, ACTION_JUMP))
+                debug_printf("Player %d pressed: Jump button\n", l_ply+1);
+            if (controller_action_down(l_ply, ACTION_JUMP))
+                debug_printf("Player %d holding: Jump button\n", l_ply+1);
+            if (controller_action_released(l_ply, ACTION_JUMP))
+                debug_printf("Player %d released: Jump button\n", l_ply+1);
+            if (controller_get_x(l_ply) != l_oldstick[l_ply].x || controller_get_y(l_ply) != l_oldstick[l_ply].y)
+            {
+                debug_printf("Player %d stick: {%0.4f, %0.4f}\n", l_ply+1, controller_get_x(l_ply), controller_get_y(l_ply));
+                controller_rumble_settrauma(l_ply, controller_get_y(l_ply));
+                l_oldstick[l_ply].x = controller_get_x(l_ply);
+                l_oldstick[l_ply].y = controller_get_y(l_ply);
+            }
         }
         
         // Render the scene
