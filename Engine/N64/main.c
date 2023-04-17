@@ -21,7 +21,7 @@ Handles the boot process of the ROM.
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
-static char* toggle_rumble();
+static char* do_rumble();
 static void advance_step();
 
 
@@ -39,7 +39,6 @@ static OSMesgQueue s_pi_queue;
 
 // Lag switch for demonstrations
 static bool s_shouldlag = TRUE;
-static bool s_shouldrubmle = FALSE;
 
 
 
@@ -74,7 +73,7 @@ static void threadfunc_idle(void *arg)
     // Initialize debug mode
     debug_initialize();
     debug_64drivebutton(toggle_lag, TRUE);
-    debug_addcommand("rumble", "Start the rumble pak on Player 1", toggle_rumble);
+    debug_addcommand("rumble amount", "Set the rumble amount (0-100) on Player 1", do_rumble);
     debug_printcommands();
     
     // Start the main thread
@@ -129,7 +128,7 @@ static void threadfunc_main(void *arg)
     // And now, perform the game main
     while (1)
     {
-        static oldx = 0, oldy = 0;
+        static f32 oldx = 0, oldy = 0;
         
         // Print controller data to show it's working
         if (controller_action_pressed(PLAYER_1, ACTION_JUMP))
@@ -171,17 +170,21 @@ static void toggle_lag()
     s_shouldlag = !s_shouldlag;
 }
 
+
 /*==============================
-    toggle_lag
-    Toggles lag when called
+    do_rumble
+    Sets rumble on player 1 when called
 ==============================*/
 
-static char* toggle_rumble()
+static char* do_rumble()
 {
-    s_shouldrubmle = !s_shouldrubmle;
-    if (s_shouldrubmle)
-        controller_rumble_start(PLAYER_1);
-    else
-        controller_rumble_stop(PLAYER_1);
-    return "Penis";
+    int trauma;
+    char str[4];
+    u8 size = debug_sizecommand();
+    if (size == 0 || size > 3)
+        return "Bad argument for 'amount'";
+    debug_parsecommand(str);
+    str[size] = '\0';
+    controller_rumble_settrauma(PLAYER_1, ((float)atoi(str))/100.0f);
+    return NULL;
 }

@@ -21,15 +21,21 @@ player inputs.
 #define SIZE_MSGQUEUE_CONTROLLER  8
 
 // Controller messages
-#define MSG_CONTROLLER_QUERY         1
-#define MSG_CONTROLLER_READ          2
-#define MSG_CONTROLLER_RUMBLE_START  3
-#define MSG_CONTROLLER_RUMBLE_STOP   4
+#define MSG_CONTROLLER_QUERY      1
+#define MSG_CONTROLLER_READ       2
+#define MSG_CONTROLLER_RUMBLE_P1  3
+#define MSG_CONTROLLER_RUMBLE_P2  4
+#define MSG_CONTROLLER_RUMBLE_P3  5
+#define MSG_CONTROLLER_RUMBLE_P4  6
 
 // Controller distances
 #define CONTROLLER_DEFAULT_MIN  {{0, 5},  {3, 3},   {4, 0},  {3, -3},   {0, -5},  {-3, -3},   {-4, 0},  {-3, 3}}
 #define CONTROLLER_DEFAULT_MAX  {{0, 83}, {64, 64}, {74, 0}, {64, -64}, {0, -83}, {-64, -64}, {-74, 0}, {-64, 64}} // My personal controller profile
 //#define CONTROLLER_DEFAULT_MAX  {{0, 63}, {46, 46}, {61, 0}, {46, -46}, {0, -63}, {-46, -46}, {-61, 0}, {-46, 46}} // Nintendo recommended values
+
+// Rumble flags
+#define RUMBLE_OFF 0
+#define RUMBLE_ON  1
 
 
 /*********************************
@@ -39,11 +45,14 @@ player inputs.
 typedef struct 
 {
     s8       contindex;
+    u8       rumblestat;
     u16      actions[MAX_ACTIONS];
     Vector2D stick;
     Octagon  stickprof_min;
     Octagon  stickprof_max;
     OSPfs    rumble;
+    OSTimer  rumbletimer;
+    f32      trauma;
 } PlayerCont;
 
 
@@ -140,7 +149,7 @@ static void threadfunc_controller(void *arg)
     // Spin this thread forever
     while (1)
     {
-        int l_ply;
+        plynum l_ply;
         OSMesg l_msg;
         
         // Wait for a controller message to arrive
@@ -191,13 +200,33 @@ static void threadfunc_controller(void *arg)
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
                 #endif
                 break;
-            case MSG_CONTROLLER_RUMBLE_START:
-                for (i=0; i<s_playercount; i++)
-                    osMotorStart(&s_playercont[i].rumble);
-                break;
-            case MSG_CONTROLLER_RUMBLE_STOP:
-                for (i=0; i<s_playercount; i++)
-                    osMotorStop(&s_playercont[i].rumble);
+            case MSG_CONTROLLER_RUMBLE_P1: // Intentional fallthrough
+            case MSG_CONTROLLER_RUMBLE_P2:
+            case MSG_CONTROLLER_RUMBLE_P3:
+            case MSG_CONTROLLER_RUMBLE_P4:
+                l_ply = (plynum)(l_msg-MSG_CONTROLLER_RUMBLE_P1);
+                debug_printf("Ok. Trauma at %f\n", s_playercont[l_ply].trauma);
+                if (s_playercont[l_ply].trauma > 0.0f)
+                {
+                    s_playercont[l_ply].trauma -= 0.1f;
+                    if (s_playercont[l_ply].rumblestat == RUMBLE_ON)
+                    {
+                        debug_printf("Rumble On\n");
+                        if (s_playercont[l_ply].trauma > 0.01f)
+                            osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(1000000.0f - s_playercont[l_ply].trauma*1000000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
+                        else
+                            s_playercont[l_ply].trauma = 0.0f;
+                        s_playercont[l_ply].rumblestat = RUMBLE_OFF;
+                        osMotorStop(&s_playercont[l_ply].rumble);
+                    }
+                    else
+                    {
+                        debug_printf("Rumble Off\n");
+                        osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(s_playercont[l_ply].trauma*1000000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
+                        s_playercont[l_ply].rumblestat = RUMBLE_ON;
+                        osMotorStart(&s_playercont[l_ply].rumble);
+                    }
+                }
                 break;
             default:
                 #if VERBOSE 
@@ -482,24 +511,28 @@ s32 controller_rumble_init(plynum player)
 
 
 /*==============================
-    controller_rumble_start
-    Starts the motor on a player's Rumble Pak
-    @param The player to start the Rumble Pak of.
+    controller_rumble_addtrauma
+    Adds trauma to a player's controller
+    @param The player who's controller we want to add trauma to
+    @param The amount of trauma to add (from 0 to 1)
 ==============================*/
 
-void controller_rumble_start(plynum player)
+void controller_rumble_addtrauma(plynum player, f32 trauma)
 {
-    osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_RUMBLE_START, OS_MESG_BLOCK);
+    s_playercont[player].trauma = clampf(s_playercont[player].trauma + trauma, 0.0f, 1.0f);
+    osSendMesg(&s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+player), OS_MESG_BLOCK);
 }
 
 
 /*==============================
-    controller_rumble_start
-    Stops the motor on a player's Rumble Pak
-    @param The player to stop the Rumble Pak of.
+    controller_rumble_settrauma
+    Sets the trauma on a player's controller
+    @param The player who's controller we want to set the trauma of
+    @param The trauma value to set (from 0 to 1)
 ==============================*/
 
-void controller_rumble_stop(plynum player)
+void controller_rumble_settrauma(plynum player, f32 trauma)
 {
-    osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_RUMBLE_STOP, OS_MESG_BLOCK);
+    s_playercont[player].trauma = clampf(trauma, 0.0f, 1.0f);
+    osSendMesg(&s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+player), OS_MESG_BLOCK);
 }
