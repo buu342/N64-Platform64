@@ -23,10 +23,11 @@ player inputs.
 // Controller messages
 #define MSG_CONTROLLER_QUERY      1
 #define MSG_CONTROLLER_READ       2
-#define MSG_CONTROLLER_RUMBLE_P1  3
-#define MSG_CONTROLLER_RUMBLE_P2  4
-#define MSG_CONTROLLER_RUMBLE_P3  5
-#define MSG_CONTROLLER_RUMBLE_P4  6
+#define MSG_CONTROLLER_RESET      3
+#define MSG_CONTROLLER_RUMBLE_P1  4
+#define MSG_CONTROLLER_RUMBLE_P2  5
+#define MSG_CONTROLLER_RUMBLE_P3  6
+#define MSG_CONTROLLER_RUMBLE_P4  7
 
 // Controller distances
 #define CONTROLLER_DEFAULT_MIN  {{0, 5},  {3, 3},   {4, 0},  {3, -3},   {0, -5},  {-3, -3},   {-4, 0},  {-3, 3}}
@@ -45,7 +46,7 @@ player inputs.
 
 typedef struct 
 {
-    s8       contindex;
+    s8       portindex;
     u8       rumblestat;
     u16      actions[MAX_ACTIONS];
     Vector2D stick;
@@ -127,7 +128,9 @@ static void threadfunc_controller(void *arg)
     s_playercount = 0;
     
     // Find out what player corresponds to what controller
-    debug_printf("Controller Thread: Querying controllers.\n");
+    #if VERBOSE 
+        debug_printf("Controller Thread: Querying controllers.\n");
+    #endif
     for (i=0; i<MAXCONTROLLERS; i++)
     {
         const Octagon l_contstick_min = CONTROLLER_DEFAULT_MIN;
@@ -136,16 +139,20 @@ static void threadfunc_controller(void *arg)
         // Check if we have a controller on port 'i'
         if ((l_pattern & (0x01 << i)) && s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
         {
-            s_playercont[s_playercount].contindex = i;
+            s_playercont[s_playercount].portindex = i+1;
             s_playercount++;
-            debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
+            #if VERBOSE 
+                debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
+            #endif
         }
         
         // Set the default stick profile
         s_playercont[i].stickprof_min = l_contstick_min;
         s_playercont[i].stickprof_max = l_contstick_max;
     }
-    debug_printf("Controller Thread: Finished querying controllers.\n");
+    #if VERBOSE 
+        debug_printf("Controller Thread: Finished querying controllers.\n");
+    #endif
     
     // Spin this thread forever
     while (1)
@@ -168,15 +175,66 @@ static void threadfunc_controller(void *arg)
         switch ((s32)l_msg)
         {
             case MSG_CONTROLLER_QUERY:
-                #if VERBOSE 
-                    debug_printf("Controller Thread: Starting query\n", (s32)l_msg);
+                #if VERBOSE
+                    debug_printf("Controller Thread: Starting query\n");
                 #endif
                 osContStartQuery(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 osContGetQuery(s_contstat);
                 #if VERBOSE 
-                    debug_printf("Controller Thread: Query finished\n", (s32)l_msg);
+                    debug_printf("Controller Thread: Query finished\n");
                 #endif
+                
+                // Detect controller disconnects
+                for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
+                {
+                    if (s_playercont[l_ply].portindex != 0 && s_contstat[s_playercont[l_ply].portindex-1].errno == CONT_NO_RESPONSE_ERROR)
+                    {
+                        debug_printf("Controller Thread: Player %d disconnected from port %d\n", l_ply+1, s_playercont[l_ply].portindex);
+                        s_playercont[l_ply].portindex = 0;
+                        s_playercont[l_ply].rumblestat = RUMBLE_ERR;
+                        s_playercont[l_ply].stick.x = 0;
+                        s_playercont[l_ply].stick.y = 0;
+                        s_playercont[l_ply].trauma = 0;
+                    }
+                }
+                
+                // Detect controller reconnects
+                for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
+                {
+                    // If a previously connected player is not connected
+                    if (s_playercont[l_ply].portindex == 0)
+                    {
+                        // Look through all ports
+                        for (i=0; i<MAXCONTROLLERS; i++)
+                        {
+                            // If this one has a controller
+                            if (s_contstat[i].errno == 0)
+                            {
+                                plynum j;
+                                bool empty = TRUE;
+                                
+                                // And said controller is unused by another player
+                                for (j=PLAYER_1; j<s_playercount; j++)
+                                {
+                                    if (s_playercont[j].portindex == i+1)
+                                    {
+                                        empty = FALSE;
+                                        break;
+                                    }
+                                }
+                                
+                                // This controller port now belongs to this player
+                                if (empty)
+                                {
+                                    debug_printf("Controller Thread: Player %d reconnected to port %d\n", l_ply+1, i+1);
+                                    s_playercont[l_ply].portindex = i+1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 break;
             case MSG_CONTROLLER_READ:
                 #if VERBOSE 
@@ -188,17 +246,36 @@ static void threadfunc_controller(void *arg)
                 osContGetReadData(s_contdata);
                 for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
                 {
-                    u32 l_contindex = s_playercont[l_ply].contindex;
-                    if (s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
-                    {
-                        debug_printf("*****\n");
-                        debug_printf("Input -> {%d, %d}\n", s_contdata[l_contindex].stick_x, s_contdata[l_contindex].stick_y);                    
+                    s32 l_contindex = s_playercont[l_ply].portindex-1;
+                    if (l_contindex > 0 && s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
                         controller_calcstick(l_ply);
-                        debug_printf("Output -> {%.4f, %.4f}\n", s_playercont[l_ply].stick.x, s_playercont[l_ply].stick.y);
-                    }
                 }
                 #if VERBOSE 
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
+                #endif
+                break;
+            case MSG_CONTROLLER_RESET:
+                osContReset(&s_msgqueue_si, s_contstat);
+                memset(s_playercont, 0, sizeof(PlayerCont)*MAXCONTROLLERS);
+                s_playercount = 0;
+                
+                // Find out what player corresponds to what controller
+                #if VERBOSE 
+                    debug_printf("Controller Thread: Querying controllers.\n");
+                #endif
+                for (i=0; i<MAXCONTROLLERS; i++)
+                {
+                    if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
+                    {
+                        s_playercont[s_playercount].portindex = i+1;
+                        s_playercount++;
+                        #if VERBOSE
+                            debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
+                        #endif
+                    }
+                }
+                #if VERBOSE 
+                    debug_printf("Controller Thread: Finished querying controllers.\n");
                 #endif
                 break;
             case MSG_CONTROLLER_RUMBLE_P1: // Intentional fallthrough
@@ -207,7 +284,7 @@ static void threadfunc_controller(void *arg)
             case MSG_CONTROLLER_RUMBLE_P4:
                 l_ply = (plynum)(l_msg-MSG_CONTROLLER_RUMBLE_P1);
                 #if VERBOSE 
-                    debug_printf("Controller Thread: Trauma at %f %ld\n", s_playercont[l_ply].trauma);
+                    debug_printf("Controller Thread: Trauma at %f\n", s_playercont[l_ply].trauma);
                 #endif
                 
                 // Handle rumble cycle
@@ -224,12 +301,18 @@ static void threadfunc_controller(void *arg)
                             s_playercont[l_ply].trauma = 0.0f;
                         s_playercont[l_ply].rumblestat = RUMBLE_OFF;
                         osMotorStop(&s_playercont[l_ply].rumble);
+                        #if VERBOSE
+                            debug_printf("Controller Thread: Rumble stopped\n");
+                        #endif
                     }
                     else
                     {
                         osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(s_playercont[l_ply].trauma*100000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
                         s_playercont[l_ply].rumblestat = RUMBLE_ON;
                         osMotorStart(&s_playercont[l_ply].rumble);
+                        #if VERBOSE
+                            debug_printf("Controller Thread: Rumble started\n");
+                        #endif
                     }
                 }
                 
@@ -237,12 +320,15 @@ static void threadfunc_controller(void *arg)
                 // The rumble pak must be shut down 3 times or more in order to guarantee it stopped
                 if (s_playercont[l_ply].rumblestat != RUMBLE_ERR && s_playercont[l_ply].trauma == 0)
                 {
-                    if (s_playercont[l_ply].rumblestat >= RUMBLE_OFF && s_playercont[l_ply].rumblestat < RUMBLE_OFF+3)
+                    if (s_playercont[l_ply].rumblestat >= RUMBLE_OFF && s_playercont[l_ply].rumblestat <= RUMBLE_OFF+3)
                     {
                         s_playercont[l_ply].rumblestat++;
                         osMotorStop(&s_playercont[l_ply].rumble);
                         osStopTimer(&s_playercont[l_ply].rumbletimer);
                         osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES(100000.0f), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
+                        #if VERBOSE 
+                            debug_printf("Controller Thread: Rumble shutdown %d/3\n", RUMBLE_OFF - s_playercont[l_ply].rumblestat);
+                        #endif
                     }
                 }
                 break;
@@ -263,25 +349,7 @@ static void threadfunc_controller(void *arg)
 
 void controller_reinitialize_all()
 {
-    int i;
-    
-    // Reset the controllers
-    osContReset(&s_msgqueue_si, s_contstat);
-    memset(s_playercont, 0, sizeof(PlayerCont)*MAXCONTROLLERS);
-    s_playercount = 0;
-    
-    // Find out what player corresponds to what controller
-    debug_printf("Controller Thread: Querying controllers.\n");
-    for (i=0; i<MAXCONTROLLERS; i++)
-    {
-        if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
-        {
-            s_playercont[s_playercount].contindex = i;
-            s_playercount++;
-            debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
-        }
-    }
-    debug_printf("Controller Thread: Finished querying controllers.\n");
+    osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_RESET, OS_MESG_BLOCK);
 }
 
 
@@ -356,14 +424,17 @@ void controller_unregister_action(plynum player, u8 action, u16 buttons)
     controller_action_pressed
     Checks if a specific action button was pressed *this frame*
     on a player's controller. 
-    @param The player to check.
-    @param The action to check
+    @param   The player to check.
+    @param   The action to check
+    @returns If the action is being pressed
 ==============================*/
 
 bool controller_action_pressed(plynum player, u8 action)
 {
-    u8 l_index = s_playercont[player].contindex;
+    s8 l_index = s_playercont[player].portindex-1;
     u16 l_action = s_playercont[player].actions[action];
+    if (l_index < 0)
+        return FALSE;
     return (s_contdata[l_index].button & l_action) != 0 && (s_contdata_old[l_index].button & l_action) == 0;
 }
 
@@ -372,13 +443,17 @@ bool controller_action_pressed(plynum player, u8 action)
     controller_action_down
     Checks if a specific action button is down on a player's
     controller. 
-    @param The player to check.
-    @param The action to check
+    @param   The player to check
+    @param   The action to check
+    @returns If the action is being held down
 ==============================*/
 
 bool controller_action_down(plynum player, u8 action)
 {
-    return (s_contdata[s_playercont[player].contindex].button & s_playercont[player].actions[action]) != 0;
+    s8 l_index = s_playercont[player].portindex-1;
+    if (l_index < 0)
+        return FALSE;
+    return (s_contdata[l_index].button & s_playercont[player].actions[action]) != 0;
 }
 
 
@@ -386,14 +461,17 @@ bool controller_action_down(plynum player, u8 action)
     controller_action_released
     Checks if a specific action button was released *this frame*
     on a player's controller. 
-    @param The player to check.
-    @param The action to check
+    @param   The player to check
+    @param   The action to check
+    @returns If the action is being released
 ==============================*/
 
 bool controller_action_released(plynum player, u8 action)
 {
-    u8 l_index = s_playercont[player].contindex;
+    s8 l_index = s_playercont[player].portindex-1;
     u16 l_action = s_playercont[player].actions[action];
+    if (l_index < 0)
+        return FALSE;
     return (s_contdata[l_index].button & l_action) == 0 && (s_contdata_old[l_index].button & l_action) != 0;
 }
 
@@ -443,8 +521,8 @@ static void controller_calcstick(plynum player)
     f32 l_ang;
     
     // Populate our helper variables
-    l_x = s_contdata[s_playercont[player].contindex].stick_x;
-    l_y = s_contdata[s_playercont[player].contindex].stick_y;
+    l_x = s_contdata[s_playercont[player].portindex-1].stick_x;
+    l_y = s_contdata[s_playercont[player].portindex-1].stick_y;
     if (l_x == 0 && l_y == 0)
     {
         s_playercont[player].stick.x = 0;
@@ -507,7 +585,7 @@ static void controller_calcstick(plynum player)
     controller_get_x
     Gets the X value of a player's stick, normalized
     to -1 and 1 based on their stick profile.
-    @param The player to get the stick X of.
+    @param   The player to get the stick X of.
     @returns The normalized stick X value.
 ==============================*/
 
@@ -521,7 +599,7 @@ f32 controller_get_x(plynum player)
     controller_get_y
     Gets the Y value of a player's stick, normalized
     to -1 and 1 based on their stick profile.
-    @param The player to get the stick Y of.
+    @param   The player to get the stick Y of.
     @returns The normalized stick Y value.
 ==============================*/
 
@@ -534,13 +612,17 @@ f32 controller_get_y(plynum player)
 /*==============================
     controller_rumble_init
     Initializes the Rumble Pak for a specific player
-    @param The player to initialize the Rumble Pak of.
+    @param   The player to initialize the Rumble Pak of.
     @returns Any errors that ocurred, or zero
 ==============================*/
 
 s32 controller_rumble_init(plynum player)
 {
-    u32 ret = osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, s_playercont[player].contindex);
+    u32 ret;
+    s8 l_index = s_playercont[player].portindex-1;
+    if (l_index < 0)
+        return PFS_ERR_CONTRFAIL;
+    ret = osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, l_index);
     if (ret == 0)
         s_playercont[player].rumblestat = RUMBLE_OFF;
     return ret;

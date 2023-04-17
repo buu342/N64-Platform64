@@ -146,6 +146,7 @@ static void threadfunc_main(void *arg)
         graphics_requestrender(l_color++, TRUE);
         
         // Read control stick data
+        controller_query_all();
         controller_read_all();
         
         // Check if the flashcart has incoming debug data
@@ -159,6 +160,7 @@ static void threadfunc_main(void *arg)
         }
     }
 }
+
 
 /*==============================
     toggle_lag
