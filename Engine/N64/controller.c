@@ -205,24 +205,30 @@ static void threadfunc_controller(void *arg)
             case MSG_CONTROLLER_RUMBLE_P3:
             case MSG_CONTROLLER_RUMBLE_P4:
                 l_ply = (plynum)(l_msg-MSG_CONTROLLER_RUMBLE_P1);
-                debug_printf("Ok. Trauma at %f\n", s_playercont[l_ply].trauma);
-                if (s_playercont[l_ply].trauma > 0.0f)
+                #if VERBOSE 
+                    debug_printf("Controller Thread: Trauma at %f %ld\n", s_playercont[l_ply].trauma);
+                #endif
+                if (s_playercont[l_ply].trauma > 0.0f || s_playercont[l_ply].rumblestat == RUMBLE_ON)
                 {
-                    s_playercont[l_ply].trauma -= 0.1f;
-                    if (s_playercont[l_ply].rumblestat == RUMBLE_ON)
+                    osStopTimer(&s_playercont[l_ply].rumbletimer);
+                    if (s_playercont[l_ply].rumblestat == RUMBLE_ON && s_playercont[l_ply].trauma > 0.0f)
                     {
-                        debug_printf("Rumble On\n");
+                        s_playercont[l_ply].trauma -= 0.1f;
                         if (s_playercont[l_ply].trauma > 0.01f)
-                            osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(1000000.0f - s_playercont[l_ply].trauma*1000000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
+                            osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(100000.0f - s_playercont[l_ply].trauma*100000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
                         else
                             s_playercont[l_ply].trauma = 0.0f;
                         s_playercont[l_ply].rumblestat = RUMBLE_OFF;
                         osMotorStop(&s_playercont[l_ply].rumble);
+                        if (s_playercont[l_ply].trauma == 0) // Call it multiple times because one might not be enough, according to Nintendo
+                        {
+                            osMotorStop(&s_playercont[l_ply].rumble);
+                            osMotorStop(&s_playercont[l_ply].rumble);
+                        }
                     }
                     else
                     {
-                        debug_printf("Rumble Off\n");
-                        osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(s_playercont[l_ply].trauma*1000000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
+                        osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES((u32)(s_playercont[l_ply].trauma*100000.0f)), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
                         s_playercont[l_ply].rumblestat = RUMBLE_ON;
                         osMotorStart(&s_playercont[l_ply].rumble);
                     }

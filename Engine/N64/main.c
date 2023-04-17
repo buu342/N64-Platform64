@@ -21,7 +21,6 @@ Handles the boot process of the ROM.
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
-static char* do_rumble();
 static void advance_step();
 
 
@@ -73,8 +72,6 @@ static void threadfunc_idle(void *arg)
     // Initialize debug mode
     debug_initialize();
     debug_64drivebutton(toggle_lag, TRUE);
-    debug_addcommand("rumble amount", "Set the rumble amount (0-100) on Player 1", do_rumble);
-    debug_printcommands();
     
     // Start the main thread
     osCreateThread(&s_threadstruct_main, THREADID_MAIN, threadfunc_main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
@@ -138,6 +135,7 @@ static void threadfunc_main(void *arg)
         if (controller_get_x(PLAYER_1) != oldx || controller_get_y(PLAYER_1) != oldy)
         {
             debug_printf("Player 1 stick: {%0.4f, %0.4f}\n", controller_get_x(PLAYER_1), controller_get_y(PLAYER_1));
+            controller_rumble_settrauma(PLAYER_1, controller_get_y(PLAYER_1));
             oldx = controller_get_x(PLAYER_1);
             oldy = controller_get_y(PLAYER_1);
         }
@@ -168,23 +166,4 @@ static void threadfunc_main(void *arg)
 static void toggle_lag()
 {
     s_shouldlag = !s_shouldlag;
-}
-
-
-/*==============================
-    do_rumble
-    Sets rumble on player 1 when called
-==============================*/
-
-static char* do_rumble()
-{
-    int trauma;
-    char str[4];
-    u8 size = debug_sizecommand();
-    if (size == 0 || size > 3)
-        return "Bad argument for 'amount'";
-    debug_parsecommand(str);
-    str[size] = '\0';
-    controller_rumble_settrauma(PLAYER_1, ((float)atoi(str))/100.0f);
-    return NULL;
 }
