@@ -33,6 +33,21 @@ player inputs.
 
 
 /*********************************
+             Structs
+*********************************/
+
+typedef struct 
+{
+    s8       contindex;
+    u16      actions[MAX_ACTIONS];
+    Vector2D stick;
+    Octagon  stickprof_min;
+    Octagon  stickprof_max;
+    OSPfs    rumble;
+} PlayerCont;
+
+
+/*********************************
         Function Prototypes
 *********************************/
 
@@ -44,11 +59,10 @@ static void controller_calcstick(plynum player);
              Globals
 *********************************/
 
-// Controller data
+// Raw controller data
 static OSContPad	s_contdata[MAXCONTROLLERS];
 static OSContPad	s_contdata_old[MAXCONTROLLERS];
 static OSContStatus	s_contstat[MAXCONTROLLERS];
-static OSPfs		s_contrumble[MAXCONTROLLERS];
 
 // Thread structure
 static OSThread	s_threadstruct_controller;
@@ -60,12 +74,8 @@ static OSMesgQueue s_msgqueue_si;
 static OSMesg      s_msgbuffer_si;
 
 // Player data
-static u8      s_playercount = 0;
-static s8      s_playerindex[MAXCONTROLLERS];
-static u16     s_playeractions[MAXCONTROLLERS][MAX_ACTIONS];
-static Octagon s_playerzone_min[MAXCONTROLLERS] = {CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN, CONTROLLER_DEFAULT_MIN};
-static Octagon s_playerzone_max[MAXCONTROLLERS] = {CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX, CONTROLLER_DEFAULT_MAX};
-static Vector2D s_playerstick[MAXCONTROLLERS];
+static u8         s_playercount = 0;
+static PlayerCont s_playercont[MAXCONTROLLERS];
 
 
 /*==============================
@@ -103,28 +113,34 @@ static void threadfunc_controller(void *arg)
     
     // Initialize the controllers
     osContInit(&s_msgqueue_si, &l_pattern, s_contstat);
-    memset(s_playeractions, 0, sizeof(u16)*MAXCONTROLLERS*MAX_ACTIONS);
-    memset(s_playerstick, 0, sizeof(Vector2D)*MAXCONTROLLERS);
+    memset(s_playercont, 0, sizeof(PlayerCont)*MAXCONTROLLERS);
+    s_playercount = 0;
     
     // Find out what player corresponds to what controller
-    memset(s_playerindex, -1, sizeof(s8)*MAXCONTROLLERS);
     debug_printf("Controller Thread: Querying controllers.\n");
-    s_playercount = 0;
     for (i=0; i<MAXCONTROLLERS; i++)
     {
+        const Octagon l_contstick_min = CONTROLLER_DEFAULT_MIN;
+        const Octagon l_contstick_max = CONTROLLER_DEFAULT_MAX;
+        
+        // Check if we have a controller on port 'i'
         if ((l_pattern & (0x01 << i)) && s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
         {
-            s_playerindex[s_playercount] = i;
+            s_playercont[s_playercount].contindex = i;
             s_playercount++;
             debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
         }
+        
+        // Set the default stick profile
+        s_playercont[i].stickprof_min = l_contstick_min;
+        s_playercont[i].stickprof_max = l_contstick_max;
     }
     debug_printf("Controller Thread: Finished querying controllers.\n");
     
     // Spin this thread forever
     while (1)
     {
-        int i;
+        int l_ply;
         OSMesg l_msg;
         
         // Wait for a controller message to arrive
@@ -158,17 +174,17 @@ static void threadfunc_controller(void *arg)
                 #endif
                 osContStartReadData(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
-                memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*s_playercount);
+                memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
                 for (i=0; i<s_playercount; i++)
                 {
-                    plynum player = s_playerindex[i];
-                    if (s_contdata[player].stick_x != s_contdata_old[player].stick_x || s_contdata[player].stick_y != s_contdata_old[player].stick_y)
+                    u32 l_contindex = s_playercont[i].contindex;
+                    if (s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
                     {
                         debug_printf("*****\n");
-                        debug_printf("Input -> {%d, %d}\n", s_contdata[player].stick_x, s_contdata[player].stick_y);                    
-                        controller_calcstick(player);
-                        debug_printf("Output -> {%.4f, %.4f}\n", s_playerstick[player].x, s_playerstick[player].y);
+                        debug_printf("Input -> {%d, %d}\n", s_contdata[l_contindex].stick_x, s_contdata[l_contindex].stick_y);                    
+                        controller_calcstick((plynum)i);
+                        debug_printf("Output -> {%.4f, %.4f}\n", s_playercont[i].stick.x, s_playercont[i].stick.y);
                     }
                 }
                 #if VERBOSE 
@@ -177,17 +193,11 @@ static void threadfunc_controller(void *arg)
                 break;
             case MSG_CONTROLLER_RUMBLE_START:
                 for (i=0; i<s_playercount; i++)
-                {
-                    plynum player = s_playerindex[i];
-                    osMotorStart(&s_contrumble[player]);
-                }
+                    osMotorStart(&s_playercont[i].rumble);
                 break;
             case MSG_CONTROLLER_RUMBLE_STOP:
                 for (i=0; i<s_playercount; i++)
-                {
-                    plynum player = s_playerindex[i];
-                    osMotorStop(&s_contrumble[s_playerindex[player]]);
-                }
+                    osMotorStop(&s_playercont[i].rumble);
                 break;
             default:
                 #if VERBOSE 
@@ -210,7 +220,7 @@ void controller_reinitialize_all()
     
     // Reset the controllers
     osContReset(&s_msgqueue_si, s_contstat);
-    memset(s_playerindex, -1, sizeof(u8)*MAXCONTROLLERS);
+    memset(s_playercont, 0, sizeof(PlayerCont)*MAXCONTROLLERS);
     s_playercount = 0;
     
     // Find out what player corresponds to what controller
@@ -219,7 +229,7 @@ void controller_reinitialize_all()
     {
         if (s_contstat[i].errno == 0 && (s_contstat[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL)
         {
-            s_playerindex[s_playercount] = i;
+            s_playercont[s_playercount].contindex = i;
             s_playercount++;
             debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
         }
@@ -275,7 +285,7 @@ inline s32 controller_playercount()
 
 void controller_register_action(plynum player, u8 action, u16 buttons)
 {
-    s_playeractions[player][action] |= buttons;
+    s_playercont[player].actions[action] |= buttons;
 }
 
 
@@ -291,7 +301,7 @@ void controller_register_action(plynum player, u8 action, u16 buttons)
 
 void controller_unregister_action(plynum player, u8 action, u16 buttons)
 {
-    s_playeractions[player][action] &= ~buttons;
+    s_playercont[player].actions[action] &= ~buttons;
 }
 
 
@@ -305,8 +315,8 @@ void controller_unregister_action(plynum player, u8 action, u16 buttons)
 
 bool controller_action_pressed(plynum player, u8 action)
 {
-    u8 l_index = s_playerindex[player];
-    u16 l_action = s_playeractions[player][action];
+    u8 l_index = s_playercont[player].contindex;
+    u16 l_action = s_playercont[player].actions[action];
     return (s_contdata[l_index].button & l_action) != 0 && (s_contdata_old[l_index].button & l_action) == 0;
 }
 
@@ -321,7 +331,7 @@ bool controller_action_pressed(plynum player, u8 action)
 
 bool controller_action_down(plynum player, u8 action)
 {
-    return (s_contdata[s_playerindex[player]].button & s_playeractions[player][action]) != 0;
+    return (s_contdata[s_playercont[player].contindex].button & s_playercont[player].actions[action]) != 0;
 }
 
 
@@ -334,7 +344,7 @@ bool controller_action_down(plynum player, u8 action)
 
 void controller_set_stickmin(plynum player, Octagon oct)
 {
-    s_playerzone_min[player] = oct;
+    s_playercont[player].stickprof_min = oct;
 }
 
 
@@ -347,7 +357,7 @@ void controller_set_stickmin(plynum player, Octagon oct)
 
 void controller_set_stickmax(plynum player, Octagon oct)
 {
-    s_playerzone_max[player] = oct;
+    s_playercont[player].stickprof_max = oct;
 }
 
 
@@ -370,12 +380,12 @@ static void controller_calcstick(plynum player)
     f32 l_ang;
     
     // Populate our helper variables
-    l_x = s_contdata[player].stick_x;
-    l_y = s_contdata[player].stick_y;
+    l_x = s_contdata[s_playercont[player].contindex].stick_x;
+    l_y = s_contdata[s_playercont[player].contindex].stick_y;
     if (l_x == 0 && l_y == 0)
     {
-        s_playerstick[player].x = 0;
-        s_playerstick[player].y = 0;
+        s_playercont[player].stick.x = 0;
+        s_playercont[player].stick.y = 0;
         return;
     }
     l_xp = (l_x >> 31) & 0x01;
@@ -391,17 +401,17 @@ static void controller_calcstick(plynum player)
         l_octant = (l_xa <= l_ya) ? (l_quadrant*2) : (l_quadrant*2 + 1);
         
     // Now we know which array values we need from our player zones
-    l_minx1 = ((OctArray)s_playerzone_min[player]).array[l_octant*2];
-    l_miny1 = ((OctArray)s_playerzone_min[player]).array[l_octant*2+1];
-    l_maxx1 = ((OctArray)s_playerzone_max[player]).array[l_octant*2];
-    l_maxy1 = ((OctArray)s_playerzone_max[player]).array[l_octant*2+1];
+    l_minx1 = ((OctArray)s_playercont[player].stickprof_min).array[l_octant*2];
+    l_miny1 = ((OctArray)s_playercont[player].stickprof_min).array[l_octant*2+1];
+    l_maxx1 = ((OctArray)s_playercont[player].stickprof_max).array[l_octant*2];
+    l_maxy1 = ((OctArray)s_playercont[player].stickprof_max).array[l_octant*2+1];
     l_octantnext = l_octant+1;
     if (l_octantnext > 7)
         l_octantnext = 0;
-    l_minx2 = ((OctArray)s_playerzone_min[player]).array[l_octantnext*2];
-    l_miny2 = ((OctArray)s_playerzone_min[player]).array[l_octantnext*2+1];
-    l_maxx2 = ((OctArray)s_playerzone_max[player]).array[l_octantnext*2];
-    l_maxy2 = ((OctArray)s_playerzone_max[player]).array[l_octantnext*2+1];
+    l_minx2 = ((OctArray)s_playercont[player].stickprof_min).array[l_octantnext*2];
+    l_miny2 = ((OctArray)s_playercont[player].stickprof_min).array[l_octantnext*2+1];
+    l_maxx2 = ((OctArray)s_playercont[player].stickprof_max).array[l_octantnext*2];
+    l_maxy2 = ((OctArray)s_playercont[player].stickprof_max).array[l_octantnext*2+1];
     
     // Ok, so now comes the actual math
     // We project a line from (0,0) to our point, and we find the interceptions with the min and max of our octant
@@ -420,13 +430,13 @@ static void controller_calcstick(plynum player)
     // That gives us how far the X and Y values are from the circumference of the circle (as a percentage)
     // Then multiply by the angle to get the final XY value mapped to [-1, 1]
     if (l_intmax_x - l_intmin_x != 0)
-        s_playerstick[player].x = clampf(((float)l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
+        s_playercont[player].stick.x = clampf(((float)l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
     else
-        s_playerstick[player].x = 0;
+        s_playercont[player].stick.x = 0;
     if (l_intmax_y - l_intmin_y != 0)
-        s_playerstick[player].y = clampf(((float)l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
+        s_playercont[player].stick.y = clampf(((float)l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
     else
-        s_playerstick[player].y = 0;
+        s_playercont[player].stick.y = 0;
 }
 
 
@@ -440,7 +450,7 @@ static void controller_calcstick(plynum player)
 
 f32 controller_get_x(plynum player)
 {
-    return s_playerstick[player].x;
+    return s_playercont[player].stick.x;
 }
 
 
@@ -454,7 +464,7 @@ f32 controller_get_x(plynum player)
 
 f32 controller_get_y(plynum player)
 {
-    return s_playerstick[player].y;
+    return s_playercont[player].stick.y;
 }
 
 
@@ -467,7 +477,7 @@ f32 controller_get_y(plynum player)
 
 s32 controller_rumble_init(plynum player)
 {
-    return osMotorInit(&s_msgqueue_si, s_contrumble, s_playerindex[player]);
+    return osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, s_playercont[player].contindex);
 }
 
 
