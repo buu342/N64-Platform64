@@ -18,16 +18,20 @@ player inputs.
            Definitions
 *********************************/
 
-#define SIZE_MSGQUEUE_CONTROLLER  8
+#define SIZE_MSGQUEUE_CONTROLLER  8*MAXCONTROLLERS
+
+// Enable this to see how the controller thread is behaving with prints
+#define VERBOSE  FALSE
 
 // Controller messages
-#define MSG_CONTROLLER_QUERY      1
-#define MSG_CONTROLLER_READ       2
-#define MSG_CONTROLLER_RESET      3
-#define MSG_CONTROLLER_RUMBLE_P1  4
-#define MSG_CONTROLLER_RUMBLE_P2  5
-#define MSG_CONTROLLER_RUMBLE_P3  6
-#define MSG_CONTROLLER_RUMBLE_P4  7
+#define MSG_CONTROLLER_QUERY        1
+#define MSG_CONTROLLER_READ         2
+#define MSG_CONTROLLER_RESET        3
+#define MSG_CONTROLLER_RUMBLE_INIT  4
+#define MSG_CONTROLLER_RUMBLE_P1    5
+#define MSG_CONTROLLER_RUMBLE_P2    6
+#define MSG_CONTROLLER_RUMBLE_P3    7
+#define MSG_CONTROLLER_RUMBLE_P4    8
 
 // Controller distances
 #define CONTROLLER_DEFAULT_MIN  {{0, 5},  {3, 3},   {4, 0},  {3, -3},   {0, -5},  {-3, -3},   {-4, 0},  {-3, 3}}
@@ -69,6 +73,10 @@ static void controller_calcstick(plynum player);
 /*********************************
              Globals
 *********************************/
+
+// Semaphores to stop queue overfilling
+static bool s_reading;
+static bool s_querying;
 
 // Raw controller data
 static OSContPad	s_contdata[MAXCONTROLLERS];
@@ -121,6 +129,8 @@ static void threadfunc_controller(void *arg)
     
     // Initialize the thread's message queue
     osCreateMesgQueue(&s_msgqueue_cont, s_msgbuffer_cont, SIZE_MSGQUEUE_CONTROLLER);
+    s_reading = FALSE;
+    s_querying = FALSE;
     
     // Initialize the controllers
     osContInit(&s_msgqueue_si, &l_pattern, s_contstat);
@@ -128,7 +138,7 @@ static void threadfunc_controller(void *arg)
     s_playercount = 0;
     
     // Find out what player corresponds to what controller
-    #if VERBOSE 
+    #if VERBOSE
         debug_printf("Controller Thread: Querying controllers.\n");
     #endif
     for (i=0; i<MAXCONTROLLERS; i++)
@@ -141,7 +151,7 @@ static void threadfunc_controller(void *arg)
         {
             s_playercont[s_playercount].portindex = i+1;
             s_playercount++;
-            #if VERBOSE 
+            #if VERBOSE
                 debug_printf("Controller Thread: Player %d found in port %d.\n", s_playercount, i+1);
             #endif
         }
@@ -150,7 +160,7 @@ static void threadfunc_controller(void *arg)
         s_playercont[i].stickprof_min = l_contstick_defmin;
         s_playercont[i].stickprof_max = l_contstick_defmax;
     }
-    #if VERBOSE 
+    #if VERBOSE
         debug_printf("Controller Thread: Finished querying controllers.\n");
     #endif
     
@@ -161,13 +171,13 @@ static void threadfunc_controller(void *arg)
         OSMesg l_msg;
         
         // Wait for a controller message to arrive
-        #if VERBOSE 
+        #if VERBOSE
             debug_printf("Controller Thread: Loop start, waiting for message\n");
         #endif
         osRecvMesg(&s_msgqueue_cont, (OSMesg *)&l_msg, OS_MESG_BLOCK);
         
         // At this point, a message has been received from another thread
-        #if VERBOSE 
+        #if VERBOSE
             debug_printf("Controller Thread: Message '%d' received\n", (s32)l_msg);
         #endif
         
@@ -175,13 +185,15 @@ static void threadfunc_controller(void *arg)
         switch ((s32)l_msg)
         {
             case MSG_CONTROLLER_QUERY:
+            
+                // Query the controllers
                 #if VERBOSE
                     debug_printf("Controller Thread: Starting query\n");
                 #endif
                 osContStartQuery(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 osContGetQuery(s_contstat);
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Query finished\n");
                 #endif
                 
@@ -190,7 +202,9 @@ static void threadfunc_controller(void *arg)
                 {
                     if (s_playercont[l_ply].portindex != 0 && s_contstat[s_playercont[l_ply].portindex-1].errno == CONT_NO_RESPONSE_ERROR)
                     {
-                        debug_printf("Controller Thread: Player %d disconnected from port %d\n", l_ply+1, s_playercont[l_ply].portindex);
+                        #if VERBOSE
+                            debug_printf("Controller Thread: Player %d disconnected from port %d\n", l_ply+1, s_playercont[l_ply].portindex);
+                        #endif
                         s_playercont[l_ply].portindex = 0;
                         s_playercont[l_ply].rumblestat = RUMBLE_ERR;
                         s_playercont[l_ply].stick.x = 0;
@@ -227,7 +241,9 @@ static void threadfunc_controller(void *arg)
                                 // This controller port now belongs to this player
                                 if (empty)
                                 {
-                                    debug_printf("Controller Thread: Player %d reconnected to port %d\n", l_ply+1, i+1);
+                                    #if VERBOSE
+                                        debug_printf("Controller Thread: Player %d reconnected to port %d\n", l_ply+1, i+1);
+                                    #endif
                                     s_playercont[l_ply].portindex = i+1;
                                     break;
                                 }
@@ -235,32 +251,40 @@ static void threadfunc_controller(void *arg)
                         }
                     }
                 }
+                s_querying = FALSE;
                 break;
             case MSG_CONTROLLER_READ:
-                #if VERBOSE 
+            
+                // Poll the controller data
+                #if VERBOSE
                     debug_printf("Controller Thread: Starting read\n", (s32)l_msg);
                 #endif
                 osContStartReadData(&s_msgqueue_si);
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
+                
+                // Normalize the stick
                 for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
                 {
                     s32 l_contindex = s_playercont[l_ply].portindex-1;
                     if (l_contindex > 0 && s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
                         controller_calcstick(l_ply);
                 }
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
                 #endif
+                s_reading = FALSE;
                 break;
             case MSG_CONTROLLER_RESET:
+            
+                // Reset the controllers
                 osContReset(&s_msgqueue_si, s_contstat);
                 memset(s_playercont, 0, sizeof(PlayerCont)*MAXCONTROLLERS);
                 s_playercount = 0;
                 
                 // Find out what player corresponds to what controller
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Querying controllers.\n");
                 #endif
                 for (i=0; i<MAXCONTROLLERS; i++)
@@ -274,16 +298,37 @@ static void threadfunc_controller(void *arg)
                         #endif
                     }
                 }
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Finished querying controllers.\n");
                 #endif
+                break;
+            case MSG_CONTROLLER_RUMBLE_INIT:
+            
+                // Initialize the rumble for everyone
+                for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
+                {
+                    s8 l_index = s_playercont[l_ply].portindex-1;
+                    
+                    // Ensure the player has a controller
+                    if (l_index < 0)
+                    {
+                        s_playercont[l_ply].rumblestat = RUMBLE_ERR;
+                        continue;
+                    }
+                    
+                    // Check if the rumble pak initialized properly
+                    if (osMotorInit(&s_msgqueue_si, &s_playercont[l_ply].rumble, l_index) == 0)
+                        s_playercont[l_ply].rumblestat = RUMBLE_OFF;
+                    else
+                        s_playercont[l_ply].rumblestat = RUMBLE_ERR;
+                }
                 break;
             case MSG_CONTROLLER_RUMBLE_P1: // Intentional fallthrough
             case MSG_CONTROLLER_RUMBLE_P2:
             case MSG_CONTROLLER_RUMBLE_P3:
             case MSG_CONTROLLER_RUMBLE_P4:
                 l_ply = (plynum)(l_msg-MSG_CONTROLLER_RUMBLE_P1);
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Trauma at %f\n", s_playercont[l_ply].trauma);
                 #endif
                 
@@ -320,20 +365,20 @@ static void threadfunc_controller(void *arg)
                 // The rumble pak must be shut down 3 times or more in order to guarantee it stopped
                 if (s_playercont[l_ply].rumblestat != RUMBLE_ERR && s_playercont[l_ply].trauma == 0)
                 {
-                    if (s_playercont[l_ply].rumblestat >= RUMBLE_OFF && s_playercont[l_ply].rumblestat <= RUMBLE_OFF+3)
+                    if (s_playercont[l_ply].rumblestat >= RUMBLE_OFF && s_playercont[l_ply].rumblestat < RUMBLE_OFF+3)
                     {
                         s_playercont[l_ply].rumblestat++;
                         osMotorStop(&s_playercont[l_ply].rumble);
                         osStopTimer(&s_playercont[l_ply].rumbletimer);
                         osSetTimer(&s_playercont[l_ply].rumbletimer, OS_USEC_TO_CYCLES(100000.0f), 0, &s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_P1+l_ply));
-                        #if VERBOSE 
-                            debug_printf("Controller Thread: Rumble shutdown %d/3\n", RUMBLE_OFF - s_playercont[l_ply].rumblestat);
+                        #if VERBOSE
+                            debug_printf("Controller Thread: Rumble shutdown %d/3\n", s_playercont[l_ply].rumblestat-RUMBLE_OFF);
                         #endif
                     }
                 }
                 break;
             default:
-                #if VERBOSE 
+                #if VERBOSE
                     debug_printf("Controller Thread: Bad message '0x%2x' received\n", (s32)l_msg);
                 #endif
                 break;
@@ -360,7 +405,10 @@ void controller_reinitialize_all()
 
 void controller_query_all()
 {
+    if (s_querying)
+        return;
     osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_QUERY, OS_MESG_BLOCK);
+    s_querying = TRUE;
 }
 
 
@@ -371,7 +419,10 @@ void controller_query_all()
 
 void controller_read_all()
 {
+    if (s_reading)
+        return;
     osSendMesg(&s_msgqueue_cont, (OSMesg)MSG_CONTROLLER_READ, OS_MESG_BLOCK);
+    s_reading = TRUE;
 }
 
 
@@ -611,21 +662,32 @@ f32 controller_get_y(plynum player)
 
 /*==============================
     controller_rumble_init
-    Initializes the Rumble Pak for a specific player
-    @param   The player to initialize the Rumble Pak of.
+    Initializes the Rumble Pak on all controllers
+==============================*/
+
+void controller_rumble_init()
+{
+    osSendMesg(&s_msgqueue_cont, (OSMesg)(MSG_CONTROLLER_RUMBLE_INIT), OS_MESG_BLOCK);
+}
+
+
+/*==============================
+    controller_rumble_check
+    Checks if the rumble pak is connected.
+    Should be called some miliseconds after rumble_init,
+    not right after. Controller stuff takes time.
+    @param   The player to check the Rumble Pak of.
     @returns Any errors that ocurred, or zero
 ==============================*/
 
-s32 controller_rumble_init(plynum player)
+s32 controller_rumble_check(plynum player)
 {
-    u32 ret;
     s8 l_index = s_playercont[player].portindex-1;
     if (l_index < 0)
         return PFS_ERR_CONTRFAIL;
-    ret = osMotorInit(&s_msgqueue_si, &s_playercont[player].rumble, l_index);
-    if (ret == 0)
-        s_playercont[player].rumblestat = RUMBLE_OFF;
-    return ret;
+    if (s_playercont[player].rumblestat == RUMBLE_ERR)
+        return PFS_ERR_NOPACK;
+    return 0;
 }
 
 

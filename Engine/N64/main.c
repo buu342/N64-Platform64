@@ -37,8 +37,7 @@ static OSMesg s_pi_messages[NUM_PI_MSGS];
 static OSMesgQueue s_pi_queue;
 
 // Lag switch for demonstrations
-static bool s_shouldlag = TRUE;
-
+static bool s_shouldlag = FALSE;
 
 
 /*==============================
@@ -105,6 +104,7 @@ static void threadfunc_main(void *arg)
     graphics_initialize(l_scheduler);
     audio_initialize();
     controller_initialize();
+    controller_rumble_init();
     memset(l_oldstick, 0, sizeof(Vector2D)*MAXCONTROLLERS);
     
     // Register framebuffers we are going to use
@@ -119,11 +119,6 @@ static void threadfunc_main(void *arg)
     // Register controller actions
     controller_register_action(PLAYER_1, ACTION_JUMP, A_BUTTON);
     controller_register_action(PLAYER_2, ACTION_JUMP, A_BUTTON);
-    
-    // Initialize rumble
-    for (i=(int)PLAYER_1; i<controller_playercount(); i++)
-        if (controller_rumble_init(i) == 0)
-            debug_printf("Found rumble on Player %d\n", i+1);
     
     // And now, perform the game main
     while (1)

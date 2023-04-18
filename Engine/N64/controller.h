@@ -49,7 +49,8 @@
     f32  controller_get_x(plynum player);
     f32  controller_get_y(plynum player);
     
-    s32  controller_rumble_init(plynum player);
+    void controller_rumble_init();
+    s32  controller_rumble_check(plynum player);
     void controller_rumble_addtrauma(plynum player, f32 trauma);
     void controller_rumble_settrauma(plynum player, f32 trauma);
     
