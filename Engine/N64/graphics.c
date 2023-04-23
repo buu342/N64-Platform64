@@ -158,8 +158,6 @@ static void threadfunc_graphics(void *arg)
                 FrameBuffer* l_fb = &s_framebuffers_active[i];
                 if (l_fb->status == FBSTATUS_FREE || (l_fb->status == FBSTATUS_READY && l_fb != s_lastrendered))
                 {
-                    if (s_framebuffers_activecount > 2 && (osViGetCurrentFramebuffer() == l_fb->address || osViGetNextFramebuffer() == l_freebuff->address)) // If we have triple buffering, no need to use a framebuffer that's busy
-                        continue;
                     l_freebuff = l_fb;
                     break;
                 }
@@ -176,7 +174,7 @@ static void threadfunc_graphics(void *arg)
         }
         
         // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
-        while (osViGetCurrentFramebuffer() == l_freebuff->address || osViGetNextFramebuffer() == l_freebuff->address)
+        while (osViGetCurrentFramebuffer() == l_freebuff->address)
         {
             #if VERBOSE 
                 debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
@@ -390,7 +388,7 @@ void graphics_register_fbuffer(bool ishd, void* address)
     l_targetbuffers[l_targetcount].displist = g_displists[l_targetcount];
     l_targetbuffers[l_targetcount].status = FBSTATUS_FREE;
     
-    // Decrease the number of active framebuffers if applicable
+    // Increase the number of active framebuffers if applicable
     if (s_framebuffers_active == l_targetbuffers)
         s_framebuffers_activecount++;
     debug_printf("Successfully registered a new %s framebuffer at address %p\n", (ishd ? "HD" : "SD"), address);
