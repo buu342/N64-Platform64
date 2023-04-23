@@ -18,6 +18,7 @@ player inputs.
            Definitions
 *********************************/
 
+#define SIZE_MSGQUEUE_SI          1
 #define SIZE_MSGQUEUE_CONTROLLER  8*MAXCONTROLLERS
 
 // Enable this to see how the controller thread is behaving with prints
@@ -90,7 +91,7 @@ static OSThread	s_threadstruct_controller;
 static OSMesgQueue s_msgqueue_cont;
 static OSMesg      s_msgbuffer_cont[SIZE_MSGQUEUE_CONTROLLER];
 static OSMesgQueue s_msgqueue_si;
-static OSMesg      s_msgbuffer_si;
+static OSMesg      s_msgbuffer_si[SIZE_MSGQUEUE_SI];
 
 // Player data
 static u8         s_playercount = 0;
@@ -106,7 +107,7 @@ static PlayerCont s_playercont[MAXCONTROLLERS];
 void controller_initialize()
 {
     // Initialize the serial interface and its message queue
-    osCreateMesgQueue(&s_msgqueue_si, &s_msgbuffer_si, 1);
+    osCreateMesgQueue(&s_msgqueue_si, s_msgbuffer_si, SIZE_MSGQUEUE_SI);
     osSetEventMesg(OS_EVENT_SI, &s_msgqueue_si, (OSMesg)1);
     
     // Start the controller thread
@@ -167,6 +168,7 @@ static void threadfunc_controller(void *arg)
     // Spin this thread forever
     while (1)
     {
+        s32 ret;
         plynum l_ply;
         OSMesg l_msg;
         
@@ -190,7 +192,14 @@ static void threadfunc_controller(void *arg)
                 #if VERBOSE
                     debug_printf("Controller Thread: Starting query\n");
                 #endif
-                osContStartQuery(&s_msgqueue_si);
+                ret = osContStartQuery(&s_msgqueue_si);
+                if (ret != 0)
+                {
+                    #if VERBOSE
+                        debug_printf("Controller Thread: Query failed with %d.\n", ret);
+                    #endif
+                    break;
+                }
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 osContGetQuery(s_contstat);
                 #if VERBOSE
@@ -257,12 +266,22 @@ static void threadfunc_controller(void *arg)
             
                 // Poll the controller data
                 #if VERBOSE
-                    debug_printf("Controller Thread: Starting read\n", (s32)l_msg);
+                    debug_printf("Controller Thread: Starting read\n");
                 #endif
-                osContStartReadData(&s_msgqueue_si);
+                ret = osContStartReadData(&s_msgqueue_si);
+                if (ret != 0)
+                {
+                    #if VERBOSE
+                        debug_printf("Controller Thread: Read failed with %d.\n", ret);
+                    #endif
+                    break;
+                }
                 osRecvMesg(&s_msgqueue_si, NULL, OS_MESG_BLOCK);
                 memcpy(s_contdata_old, s_contdata, sizeof(OSContPad)*MAXCONTROLLERS);
                 osContGetReadData(s_contdata);
+                #if VERBOSE
+                    debug_printf("Controller Thread: Read finished\n");
+                #endif
                 
                 // Normalize the stick
                 for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
@@ -271,9 +290,6 @@ static void threadfunc_controller(void *arg)
                     if (l_contindex > 0 && s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
                         controller_calcstick(l_ply);
                 }
-                #if VERBOSE
-                    debug_printf("Controller Thread: Read finished\n", (s32)l_msg);
-                #endif
                 s_reading = FALSE;
                 break;
             case MSG_CONTROLLER_RESET:
@@ -607,8 +623,8 @@ static void controller_calcstick(plynum player)
     
     // Ok, so now comes the actual math
     // We project a line from (0,0) to our point, and we find the interceptions with the min and max of our octant
-    l_detmin = (l_minx1*l_miny2 - l_miny1*l_minx2)/((float)((l_minx1 - l_minx2)*(0 - l_y) - (l_miny1 - l_miny2)*(0 - l_x)));
-    l_detmax = (l_maxx1*l_maxy2 - l_maxy1*l_maxx2)/((float)((l_maxx1 - l_maxx2)*(0 - l_y) - (l_maxy1 - l_maxy2)*(0 - l_x)));
+    l_detmin = (l_minx1*l_miny2 - l_miny1*l_minx2)/((f32)((l_minx1 - l_minx2)*(0 - l_y) - (l_miny1 - l_miny2)*(0 - l_x)));
+    l_detmax = (l_maxx1*l_maxy2 - l_maxy1*l_maxx2)/((f32)((l_maxx1 - l_maxx2)*(0 - l_y) - (l_maxy1 - l_maxy2)*(0 - l_x)));
     l_intmin_x = (0 - l_x)*l_detmin;
     l_intmin_y = (0 - l_y)*l_detmin;
     l_intmax_x = (0 - l_x)*l_detmax;
@@ -622,11 +638,11 @@ static void controller_calcstick(plynum player)
     // That gives us how far the X and Y values are from the circumference of the circle (as a percentage)
     // Then multiply by the angle to get the final XY value mapped to [-1, 1]
     if (l_intmax_x - l_intmin_x != 0)
-        s_playercont[player].stick.x = clampf(((float)l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
+        s_playercont[player].stick.x = clampf(((f32)l_x - l_intmin_x)/(l_intmax_x - l_intmin_x), 0, 1)*cosf(l_ang);
     else
         s_playercont[player].stick.x = 0;
     if (l_intmax_y - l_intmin_y != 0)
-        s_playercont[player].stick.y = clampf(((float)l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
+        s_playercont[player].stick.y = clampf(((f32)l_y - l_intmin_y)/(l_intmax_y - l_intmin_y), 0, 1)*sinf(l_ang);
     else
         s_playercont[player].stick.y = 0;
 }
