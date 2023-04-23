@@ -12,6 +12,8 @@ Handles the boot process of the ROM.
 #include "scheduler.h"
 #include "graphics.h"
 #include "audio.h"
+#include "scene.h"
+#include "helper.h"
 
 
 /*********************************
@@ -22,6 +24,10 @@ static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
 static void advance_step();
+
+// Unexposed scene.c functions
+inline void scene_set_subtick(f32 subtick);
+inline void scene_set_frametime(f32 frametime);
 
 
 /*********************************
@@ -94,7 +100,6 @@ static void threadfunc_idle(void *arg)
 static void threadfunc_main(void *arg)
 {
     int i;
-    u8 l_color = 0;
     Vector2D l_oldstick[MAXCONTROLLERS];
     Scheduler* l_scheduler;
     debug_printf("Main Thread: Started\n");
@@ -123,41 +128,51 @@ static void threadfunc_main(void *arg)
     // And now, perform the game main
     while (1)
     {
-        plynum l_ply;
+        OSTime l_oldtime = 0;
+        OSTime l_accumulator = 0;
+        const OSTime l_dt = OS_USEC_TO_CYCLES(SEC_TO_USEC(DELTATIME));
+
+        // Initialize the scene
+        scene_initialize();
         
-        // Print controller data to show it's working
-        for (l_ply=PLAYER_1; l_ply<controller_playercount(); l_ply++)
+        // Handle the scene loop
+        while (!scene_shouldchange())
         {
-            if (controller_action_pressed(l_ply, ACTION_JUMP))
-                debug_printf("Player %d pressed: Jump button\n", l_ply+1);
-            if (controller_action_down(l_ply, ACTION_JUMP))
-                debug_printf("Player %d holding: Jump button\n", l_ply+1);
-            if (controller_action_released(l_ply, ACTION_JUMP))
-                debug_printf("Player %d released: Jump button\n", l_ply+1);
-            if (controller_get_x(l_ply) != l_oldstick[l_ply].x || controller_get_y(l_ply) != l_oldstick[l_ply].y)
+            OSTime l_curtime = osGetTime();
+            OSTime l_frametime = l_curtime - l_oldtime;
+            
+            // In order to prevent problems if the game slows down significantly, we will clamp the maximum timestep the simulation can take
+            if (l_frametime > OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f)))
+                l_frametime = OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f));
+            scene_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
+            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
+            l_oldtime = l_curtime;
+            
+            // Perform the update in discrete steps (ticks)
+            l_accumulator += l_frametime;
+            while (l_accumulator >= l_dt)
             {
-                debug_printf("Player %d stick: {%0.4f, %0.4f}\n", l_ply+1, controller_get_x(l_ply), controller_get_y(l_ply));
-                controller_rumble_settrauma(l_ply, controller_get_y(l_ply));
-                l_oldstick[l_ply].x = controller_get_x(l_ply);
-                l_oldstick[l_ply].y = controller_get_y(l_ply);
+                scene_update();
+                l_accumulator -= l_dt;
             }
-        }
-        
-        // Render the scene
-        graphics_requestrender(l_color++, TRUE);
-        
-        // Read control stick data
-        controller_query_all();
-        controller_read_all();
-        
-        // Check if the flashcart has incoming debug data
-        debug_pollcommands();
-        
-        // If enabled, crunch some numbers for a while to create "lag"
-        if (s_shouldlag)
-        {
-            for (i=0; i<1000000; i++)
-                ;
+            
+            // Read control stick data
+            controller_query_all();
+            controller_read_all();
+            
+            // Render the scene
+            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
+            scene_render();
+            
+            // Check if the flashcart has incoming debug data
+            debug_pollcommands();
+            
+            // If enabled, crunch some numbers for a while to create "lag"
+            if (s_shouldlag)
+            {
+                for (i=0; i<1000000; i++)
+                    ;
+            }
         }
     }
 }

@@ -13,12 +13,14 @@
     // The selected TV mode
     #define TVMODE  TV_PAL
     
-    // Target framerate
+    // Target framerate and tickrate
     #if TVMODE == TV_PAL
         #define TARGET_FRAMERATE 25
     #else
         #define TARGET_FRAMERATE 30
     #endif
+    #define TICKRATE   50
+    #define DELTATIME  (1.0f/(f64)TICKRATE)
     
     
     /*********************************

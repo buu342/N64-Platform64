@@ -2,7 +2,7 @@
 #                    Code files and ROM name                   #
 ################################################################
 
-CODECFILES  = main.c controller.c scheduler.c graphics.c audio.c rcp.c helper.c
+CODECFILES  = main.c controller.c scheduler.c graphics.c audio.c rcp.c helper.c scene.c
 CODEHFILES  =
 
 DEBUGFILES = debug.c usb.c

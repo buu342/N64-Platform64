@@ -7,8 +7,10 @@
     *********************************/
     
     // Time conversion
-    #define SEC_TO_USEC(a)  (a*1000000)
-    #define USEC_TO_SEC(a)  (((f32)a)*0.000001)
+    #define SEC_TO_USEC(a)   (((f64)a)*1000000.0f)
+    #define MSEC_TO_USEC(a)  (((f64)a)*1000.0f)
+    #define USEC_TO_MSEC(a)  (((f64)a)/1000.0f)
+    #define USEC_TO_SEC(a)   (((f64)a)/1000000.0f)
     
     
     /*********************************
