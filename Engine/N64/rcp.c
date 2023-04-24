@@ -24,7 +24,7 @@ Gfx* g_displistp;
 // RCP task
 static RenderTask* s_curtask = NULL;
 static OSTask s_rcptask_render =
-{
+{{
     M_GFXTASK,              // Task type
     0,                      // Task flags
     NULL,                   // RCP boot microcode pointer (fill in later)
@@ -41,22 +41,22 @@ static OSTask s_rcptask_render =
     0,                      // Task data size (fill in later)
     NULL,                   // Task yield buffer pointer (unused)
     0                       // Task yield buffer size (unused)
-};
+}};
 
 
 /*********************************
             Viewports
 *********************************/
 
-static const Vp s_viewport_sd = {
-    SCREEN_WIDTH_SD*2, SCREEN_HEIGHT_SD*2, G_MAXZ/2, 0,	// Scale 
-    SCREEN_WIDTH_SD*2, SCREEN_HEIGHT_SD*2, G_MAXZ/2, 0,	// Translation
-};
+static const Vp s_viewport_sd = {{
+    {SCREEN_WIDTH_SD*2, SCREEN_HEIGHT_SD*2, G_MAXZ/2, 0},	// Scale 
+    {SCREEN_WIDTH_SD*2, SCREEN_HEIGHT_SD*2, G_MAXZ/2, 0},	// Translation
+}};
 
-static const Vp s_viewport_hd = {
-    SCREEN_WIDTH_HD*2, SCREEN_HEIGHT_HD*2, G_MAXZ/2, 0,	// Scale 
-    SCREEN_WIDTH_HD*2, SCREEN_HEIGHT_HD*2, G_MAXZ/2, 0,	// Translation
-};
+static const Vp s_viewport_hd = {{
+    {SCREEN_WIDTH_HD*2, SCREEN_HEIGHT_HD*2, G_MAXZ/2, 0},	// Scale 
+    {SCREEN_WIDTH_HD*2, SCREEN_HEIGHT_HD*2, G_MAXZ/2, 0},	// Translation
+}};
 
 
 /*********************************

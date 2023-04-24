@@ -4,8 +4,9 @@
 #include "osconfig.h"
 #include "scheduler.h"
 #include "graphics.h"
-#include "scene.h"
+#include "rcp.h"
 #include "helper.h"
+#include "scene.h"
 
 static f32 s_xpos;
 static f32 s_xpos_old;

@@ -134,7 +134,6 @@ static void threadfunc_graphics(void *arg)
     while (1)
     {
         int i;
-        int l_buffcount;
         RenderMessage l_msg;
         RenderMessage* l_msgp;
         

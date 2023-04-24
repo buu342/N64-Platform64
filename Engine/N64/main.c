@@ -5,6 +5,7 @@ Handles the boot process of the ROM.
 ***************************************************************/
 
 #include <ultra64.h>
+#include <memory.h>
 #include "types.h"
 #include "debug.h"
 #include "osconfig.h"
@@ -23,7 +24,6 @@ Handles the boot process of the ROM.
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
-static void advance_step();
 
 // Unexposed scene.c functions
 inline void scene_set_subtick(f32 subtick);

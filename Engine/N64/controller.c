@@ -6,6 +6,7 @@ player inputs.
 ***************************************************************/
 
 #include <ultra64.h>
+#include <memory.h>
 #include <math.h>
 #include "debug.h"
 #include "types.h"
@@ -287,7 +288,7 @@ static void threadfunc_controller(void *arg)
                 for (l_ply=PLAYER_1; l_ply<s_playercount; l_ply++)
                 {
                     s32 l_contindex = s_playercont[l_ply].portindex-1;
-                    if (l_contindex > 0 && s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y)
+                    if (l_contindex > 0 && (s_contdata[l_contindex].stick_x != s_contdata_old[l_contindex].stick_x || s_contdata[l_contindex].stick_y != s_contdata_old[l_contindex].stick_y))
                         controller_calcstick(l_ply);
                 }
                 s_reading = FALSE;
@@ -603,7 +604,7 @@ static void controller_calcstick(plynum player)
     
     // Find the octant on the cartesian plane
     l_quadrant = (!l_xp) ? (l_yp) : (3 - l_yp);
-    if (l_quadrant & 0x01 == 1)
+    if ((l_quadrant & 0x01) == 1)
         l_octant = (l_xa <= l_ya) ? (l_quadrant*2 + 1) : (l_quadrant*2);
     else
         l_octant = (l_xa <= l_ya) ? (l_quadrant*2) : (l_quadrant*2 + 1);

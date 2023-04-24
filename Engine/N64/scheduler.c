@@ -11,6 +11,7 @@ audio tasks, as well as handles PreNMI interrupts (Reset Button)
 #include "types.h"
 #include "scheduler.h"
 #include "graphics.h"
+#include "audio.h"
 
 
 /*********************************
