@@ -55,6 +55,7 @@ APP         = $(TARGETS:.n64=.out)
 ifeq ($(DEBUG_MODE), 0)
     CODEOBJECTS     = $(CODECFILES:.c=.o)
     OPTIMIZER       = -O2
+    COMPFLAGS       = 
     LCDEFS          = $(COMPFLAGS) -D_FINALROM -DNDEBUG -DF3DEX_GBI_2 -DNOT_SPEC
     N64LIB          = -lgultra_rom
     MAKEROMFLAGS    = 
