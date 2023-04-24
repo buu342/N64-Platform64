@@ -21,6 +21,9 @@ Handles graphics rendering
 // Enable this to see how the graphics thread is behaving with prints
 #define VERBOSE  FALSE
 
+// Size of message buffer for thread communication
+#define MSGBUFF_SIZE  (FRAMEBUFF_MAXCOUNT+1)
+
 
 /*********************************
              Structs
@@ -70,6 +73,10 @@ static OSMesgQueue s_msgqueue_rdp;
 static OSMesg      s_msgbuffer_rdp;
 static OSMesgQueue s_msgqueue_vsync;
 static OSMesg      s_msgbuffer_vsync;
+
+// Other thread communication stuff
+static RenderMessage s_messages[MSGBUFF_SIZE];
+static u8            s_message_index;
 
 // The scheduler
 static Scheduler* s_scheduler;
@@ -129,12 +136,12 @@ static void threadfunc_graphics(void *arg)
     osCreateMesgQueue(&s_msgqueue_rdp, &s_msgbuffer_rdp, 1);
     osCreateMesgQueue(&s_msgqueue_vsync, &s_msgbuffer_vsync, 1);
     osSetEventMesg(OS_EVENT_DP, &s_msgqueue_rdp, NULL);
+    s_message_index = 0;
     
     // Spin this thread forever
     while (1)
     {
         int i;
-        RenderMessage l_msg;
         RenderMessage* l_msgp;
         
         // Wait for a graphics message to arrive
@@ -142,9 +149,6 @@ static void threadfunc_graphics(void *arg)
             debug_printf("Graphics Thread: Loop start. Waiting for render request.\n"); 
         #endif
         osRecvMesg(&s_msgqueue_graphics, (OSMesg*)&l_msgp, OS_MESG_BLOCK);
-        
-        // Make a copy for safekeeping
-        memcpy(&l_msg, l_msgp, sizeof(RenderMessage));
         
         // We received a message, find an available framebuffer if we don't have one yet
         #if VERBOSE 
@@ -176,7 +180,7 @@ static void threadfunc_graphics(void *arg)
         #if VERBOSE 
             debug_printf("Graphics Thread: Found buffer '%d' at %p.\n", i, l_freebuff->address);
         #endif
-        graphics_renderscene(l_freebuff, l_msg.func);
+        graphics_renderscene(l_freebuff, l_msgp->func);
         l_freebuff->status = FBSTATUS_RENDERING;
         
         // Wait for the render task to finish
@@ -193,7 +197,7 @@ static void threadfunc_graphics(void *arg)
         
         // If we're not meant to swap the framebuffer yet, then stop here
         // The next loop should reuse this framebuffer if needed
-        if (!l_msg.swapbuffer)
+        if (!l_msgp->swapbuffer)
         {
             #if VERBOSE 
                 debug_printf("Graphics Thread: Don't swap buffer yet.\n");
@@ -240,7 +244,8 @@ static void graphics_renderscene(FrameBuffer* fb, void (*func)())
     
     // Build the display list
     rcp_initialize(&l_task);
-    l_task.func();
+    if (func != NULL)
+        l_task.func();
     rcp_finish(&l_task);
         
     // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
@@ -277,8 +282,11 @@ static void graphics_renderscene(FrameBuffer* fb, void (*func)())
 
 void graphics_requestrender(void (*func)())
 {
-    RenderMessage l_msg = {func, TRUE};
-    osSendMesg(&s_msgqueue_graphics, (OSMesg)&l_msg, OS_MESG_BLOCK);
+    RenderMessage* l_msgp = &s_messages[s_message_index];
+    l_msgp->func = func;
+    l_msgp->swapbuffer = TRUE;
+    s_message_index = (s_message_index + 1)%MSGBUFF_SIZE;
+    osSendMesg(&s_msgqueue_graphics, (OSMesg)l_msgp, OS_MESG_BLOCK);
 }
 
 
