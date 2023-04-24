@@ -160,7 +160,7 @@ static void threadfunc_main(void *arg)
             controller_read_all();
             
             // Render the scene
-            scene_set_subtick(1.0f - ((f64)l_accumulator)/((f64)l_dt));
+            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
             graphics_requestrender(&scene_render);
             
             // Check if the flashcart has incoming debug data

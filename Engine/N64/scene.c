@@ -16,6 +16,9 @@ static f32 s_timescale = 1.0f;
 static f32 s_subtick   = 0.0f;
 static f32 s_frametime = 0.0f;
 
+static u32 s_size = 64;
+static f32 s_speed = 200*DELTATIME;
+
 
 /*==============================
     scene_initialize
@@ -38,9 +41,9 @@ void scene_initialize()
 void scene_update()
 {
     s_xpos_old = s_xpos;
-    s_xpos += 100*DELTATIME;
-    if (s_xpos > graphics_get_screenw())
-        s_xpos = 0;
+    s_xpos += s_speed;
+    if (s_xpos > graphics_get_screenw()-s_size || s_xpos <= 0)
+        s_speed = -s_speed;
 }
 
 
@@ -52,8 +55,7 @@ void scene_update()
 void scene_render()
 {
     int l_ypos = 64;
-    int l_size = 64;
-    int l_xrenderpos = lerpf(s_xpos_old, s_xpos, s_subtick);
+    int l_xrenderpos = s_xpos*s_subtick + s_xpos_old*(1.0f-s_subtick);
     
     // Clear the framebuffer with a horrible blue
     rcp_clearbuffers(0, 0, 255);
@@ -61,7 +63,7 @@ void scene_render()
     // Draw a rectangle
     gDPSetCycleType(g_displistp++, G_CYC_FILL);
     gDPSetFillColor(g_displistp++, GPACK_RGBA5551(255, 0, 0, 1) << 16 | GPACK_RGBA5551(255, 0, 0, 1));
-    gDPFillRectangle(g_displistp++, l_xrenderpos, l_ypos, l_xrenderpos+l_size, l_ypos+l_size);
+    gDPFillRectangle(g_displistp++, l_xrenderpos, l_ypos, l_xrenderpos+s_size, l_ypos+s_size);
     gDPPipeSync(g_displistp++);
 }
 
