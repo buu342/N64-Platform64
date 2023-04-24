@@ -29,7 +29,7 @@ Handles graphics rendering
 // A struct which describes the render task from the main thread
 typedef struct
 {
-    u8 color;
+    void (*func)();
     bool swapbuffer;
 } RenderMessage;
 
@@ -39,7 +39,7 @@ typedef struct
 *********************************/
 
 static void threadfunc_graphics(void *arg);
-static void graphics_renderscene(FrameBuffer* fb, u8 color);
+static void graphics_renderscene(FrameBuffer* fb, void (*func)());
 
 
 /*********************************
@@ -149,7 +149,7 @@ static void threadfunc_graphics(void *arg)
         
         // We received a message, find an available framebuffer if we don't have one yet
         #if VERBOSE 
-            debug_printf("Graphics Thread: Render request received %d %d.\n", l_msg.color, l_msg.swapbuffer);
+            debug_printf("Graphics Thread: Render request received.\n");
         #endif
         if (l_freebuff == NULL)
         {
@@ -173,21 +173,11 @@ static void threadfunc_graphics(void *arg)
             }
         }
         
-        // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
-        while (osViGetCurrentFramebuffer() == l_freebuff->address)
-        {
-            #if VERBOSE 
-                debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
-            #endif
-            s_scheduler->gfx_notify = &s_msgqueue_vsync;
-            osRecvMesg(&s_msgqueue_vsync, NULL, OS_MESG_BLOCK);
-        }
-        
         // Generate the display list for the scene
         #if VERBOSE 
             debug_printf("Graphics Thread: Found buffer '%d' at %p.\n", i, l_freebuff->address);
         #endif
-        graphics_renderscene(l_freebuff, l_msg.color);
+        graphics_renderscene(l_freebuff, l_msg.func);
         l_freebuff->status = FBSTATUS_RENDERING;
         
         // Wait for the render task to finish
@@ -227,16 +217,17 @@ static void threadfunc_graphics(void *arg)
     graphics_renderscene
     Creates a display list and render task for the RCP
     @param The framebuffer to use
-    @param The color to wipe the screen with
+    @param The render function
 ==============================*/
 
-static void graphics_renderscene(FrameBuffer* fb, u8 color)
+static void graphics_renderscene(FrameBuffer* fb, void (*func)())
 {
     RenderTask l_task;
     
     // Initialize the render task
     l_task.displistp = fb->displist;
     l_task.framebuffer = fb->address;
+    l_task.func = func;
     if (s_ishd)
         l_task.zbuffer = s_zbuffer_hd;
     else
@@ -246,14 +237,22 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
     #else
         l_task.bufferdepth = G_IM_SIZ_32b;
     #endif
-    l_task.color = color;
+    l_task.ishd = s_ishd;
     
     // Build the display list
-    if (s_ishd)
-        rcp_initialize_hd(&l_task);
-    else
-        rcp_initialize_sd(&l_task);
+    rcp_initialize(&l_task);
+    l_task.func();
     rcp_finish(&l_task);
+        
+    // If the framebuffer is still in use by the VI (the switch takes time), then wait for it to become available
+    while (osViGetCurrentFramebuffer() == fb->address)
+    {
+        #if VERBOSE 
+            debug_printf("Graphics Thread: Framebuffer in use by VI. Waiting for VSync.\n");
+        #endif
+        s_scheduler->gfx_notify = &s_msgqueue_vsync;
+        osRecvMesg(&s_msgqueue_vsync, NULL, OS_MESG_BLOCK);
+    }
     
     // Let the scheduler know the RCP is going to be busy
     s_scheduler->task_gfx = l_task.task;
@@ -274,14 +273,12 @@ static void graphics_renderscene(FrameBuffer* fb, u8 color)
 /*==============================
     graphics_requestrender
     Requests a scene render from the main thread
-    @param The color to wipe the screen with
-    @param Whether the framebuffer should be swapped 
-           when the render is finished
+    @param The render function
 ==============================*/
 
-void graphics_requestrender(u8 color, bool swapbuffer)
+void graphics_requestrender(void (*func)())
 {
-    RenderMessage l_msg = {color, swapbuffer};
+    RenderMessage l_msg = {func, TRUE};
     osSendMesg(&s_msgqueue_graphics, (OSMesg)&l_msg, OS_MESG_BLOCK);
 }
 

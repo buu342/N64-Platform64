@@ -35,7 +35,8 @@
         void*   framebuffer;
         void*   zbuffer;
         u32     bufferdepth;
-        u8      color;
+        u8      ishd;
+        void    (*func)();
         OSTask* task;
     } RenderTask;
     
@@ -54,7 +55,7 @@
     *********************************/
 
     void graphics_initialize(Scheduler* scheduler);
-    void graphics_requestrender(u8 color, bool swapbuffer);
+    void graphics_requestrender(void (*func)());
     void graphics_register_fbuffer(bool ishd, void* address);
     void graphics_register_zbuffer(bool ishd, void* address);
     void graphics_unregister_fbuffer(bool ishd, void* address);

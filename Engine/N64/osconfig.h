@@ -70,7 +70,7 @@
 
     // Graphics thread stack
     #define STACKSTART_GRAPHICS  (STACKSTART_SCHEDULER + STACKSIZE_SCHEDULER)
-    #define	STACKSIZE_GRAPHICS   0x2000
+    #define	STACKSIZE_GRAPHICS   0x4000
     
     // Audio thread stack
     #define STACKSTART_AUDIO  (STACKSTART_GRAPHICS + STACKSIZE_GRAPHICS)

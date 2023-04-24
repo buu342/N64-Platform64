@@ -145,7 +145,6 @@ static void threadfunc_main(void *arg)
             if (l_frametime > OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f)))
                 l_frametime = OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f));
             scene_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
-            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
             l_oldtime = l_curtime;
             
             // Perform the update in discrete steps (ticks)
@@ -161,8 +160,8 @@ static void threadfunc_main(void *arg)
             controller_read_all();
             
             // Render the scene
-            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
-            scene_render();
+            scene_set_subtick(1.0f - ((f64)l_accumulator)/((f64)l_dt));
+            graphics_requestrender(&scene_render);
             
             // Check if the flashcart has incoming debug data
             debug_pollcommands();
@@ -170,7 +169,7 @@ static void threadfunc_main(void *arg)
             // If enabled, crunch some numbers for a while to create "lag"
             if (s_shouldlag)
             {
-                for (i=0; i<1000000; i++)
+                for (i=0; i<700000; i++)
                     ;
             }
         }

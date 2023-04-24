@@ -13,8 +13,8 @@
             Function Prototypes
     *********************************/
 
-    void rcp_initialize_sd(RenderTask* task);
-    void rcp_initialize_hd(RenderTask* task);
+    void rcp_initialize(RenderTask* task);
+    void rcp_clearbuffers(u8 red, u8 green, u8 blue);
     void rcp_finish(RenderTask* task);
 
 #endif

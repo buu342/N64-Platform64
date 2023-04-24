@@ -22,6 +22,7 @@ Gfx  g_displists[FRAMEBUFF_MAXCOUNT][DISPLIST_SIZE];
 Gfx* g_displistp;
 
 // RCP task
+static RenderTask* s_curtask = NULL;
 static OSTask s_rcptask_render =
 {
     M_GFXTASK,              // Task type
@@ -109,14 +110,13 @@ static const Gfx s_dl_rdpinit_hd[] = {
 
 
 /*==============================
-    rcp_initialize_sd
-    Initializes the RCP for drawing in standard definition
+    rcp_initialize
+    Initializes the RCP for drawing
     @param A pointer to the render task struct to use
 ==============================*/
 
-void rcp_initialize_sd(RenderTask* task)
+void rcp_initialize(RenderTask* task)
 {
-    u8 l_clearcolor = task->color;
     g_displistp = task->displistp;
     
     // Set the segment register to the first segment
@@ -125,65 +125,71 @@ void rcp_initialize_sd(RenderTask* task)
     gSPSegment(g_displistp++, 0, 0x0);
     
     // Set the framebuffer that the RDP will draw onto
-    gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_SD, OS_K0_TO_PHYSICAL(task->framebuffer));
+    if (task->ishd)
+    {
+        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_HD, OS_K0_TO_PHYSICAL(task->framebuffer));
+    }
+    else
+    {
+        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_SD, OS_K0_TO_PHYSICAL(task->framebuffer));
+    }
     
     // Initialize the RSP and RDP with our initialization display lists
-    gSPDisplayList(g_displistp++, s_dl_rdpinit_sd);
-    gSPDisplayList(g_displistp++, s_dl_rspinit_sd);
-    
-    // Clear the framebuffer
-    gDPSetCycleType(g_displistp++, G_CYC_FILL);
-    gDPSetFillColor(g_displistp++, GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1) << 16 | GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1));
-    gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
-    gDPPipeSync(g_displistp++);
-    
-    // Clear the Z-buffer
-    if (task->zbuffer != NULL)
+    if (task->ishd)
     {
-        gDPSetDepthImage(g_displistp++, task->zbuffer);
-        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_SD, task->zbuffer);
-        gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
-        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+        gSPDisplayList(g_displistp++, s_dl_rdpinit_hd);
+        gSPDisplayList(g_displistp++, s_dl_rspinit_hd);
     }
+    else
+    {
+        gSPDisplayList(g_displistp++, s_dl_rdpinit_sd);
+        gSPDisplayList(g_displistp++, s_dl_rspinit_sd);
+    }
+    
+    // Set the current task pointer so that we can use it elsewhere
+    s_curtask = task;
 }
 
 
 /*==============================
-    rcp_initialize_sd
-    Initializes the RCP for drawing in high definition
-    @param A pointer to the render task struct to use
+    rcp_clearbuffers
+    Clears the framebuffer and zbuffer
+    @param The red color to clear the framebuffer with
+    @param The green color to clear the framebuffer with
+    @param The blue color to clear the framebuffer with
 ==============================*/
 
-void rcp_initialize_hd(RenderTask* task)
+void rcp_clearbuffers(u8 red, u8 green, u8 blue)
 {
-    u8 l_clearcolor = task->color;
-    g_displistp = task->displistp;
-    
-    // Set the segment register to the first segment
-    // The addresses passed to the RCP must be in segment addresses
-    // The CPU uses virtual addresses, this will convert accordingly
-    gSPSegment(g_displistp++, 0, 0x0);
-    
-    // Set the framebuffer that the RDP will draw onto
-    gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, task->bufferdepth, SCREEN_WIDTH_HD, OS_K0_TO_PHYSICAL(task->framebuffer));
-    
-    // Initialize the RSP and RDP with our initialization display lists
-    gSPDisplayList(g_displistp++, s_dl_rdpinit_hd);
-    gSPDisplayList(g_displistp++, s_dl_rspinit_hd);
-    
     // Clear the framebuffer
     gDPSetCycleType(g_displistp++, G_CYC_FILL);
-    gDPSetFillColor(g_displistp++, GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1) << 16 | GPACK_RGBA5551(l_clearcolor, l_clearcolor, l_clearcolor, 1));
-    gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_HD-1, SCREEN_HEIGHT_HD-1);
+    gDPSetFillColor(g_displistp++, GPACK_RGBA5551(red, green, blue, 1) << 16 | GPACK_RGBA5551(red, green, blue, 1));
+    if (s_curtask->ishd)
+    {
+        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_HD-1, SCREEN_HEIGHT_HD-1);
+    }
+    else
+    {
+        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+    }
     gDPPipeSync(g_displistp++);
     
     // Clear the Z-buffer
-    if (task->zbuffer != NULL)
+    if (s_curtask->zbuffer != NULL)
     {
-        gDPSetDepthImage(g_displistp++, task->zbuffer);
-        gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_SD, task->zbuffer);
-        gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
-        gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+        gDPSetDepthImage(g_displistp++, s_curtask->zbuffer);
+        if (s_curtask->ishd)
+        {
+            gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_HD, s_curtask->zbuffer);
+            gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
+            gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_HD-1, SCREEN_HEIGHT_HD-1);
+        }
+        else
+        {
+            gDPSetColorImage(g_displistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH_SD, s_curtask->zbuffer);
+            gDPSetFillColor(g_displistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
+            gDPFillRectangle(g_displistp++, 0, 0, SCREEN_WIDTH_SD-1, SCREEN_HEIGHT_SD-1);
+        }
     }
 }
 

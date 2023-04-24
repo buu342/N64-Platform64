@@ -17,6 +17,7 @@
             Function Prototypes
     *********************************/
     
-    float clampf(float val, float min, float max);
+    f32 clampf(f32 val, f32 min, f32 max);
+    f32 lerpf(f32 from, f32 target, f32 fraction);
 
 #endif
