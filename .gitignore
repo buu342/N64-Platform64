@@ -1,5 +1,6 @@
 *.o
 *.d
+*.a
 *.out
 *.cvt
 *.exe

@@ -49,7 +49,22 @@ if not exist %ROMREGISTER% (
     echo.
     set ALLOWREGISTER=0
 )
-goto MoveFromOut
+goto HandleDependencies
+
+
+:HandleDependencies
+echo Building dependencies
+for /r %%F in ("makeme.bat") do (
+    if /i not "%~dp0"=="%%~dpF" (
+        if exist "%%~F" (
+            cd "%%~dpF"
+            set SILENT=1
+            call "%%~F"
+            cd "%~dp0"
+        )
+    )
+)
+goto :MoveFromOut
 
 
 :MoveFromOut
@@ -57,6 +72,7 @@ if not exist out goto make
 cd out >nul 2>&1
 move *.o .. >nul 2>&1
 move *.d .. >nul 2>&1
+move *.a .. >nul 2>&1
 move *.out .. >nul 2>&1
 move *.n64 .. >nul 2>&1
 move *.cvt .. >nul 2>&1
@@ -65,6 +81,7 @@ goto Make
 
 
 :Make
+echo Building Main
 make
 set MAKEERROR=%errorlevel%
 echo.
@@ -82,6 +99,7 @@ goto MoveToOut
 md out >nul 2>&1
 move *.o out >nul 2>&1
 move *.d out >nul 2>&1
+move *.a out >nul 2>&1
 move *.out out >nul 2>&1
 move *.n64 out >nul 2>&1
 move *.cvt out >nul 2>&1

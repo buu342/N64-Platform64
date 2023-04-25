@@ -1,7 +1,7 @@
 #include <ultra64.h>
 #include <memory.h>
-#include "types.h"
-#include "scene.h"
+#include "../types.h"
+#include "../scene.h"
    
     
 /*********************************

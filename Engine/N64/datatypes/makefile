@@ -1,18 +1,13 @@
 ################################################################
-#                    Code files and ROM name                   #
+#                  Code files and library name                 #
 ################################################################
 
-CODECFILES  = main.c scheduler.c graphics.c audio.c controller.c rcp.c helper.c scene.c
+CODECFILES  = types.c
 CODEHFILES  =
-LIBRARYFILES = datatypes.a
 
-DEBUGFILES = debug.c usb.c
+DEBUGFILES =
 
-ROMNAME = platform.n64
-
-REGISTRATION = "PLATFORM64" B PF I
-
-PADDING = 8
+LIBNAME = datatypes.a
 
 
 ################################################################
@@ -21,32 +16,13 @@ PADDING = 8
 
 CC  = gcc
 LD  = ld
-MAKEROM = mild
+AR  = ar
 COMPFLAGS = -Wall -Werror
 
 
 ################################################################
-#                         Make Commands                        #
-################################################################
-
-ifeq ($(DEBUG_MODE), 1)
-    TARGETS = $(ROMNAME:.n64=_d.n64)
-else
-    TARGETS = $(ROMNAME)
-endif
-
-default: $(TARGETS)
-    
-
-################################################################
 #     Don't touch below unless you know what you're doing!     #
 ################################################################
-
-include $(ROOT)/usr/include/make/PRdefs
-
-CODESEGMENT = codesegment.o
-OBJECTS     = $(CODESEGMENT)
-APP         = $(TARGETS:.n64=.out)
 
 
 ################################################################
@@ -58,14 +34,10 @@ ifeq ($(DEBUG_MODE), 0)
     OPTIMIZER       = -O2
     COMPFLAGS       = 
     LCDEFS          = $(COMPFLAGS) -D_FINALROM -DNDEBUG -DF3DEX_GBI_2 -DNOT_SPEC
-    N64LIB          = -lgultra_rom
-    MAKEROMFLAGS    = 
 else
     CODEOBJECTS     = $(CODECFILES:.c=.o) $(DEBUGFILES:.c=.o)
     OPTIMIZER       = -g
     LCDEFS          = $(COMPFLAGS) -DDEBUG  -DF3DEX_GBI_2 -DNOT_SPEC
-    N64LIB          = -lgultra_d
-    MAKEROMFLAGS    = -d
 endif
 
 
@@ -73,7 +45,7 @@ endif
 #                        Linker Settings                       #
 ################################################################
 
-LCINCS  = -I. -I$(ROOT)/usr/include/PR -I $(ROOT)/usr/include
+LCINCS  = -I. -I$(ROOT)/usr/include/PR -I $(ROOT)/usr/include 
 LCOPTS  = -G 0
 LDIRT   = $(APP)
 LDFLAGS = $(MKDEPOPT) -L$(ROOT)/usr/lib -L$(ROOT)/usr/lib/PR $(N64LIB) -L$(GCCDIR)/mipse/lib -lkmc
@@ -92,14 +64,16 @@ DEPS := $(CODEOBJECTS:.o=.d)
 #                          Compilation                         #
 ################################################################
 
-include $(COMMONRULES)
+GCCFLAG	= -c -I$(ROOT)/usr/include -D_MIPS_SZLONG=32 -D_MIPS_SZINT=32
+CFLAGS = $(LCDEFS) $(LCINCS) $(LCOPTS) $(GCCFLAG) $(OPTIMIZER)
+CELFRULES	= $(ROOT)/usr/include/make/celfrules
+include $(ROOT)/usr/include/make/celfdefs
 
-$(CODESEGMENT): $(CODEOBJECTS)
-    $(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LIBRARYFILES) $(LDFLAGS)
+TARGETS = $(LIBNAME)
+OBJECTS = $(CODEOBJECTS)
 
-$(TARGETS): $(OBJECTS)
-    $(MAKEROM) spec $(MAKEROMFLAGS) -r $(TARGETS) -e $(APP) -s $(PADDING)
-    @makemask $(TARGETS)
-ifeq ($(ALLOWREGISTER), 1)
-    @nrdc $(TARGETS) $(REGISTRATION)
-endif
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+$(TARGETS): $(CODEOBJECTS)
+	$(AR) -cr $(TARGETS) $(OBJECTS)
