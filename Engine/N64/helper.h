@@ -19,5 +19,6 @@
     
     f32 clampf(f32 val, f32 min, f32 max);
     f32 lerpf(f32 from, f32 target, f32 fraction);
+    s32 roundf(f32 val);
 
 #endif

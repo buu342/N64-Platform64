@@ -28,6 +28,7 @@ static void toggle_lag();
 // Unexposed scene.c functions
 inline void scene_set_subtick(f32 subtick);
 inline void scene_set_frametime(f32 frametime);
+inline void scene_increment_gametime();
 
 
 /*********************************
@@ -172,6 +173,9 @@ static void threadfunc_main(void *arg)
                 for (i=0; i<700000; i++)
                     ;
             }
+
+            // Advance the game time
+            scene_increment_gametime();
         }
     }
 }

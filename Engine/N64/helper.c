@@ -38,3 +38,19 @@ f32 lerpf(f32 from, f32 target, f32 fraction)
 {
     return from + (fraction*(target - from));
 }
+
+
+/*==============================
+    roundf
+    Rounds a floating point number
+    @param  The value to round
+    @return The rounded result
+==============================*/
+
+s32 roundf(f32 val)
+{
+    if (val < 0.0f)
+        return (s32)(val - 0.5f);
+    else
+        return (s32)(val + 0.5f);
+}

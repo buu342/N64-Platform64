@@ -11,5 +11,6 @@
     inline f32 scene_get_timescale();
     inline f32 scene_get_subtick();
     inline f32 scene_get_frametime();
+    inline u64 scene_get_gametime();
     
 #endif
