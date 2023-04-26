@@ -1,6 +1,6 @@
 #include <ultra64.h>
-#include "types.h"
 #include "debug.h"
+#include "types.h"
 #include "osconfig.h"
 #include "scheduler.h"
 #include "graphics.h"

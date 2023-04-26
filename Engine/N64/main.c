@@ -6,8 +6,8 @@ Handles the boot process of the ROM.
 
 #include <ultra64.h>
 #include <memory.h>
-#include "types.h"
 #include "debug.h"
+#include "types.h"
 #include "osconfig.h"
 #include "controller.h"
 #include "scheduler.h"

@@ -1,18 +1,20 @@
 @echo off
-echo Compiling DataTypes
+set LIBNAME=Math Datatypes Library
+echo Compiling %LIBNAME%
 
 
 :Setup
 set ROOT=C:\ultra
-set PROJDIR=..\
+set PROJDIR=..\..\
 
 
 :Don't touch
 set gccdir=%ROOT%\gcc
 set PATH=%ROOT%\gcc\mipse\bin;%ROOT%\usr\sbin;C:\WINDOWS\system32;
-set gccsw=-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__ -MD
+set gccsw=-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__
 set n64align=on
 set DEBUG_MODE=0
+for %%I in (.) do set CURRDIRNAME=%%~nxI
 goto CheckDebugMode
 
 
@@ -76,7 +78,7 @@ move *.a out >nul 2>&1
 md %PROJDIR%out >nul 2>&1
 copy out\*.a %PROJDIR%out  >nul 2>&1
 if "%MAKEERROR%"=="0" (
-	echo Library compiled sucessfully!
+	echo %LIBNAME% compiled sucessfully!
 )
 goto Finish
 

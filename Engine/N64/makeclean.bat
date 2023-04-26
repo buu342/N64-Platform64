@@ -13,6 +13,7 @@ if /I "%PROMPT%" EQU "Y" (
 
 :HandleDependencies
 echo Cleaning up the project directory
+echo.
 echo Cleaning dependencies
 for /r %%F in ("makeclean.bat") do (
     if /i not "%~dp0"=="%%~dpF" (

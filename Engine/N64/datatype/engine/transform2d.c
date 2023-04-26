@@ -1,115 +1,9 @@
 #include <ultra64.h>
-#include <memory.h>
-#include "../types.h"
-#include "../scene.h"
-   
-    
-/*********************************
-            2D Vector
-*********************************/
+#include "../../debug.h"
+#include "../../types.h"
+#include "../../scene.h"
+#include "transform2d.h"
 
-/*==============================
-    vector2d_initialize
-    Returns an initialized 2D vector
-    @param  The initial X value
-    @param  The initial Y value
-    @return An initialized 2D vector
-==============================*/
-
-inline Vector2D vector2d_initialize(f32 x, f32 y)
-{
-    Vector2D v = {.x = x, .y = y};
-    return v;
-}
-
-
-/*==============================
-    vector2d_add
-    Adds a value to a 2D vector
-    @param The vector to add to
-    @param The value to add
-    @return The resulting vector
-==============================*/
-
-inline Vector2D vector2d_add(Vector2D v, f32 val)
-{
-    v.x += val;
-    v.y += val;
-    return v;
-}
-
-
-/*==============================
-    vector2d_addvector
-    Adds a 2D vector to a 2D vector
-    @param  The first vector
-    @param  The second vector
-    @return The combined vector
-==============================*/
-
-inline Vector2D vector2d_addvector(Vector2D a, Vector2D b)
-{
-    a.x += b.x;
-    a.y += b.y;
-    return a;
-}
-
-
-/*==============================
-    vector2d_mult
-    Multiplies a value to a 2D vector
-    @param The vector to multiply to
-    @param The value to multiply
-    @return The resulting vector
-==============================*/
-
-inline Vector2D vector2d_mult(Vector2D v, f32 val)
-{
-    v.x *= val;
-    v.y *= val;
-    return v;
-}
-
-
-/*==============================
-    vector2d_multvector
-    Multiplies a 2D vector to a 2D vector
-    @param  The first vector
-    @param  The second vector
-    @return The combined vector
-==============================*/
-
-inline Vector2D vector2d_multvector(Vector2D a, Vector2D b)
-{
-    a.x *= b.x;
-    a.y *= b.y;
-    return a;
-}
-    
-    
-/*********************************
-            3D Vector
-*********************************/
-
-/*==============================
-    vector3d_initialize
-    Returns an initialized 3D vector
-    @param  The initial X value
-    @param  The initial Y value
-    @param  The initial Z value
-    @return An initialized 3D vector
-==============================*/
-
-inline Vector3D vector3d_initialize(f32 x, f32 y, f32 z)
-{
-    Vector3D v = {.x = x, .y = y, .z = z};
-    return v;
-}
-
-
-/*********************************
-        2D Transformations
-*********************************/
 
 /*==============================
     transform2d_initialize
@@ -120,7 +14,7 @@ inline Vector3D vector3d_initialize(f32 x, f32 y, f32 z)
 inline Transform2D transform2d_initialize(Vector2D pos, f32 rot, Vector2D scale)
 {
     Transform2D t = {
-        .pos = pos,    .rot = rot,    .scale = scale, 
+        .pos = pos,    .rot = rot,    .scale = scale,
         .oldpos = pos, .oldrot = rot, .oldscale = scale, 
         .transformtime = 0, .interpolate = TRUE
     };
@@ -348,15 +242,4 @@ inline f32 transform2d_get_subrot(Transform2D* t)
 inline Vector2D transform2d_get_subscale(Transform2D* t)
 {
     return vector2d_addvector(vector2d_mult(t->scale, scene_get_subtick()), vector2d_mult(t->oldscale, 1.0f-scene_get_subtick()));
-}
-    
-    
-/*********************************
-              Other
-*********************************/
-
-inline Color color_initialize(u8 red, u8 green, u8 blue, u8 alpha)
-{
-    Color c = {.red = red, .green = green, .blue = blue, .alpha = alpha};
-    return c;
 }
