@@ -14,7 +14,7 @@
 *********************************/
 
 #define RECTSIZE   64
-#define RECTSPEED  200*DELTATIME
+#define RECTSPEED  200*scene_get_deltatime()
 
 
 /*********************************
@@ -23,6 +23,7 @@
 
 // Engine stuff
 static f32 s_timescale = 1.0f;
+static f32 s_deltatime_scaled = DELTATIME;
 static f32 s_subtick   = 0.0f;
 static f32 s_frametime = 0.0f;
 static u64 s_gametime  = 0;
@@ -48,7 +49,7 @@ void scene_initialize()
 
 /*==============================
     scene_update
-    Updates the scene by DELTATIME ticks
+    Updates the scene by deltatime ticks
 ==============================*/
 
 void scene_update()
@@ -114,6 +115,7 @@ void scene_render()
 inline void scene_set_timescale(f32 timescale)
 {
     s_timescale = timescale;
+    s_deltatime_scaled = DELTATIME*timescale;
 }
 
 
@@ -151,6 +153,30 @@ inline void scene_set_frametime(f32 frametime)
 inline void scene_increment_gametime()
 {
     s_gametime++;
+}
+
+
+/*==============================
+    scene_get_deltatime
+    Gets the deltatime
+    @return The deltatime
+==============================*/
+
+inline f32 scene_get_deltatime()
+{
+    return s_deltatime_scaled;
+}
+
+
+/*==============================
+    scene_get_deltatime_unscaled
+    Gets the unscaled deltatime
+    @return The unscaled deltatime
+==============================*/
+
+inline f32 scene_get_deltatime_unscaled()
+{
+    return DELTATIME;
 }
 
 
