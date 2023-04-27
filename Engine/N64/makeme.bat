@@ -60,6 +60,7 @@ for /r %%F in ("makeme.bat") do (
             cd "%%~dpF"
             set SILENT=1
             call "%%~F"
+            echo.
             cd "%~dp0"
         )
     )

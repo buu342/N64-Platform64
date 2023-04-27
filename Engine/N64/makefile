@@ -43,8 +43,6 @@ default: $(TARGETS)
 #     Don't touch below unless you know what you're doing!     #
 ################################################################
 
-include $(ROOT)/usr/include/make/PRdefs
-
 CODESEGMENT = codesegment.o
 OBJECTS     = $(CODESEGMENT)
 APP         = $(TARGETS:.n64=.out)
@@ -84,9 +82,9 @@ LDFLAGS = $(MKDEPOPT) -L$(ROOT)/usr/lib -L$(ROOT)/usr/lib/PR $(N64LIB) -L$(GCCDI
 #                          Dependencies                        #
 ################################################################
 
-DEPS := $(wildcard $(CODEOBJECTS:.o=.d)*.d)
+DEPS := $(CODEOBJECTS:.o=.d)
 
--include $(DEPS)
+-include $(DEPS) $(ROOT)/usr/include/make/PRdefs
 
 
 ################################################################
