@@ -33,6 +33,7 @@ Handles graphics rendering
 typedef struct
 {
     void (*func)();
+    bool usecpu;
     bool swapbuffer;
 } RenderMessage;
 
@@ -177,23 +178,31 @@ static void threadfunc_graphics(void *arg)
         }
         
         // Generate the display list for the scene
-        #if VERBOSE 
-            debug_printf("Graphics Thread: Found buffer '%d' at %p.\n", i, l_freebuff->address);
-        #endif
-        graphics_renderscene(l_freebuff, l_msgp->func);
-        l_freebuff->status = FBSTATUS_RENDERING;
-        
-        // Wait for the render task to finish
-        (void)osRecvMesg(&s_msgqueue_rdp, NULL, OS_MESG_BLOCK);
-        #if VERBOSE 
-            debug_printf("Graphics Thread: Render task finished.\n");
-        #endif
-        s_scheduler->task_gfx = NULL;
-        
-        // If we got here, the RCP did not hang, hooray!
-        #if DEBUG_MODE
-            osStopTimer(&s_rcptime);
-        #endif
+        if (!l_msgp->usecpu)
+        {
+            #if VERBOSE 
+                debug_printf("Graphics Thread: Found buffer '%d' at %p.\n", i, l_freebuff->address);
+            #endif
+            graphics_renderscene(l_freebuff, l_msgp->func);
+            l_freebuff->status = FBSTATUS_RENDERING;
+            
+            // Wait for the render task to finish
+            (void)osRecvMesg(&s_msgqueue_rdp, NULL, OS_MESG_BLOCK);
+            #if VERBOSE 
+                debug_printf("Graphics Thread: Render task finished.\n");
+            #endif
+            s_scheduler->task_gfx = NULL;
+            
+            // If we got here, the RCP did not hang, hooray!
+            #if DEBUG_MODE
+                osStopTimer(&s_rcptime);
+            #endif
+        }
+        else
+        {
+            if (l_msgp->func != NULL)
+                l_msgp->func();
+        }
         
         // If we're not meant to swap the framebuffer yet, then stop here
         // The next loop should reuse this framebuffer if needed
@@ -278,13 +287,16 @@ static void graphics_renderscene(FrameBuffer* fb, void (*func)())
     graphics_requestrender
     Requests a scene render from the main thread
     @param The render function
+    @param Whether to draw with the CPU
+    @param Whether to swap the buffer at the end of this task
 ==============================*/
 
-void graphics_requestrender(void (*func)())
+void graphics_requestrender(void (*func)(), bool usecpu, bool swapbuffer)
 {
     RenderMessage* l_msgp = &s_messages[s_message_index];
     l_msgp->func = func;
-    l_msgp->swapbuffer = TRUE;
+    l_msgp->usecpu = usecpu;
+    l_msgp->swapbuffer = swapbuffer;
     s_message_index = (s_message_index + 1)%MSGBUFF_SIZE;
     osSendMesg(&s_msgqueue_graphics, (OSMesg)l_msgp, OS_MESG_BLOCK);
 }

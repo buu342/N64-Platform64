@@ -5,7 +5,7 @@
 CODECFILES  = color.c transform2d.c
 CODEHFILES  =
 
-LIBNAME = datatypes_engine.a
+LIBNAME = libdatatypes_engine.a
 
 
 ################################################################
@@ -52,11 +52,6 @@ default: $(TARGETS)
 #                        Linker Settings                       #
 ################################################################
 
-LCINCS  = -I. -I$(ROOT)/usr/include/PR -I $(ROOT)/usr/include 
-LCOPTS  = -G 0
-LDIRT   = $(APP)
-LDFLAGS = $(MKDEPOPT) -L$(ROOT)/usr/lib -L$(ROOT)/usr/lib/PR $(N64LIB) -L$(GCCDIR)/mipse/lib -lkmc
-
 
 ################################################################
 #                          Dependencies                        #
@@ -66,17 +61,17 @@ DEPS := $(CODEOBJECTS:.o=.d)
 
 -include $(DEPS) $(ROOT)/usr/include/make/celfdefs
 
-GCCFLAG	= -c -I$(ROOT)/usr/include -D_MIPS_SZLONG=32 -D_MIPS_SZINT=32
-CFLAGS = $(LCDEFS) $(LCINCS) $(LCOPTS) $(GCCFLAG) $(OPTIMIZER)
-CELFRULES = $(ROOT)/usr/include/make/celfrules
-
 
 ################################################################
 #                          Compilation                         #
 ################################################################
 
+CCINC =	-I. -I$(ROOT)/usr/include
+CCDEF = $(LCDEFS) -D_WIN32 -D_LANGUAGE_C -D_MIPS_SZLONG=32 -D_MIPS_SZINT=32
+CELFRULES = $(ROOT)/usr/include/make/celfrules
+
 $(TARGETS): $(CODEOBJECTS)
 	$(AR) -cr $(TARGETS) $(CODEOBJECTS)
     
 .c.o:
-	$(CC) -c $(CFLAGS) $<
+	$(CC) $(OPTIMIZER) -c $(CCINC) $(CCDEF) $<

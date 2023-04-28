@@ -2,10 +2,11 @@
 #                    Code files and ROM name                   #
 ################################################################
 
-CODECFILES  = main.c scheduler.c graphics.c audio.c controller.c rcp.c helper.c scene.c
+CODECFILES  = main.c scheduler.c graphics.c audio.c controller.c rcp.c helper.c engine.c
 CODEHFILES  =
-LIBRARYFILES = datatypes_engine.a \
-               datatypes_math.a
+LIBRARYFILES = libdatatypes_math.o \
+               libdatatypes_engine.o \
+               libgame_levels.o
 
 DEBUGFILES = debug.c usb.c
 
@@ -46,21 +47,21 @@ default: $(TARGETS)
 CODESEGMENT = codesegment.o
 OBJECTS     = $(CODESEGMENT)
 APP         = $(TARGETS:.n64=.out)
-
+#LINKLIBS    = $(LIBRARYFILES:lib%=%)
 
 ################################################################
 #                     ROM debug mode check                     #
 ################################################################
 
 ifeq ($(DEBUG_MODE), 0)
-    CODEOBJECTS     = $(CODECFILES:.c=.o)
+    CODEOBJECTS     = $(CODECFILES:.c=.o) $(LIBRARYFILES)
     OPTIMIZER       = -O2
     COMPFLAGS       = 
     LCDEFS          = -MD $(COMPFLAGS) -D_FINALROM -DNDEBUG -DF3DEX_GBI_2 -DNOT_SPEC
     N64LIB          = -lgultra_rom
     MAKEROMFLAGS    = 
 else
-    CODEOBJECTS     = $(CODECFILES:.c=.o) $(DEBUGFILES:.c=.o)
+    CODEOBJECTS     = $(CODECFILES:.c=.o) $(LIBRARYFILES) $(DEBUGFILES:.c=.o)
     OPTIMIZER       = -g
     LCDEFS          = -MD $(COMPFLAGS) -DDEBUG -DF3DEX_GBI_2 -DNOT_SPEC
     N64LIB          = -lgultra_d
@@ -75,7 +76,8 @@ endif
 LCINCS  = -I. -I$(ROOT)/usr/include/PR -I $(ROOT)/usr/include
 LCOPTS  = -G 0
 LDIRT   = $(APP)
-LDFLAGS = $(MKDEPOPT) -L$(ROOT)/usr/lib -L$(ROOT)/usr/lib/PR $(N64LIB) -L$(GCCDIR)/mipse/lib -lkmc
+#LDLINKLIBS := $(foreach inclib,$(basename $(LINKLIBS)),-l$(inclib))
+LDFLAGS = $(MKDEPOPT) -L$(ROOT)/usr/lib -L$(ROOT)/usr/lib/PR $(N64LIB) -L. --start-group $(LDLINKLIBS) --end-group -L$(GCCDIR)/mipse/lib -lkmc
 
 
 ################################################################
@@ -91,8 +93,8 @@ DEPS := $(CODEOBJECTS:.o=.d)
 #                          Compilation                         #
 ################################################################
 
-$(CODESEGMENT): $(CODEOBJECTS) $(LIBRARYFILES)
-    $(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LIBRARYFILES)  $(LDFLAGS)
+$(CODESEGMENT): $(CODEOBJECTS)
+    $(LD) -o $(CODESEGMENT) -r $(CODEOBJECTS) $(LDFLAGS)
 
 $(TARGETS): $(OBJECTS)
     $(MAKEROM) spec $(MAKEROMFLAGS) -r $(TARGETS) -e $(APP) -s $(PADDING)

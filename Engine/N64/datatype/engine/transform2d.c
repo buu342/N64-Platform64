@@ -1,7 +1,7 @@
 #include <ultra64.h>
 #include "../../debug.h"
 #include "../../types.h"
-#include "../../scene.h"
+#include "../../engine.h"
 #include "transform2d.h"
 
 
@@ -30,9 +30,9 @@ inline Transform2D transform2d_initialize(Vector2D pos, f32 rot, Vector2D scale)
 
 static inline void transform2d_updateold(Transform2D* t)
 {
-    if (scene_get_gametime() != t->transformtime)
+    if (engine_get_gametime() != t->transformtime)
     {
-        t->transformtime = scene_get_gametime();
+        t->transformtime = engine_get_gametime();
         t->interpolate = TRUE;
         t->oldpos = t->pos;
         t->oldrot = t->rot;
@@ -215,7 +215,7 @@ inline Vector2D transform2d_get_oldscale(Transform2D* t)
 
 inline Vector2D transform2d_get_subpos(Transform2D* t)
 {
-    return vector2d_addvector(vector2d_mult(t->pos, scene_get_subtick()), vector2d_mult(t->oldpos, 1.0f-scene_get_subtick()));
+    return vector2d_addvector(vector2d_mult(t->pos, engine_get_subtick()), vector2d_mult(t->oldpos, 1.0f-engine_get_subtick()));
 }
 
 
@@ -228,7 +228,7 @@ inline Vector2D transform2d_get_subpos(Transform2D* t)
 
 inline f32 transform2d_get_subrot(Transform2D* t)
 {
-    return t->rot*scene_get_subtick() + t->oldrot*(1.0f-scene_get_subtick());
+    return t->rot*engine_get_subtick() + t->oldrot*(1.0f-engine_get_subtick());
 }
 
 
@@ -241,5 +241,5 @@ inline f32 transform2d_get_subrot(Transform2D* t)
 
 inline Vector2D transform2d_get_subscale(Transform2D* t)
 {
-    return vector2d_addvector(vector2d_mult(t->scale, scene_get_subtick()), vector2d_mult(t->oldscale, 1.0f-scene_get_subtick()));
+    return vector2d_addvector(vector2d_mult(t->scale, engine_get_subtick()), vector2d_mult(t->oldscale, 1.0f-engine_get_subtick()));
 }

@@ -13,7 +13,7 @@ Handles the boot process of the ROM.
 #include "scheduler.h"
 #include "graphics.h"
 #include "audio.h"
-#include "scene.h"
+#include "engine.h"
 #include "helper.h"
 
 
@@ -25,10 +25,10 @@ static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
 static void toggle_lag();
 
-// Unexposed scene.c functions
-inline void scene_set_subtick(f32 subtick);
-inline void scene_set_frametime(f32 frametime);
-inline void scene_increment_gametime();
+// Unexposed engine.c functions
+inline void engine_set_subtick(f32 subtick);
+inline void engine_set_frametime(f32 frametime);
+inline void engine_increment_gametime();
 
 
 /*********************************
@@ -133,11 +133,11 @@ static void threadfunc_main(void *arg)
         OSTime l_accumulator = 0;
         const OSTime l_dt = OS_USEC_TO_CYCLES(SEC_TO_USEC(DELTATIME));
 
-        // Initialize the scene
-        scene_initialize();
+        // Initialize the level
+        engine_level_start();
         
-        // Handle the scene loop
-        while (!scene_shouldchange())
+        // Handle the engine loop
+        while (!engine_level_shouldchange())
         {
             OSTime l_curtime = osGetTime();
             OSTime l_frametime = l_curtime - l_oldtime;
@@ -145,14 +145,14 @@ static void threadfunc_main(void *arg)
             // In order to prevent problems if the game slows down significantly, we will clamp the maximum timestep the simulation can take
             if (l_frametime > OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f)))
                 l_frametime = OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f));
-            scene_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
+            engine_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
             l_oldtime = l_curtime;
             
             // Perform the update in discrete steps (ticks)
             l_accumulator += l_frametime;
             while (l_accumulator >= l_dt)
             {
-                scene_update();
+                engine_level_update();
                 l_accumulator -= l_dt;
             }
             
@@ -160,9 +160,9 @@ static void threadfunc_main(void *arg)
             controller_query_all();
             controller_read_all();
             
-            // Render the scene
-            scene_set_subtick(((f64)l_accumulator)/((f64)l_dt));
-            graphics_requestrender(&scene_render);
+            // Render the engine
+            engine_set_subtick(((f64)l_accumulator)/((f64)l_dt));
+            engine_level_render();
             
             // Check if the flashcart has incoming debug data
             debug_pollcommands();
@@ -175,8 +175,11 @@ static void threadfunc_main(void *arg)
             }
 
             // Advance the game time
-            scene_increment_gametime();
+            engine_increment_gametime();
         }
+        
+        // End the current level
+        engine_level_end();
     }
 }
 

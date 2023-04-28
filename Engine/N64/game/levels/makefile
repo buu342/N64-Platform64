@@ -1,11 +1,11 @@
 ################################################################
-#                    Code files and ROM name                   #
+#                  Code files and library name                 #
 ################################################################
 
-CODECFILES  = quaternion.c vector2d.c vector3d.c
+CODECFILES  = levels.c level_boot.c
 CODEHFILES  =
 
-LIBNAME = libdatatypes_math.a
+LIBNAME = libgame_levels.a
 
 
 ################################################################

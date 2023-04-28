@@ -55,7 +55,7 @@
     *********************************/
 
     void graphics_initialize(Scheduler* scheduler);
-    void graphics_requestrender(void (*func)());
+    void graphics_requestrender(void (*func)(), bool usecpu, bool swapbuffer);
     void graphics_register_fbuffer(bool ishd, void* address);
     void graphics_register_zbuffer(bool ishd, void* address);
     void graphics_unregister_fbuffer(bool ishd, void* address);
