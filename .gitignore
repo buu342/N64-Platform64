@@ -5,3 +5,6 @@
 *.cvt
 *.exe
 *.n64
+Tools/*/Debug/*
+Tools/*/Release/*
+Tools/*/.vs
