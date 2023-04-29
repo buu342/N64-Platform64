@@ -30,9 +30,9 @@ static Vector2D    s_rect_speed;
 
 void level_boot_start()
 {
-    /*s_rect_transform = transform2d_initialize(vector2d_initialize(64, 64), 0, vector2d_initialize(RECTSIZE, RECTSIZE));
+    s_rect_transform = transform2d_initialize(vector2d_initialize(64, 64), 0, vector2d_initialize(RECTSIZE, RECTSIZE));
     s_rect_color = color_initialize(255, 0, 0, 255);
-    s_rect_speed = vector2d_initialize(RECTSPEED, 0);*/
+    s_rect_speed = vector2d_initialize(RECTSPEED, 0);
 }
 
 

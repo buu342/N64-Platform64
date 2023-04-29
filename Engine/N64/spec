@@ -7,7 +7,7 @@ beginseg
     address SEGMENTSTART_CODE
     maxsize SEGMENTSIZE_CODE
 	stack   STACKSTART_BOOT + STACKSIZE_BOOT
-	include "codesegment.o"
+	include "build/codesegment.o"
 	include "$(ROOT)/usr/lib/PR/rspboot.o"
 	include "$(ROOT)/usr/lib/PR/gspF3DEX2.fifo.o"
 endseg

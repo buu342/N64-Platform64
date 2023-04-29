@@ -5,6 +5,7 @@
 #include "scheduler.h"
 #include "graphics.h"
 #include "engine.h"
+#include "game/levels/levels.h"
 
 
 /*********************************
@@ -84,10 +85,10 @@ void engine_level_end()
     @param The levelid to switch to
 ==============================*/
 
-void engine_level_change(levelid id)
+void engine_level_change(u32 levelid)
 {
     s_levelid_old = s_levelid;
-    s_levelid = id;
+    s_levelid = levelid;
     s_changelevel = TRUE;
 }
 

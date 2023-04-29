@@ -1,14 +1,12 @@
 #ifndef PLATFORM64_SCENE_H
 #define PLATFORM64_SCENE_H
 
-    #include "game/levels/levels.h"
-
     void engine_level_start();
     void engine_level_update();
     void engine_level_render();
     void engine_level_end();
     
-    void engine_level_change(levelid id);
+    void engine_level_change(u32 levelid);
     bool engine_level_shouldchange();
     
     inline void scene_set_timescale(f32 timescale);

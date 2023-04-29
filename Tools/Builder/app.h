@@ -15,3 +15,6 @@ class App : public wxApp
 		~App();
 		virtual bool OnInit();
 };
+
+time_t LastModTime(const char* path);
+unsigned int GetMBits(const char* path);

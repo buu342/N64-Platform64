@@ -1,11 +1,12 @@
 #include "traverser.h"
 #include <wx/artprov.h>
 
-Traverser::Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root)
+Traverser::Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map)
 {
     this->m_CurDir = path;
     this->m_ProjectTree = tree;
     this->m_CurNode = root;
+    this->m_Map = map;
 }
 
 Traverser::~Traverser()
@@ -22,7 +23,11 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
 {
     wxFileName name(filename);
     if (IsWhitelistedExtension(name.GetExt()))
-        this->m_ProjectTree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
+    {
+        wxTreeItemId id = this->m_ProjectTree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
+        if (name.GetExt() == "c")
+            this->m_Map->insert(std::pair<wxTreeItemId, CompUnit* >(id, new CompUnit(this->m_ProjectTree, id)));
+    }
     return wxDIR_CONTINUE;
 }
 
@@ -37,7 +42,7 @@ wxDirTraverseResult Traverser::OnDir(const wxString& dirname)
     this->m_CurNode = this->m_ProjectTree->AppendItem(this->m_CurNode, wxFileName(dirname).GetName(), 0);
 	
     // Traverse recursively
-    Traverser traverser(dirname, this->m_ProjectTree, this->m_CurNode);
+    Traverser traverser(dirname, this->m_ProjectTree, this->m_CurNode, this->m_Map);
 	dir.Traverse(traverser);
     dir.Close();
 

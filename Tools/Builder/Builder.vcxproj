@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h" />
+    <ClInclude Include="compunit.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="traverser.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp" />
+    <ClCompile Include="compunit.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="traverser.cpp" />
   </ItemGroup>
