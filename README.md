@@ -20,7 +20,7 @@ Below are instructions for compiling different parts of Platform64.
 ### Tools
 <details><summary>Builder</summary>
 
-Please consult the [Tools/Builder](Tools/Builder) folder for compilation instructions.
+Please consult the [Tools/Builder](Tools/Builder#builder) folder for compilation instructions.
 </details>
 
 <details><summary>MemMapper</summary>
