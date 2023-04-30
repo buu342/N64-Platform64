@@ -45,6 +45,11 @@ typedef struct IUnknown IUnknown;
 #define FINALROM      OUTPUTPATH + "/" + TARGET
 #define FINALROM_D    OUTPUTPATH + "/" + TARGETDEBUG
 
+// Icons
+extern wxIcon   iconbm_prog;
+extern wxBitmap iconbm_c;
+extern wxBitmap iconbm_h;
+
 class Main : public wxFrame
 {
 	private:

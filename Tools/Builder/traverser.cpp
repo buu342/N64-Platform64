@@ -24,9 +24,13 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
     wxFileName name(filename);
     if (IsWhitelistedExtension(name.GetExt()))
     {
-        wxTreeItemId id = this->m_ProjectTree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
         if (name.GetExt() == "c")
+        {
+            wxTreeItemId id = this->m_ProjectTree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
             this->m_Map->insert(std::pair<wxTreeItemId, CompUnit* >(id, new CompUnit(this->m_ProjectTree, id)));
+        }
+        else
+            this->m_ProjectTree->AppendItem(this->m_CurNode, name.GetFullName(), 2);
     }
     return wxDIR_CONTINUE;
 }

@@ -27,6 +27,18 @@
     <ClInclude Include="compunit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resources\icon_c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\icon_h.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\icon_prog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp">
@@ -41,5 +53,21 @@
     <ClCompile Include="compunit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Builder.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\h.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\c.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\prog.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

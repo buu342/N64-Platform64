@@ -22,6 +22,10 @@
     <ClInclude Include="app.h" />
     <ClInclude Include="compunit.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resources\icon_c.h" />
+    <ClInclude Include="resources\icon_h.h" />
+    <ClInclude Include="resources\icon_prog.h" />
     <ClInclude Include="traverser.h" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +33,14 @@
     <ClCompile Include="compunit.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="traverser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Builder.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\c.png" />
+    <Image Include="resources\h.png" />
+    <Image Include="resources\prog.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

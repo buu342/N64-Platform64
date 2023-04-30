@@ -37,7 +37,8 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_treeIcons = new wxImageList();
 	this->m_treeIcons->Create(iconSize.x, iconSize.y);
 	this->m_treeIcons->Add(wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FOLDER"))));
-	this->m_treeIcons->Add(wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_NORMAL_FILE"))));
+	this->m_treeIcons->Add(iconbm_c);
+	this->m_treeIcons->Add(iconbm_h);
 
 	// Create the tree control
 	this->m_TreeCtrl_ProjectDir = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE | wxTR_HAS_BUTTONS | wxTR_HIDE_ROOT | wxBORDER_SUNKEN);

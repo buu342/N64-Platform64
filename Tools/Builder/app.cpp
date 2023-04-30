@@ -4,8 +4,15 @@
 #endif
 
 // Icons
+#include "resources/icon_prog.h"
+#include "resources/icon_c.h"
+#include "resources/icon_h.h"
 
 wxIMPLEMENT_APP(App);
+
+wxIcon   iconbm_prog = wxNullIcon;
+wxBitmap iconbm_c = wxNullBitmap;
+wxBitmap iconbm_h = wxNullBitmap;
 
 App::App()
 {
@@ -22,8 +29,12 @@ bool App::OnInit()
 	if (!wxApp::OnInit())
 		return false;
 	wxInitAllImageHandlers();
+	wxBitmap temp = wxBITMAP_PNG_FROM_DATA(icon_prog);
+	iconbm_prog.CopyFromBitmap(temp);
+	iconbm_c = wxBITMAP_PNG_FROM_DATA(icon_c);
+	iconbm_h = wxBITMAP_PNG_FROM_DATA(icon_h);
 	this->m_ProgramFrame = new Main();
-	//this->m_ProgramFrame->SetIcon(iconbm_prog);
+	this->m_ProgramFrame->SetIcon(iconbm_prog);
 	this->m_ProgramFrame->Show();
 	SetTopWindow(this->m_ProgramFrame);
 	return true;
