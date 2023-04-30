@@ -60,8 +60,18 @@ bool CompUnit::ShouldRebuild()
 	wxStructStat stat_output;
 	stat_input.st_mtime = LastModTime(this->m_File.GetFullPath());
 	stat_output.st_mtime = LastModTime(this->m_Output.GetFullPath());
+
+	// Check if the modification date of the C file superscedes the objectfile
 	if (!wxFileExists(this->m_Output.GetFullPath()) || wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
 		return true;
+
+	// Check if header files superscene the object file
+	for (std::vector<wxFileName>::iterator it = this->m_Dependencies.begin(); it != this->m_Dependencies.end(); ++it)
+	{
+		stat_input.st_mtime = LastModTime((*it).GetFullPath());
+		if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
+			return true;
+	}
 	return false;
 }
 
