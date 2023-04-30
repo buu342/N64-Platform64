@@ -13,12 +13,16 @@ Below are instructions for compiling different parts of Platform64.
 <details><summary>N64</summary>
 
 1) Ensure you have libultra installed.
-2) If your install directories differ from the default, open `makeme.bat` in your text editor of choice and modify the `ROOT` variable to point to the correct folder.
-3) Optionally, if you want the compiled ROM to be moved to any specific folder, modify the `MOVEFOLDER` variable as well.
-4) To compile, simply execute `makeme.bat`.
+2) If you haven't already, you must first compile the [Builder](Tools/Builder) tool and place it in the project's source directory.
+3) To compile, simply execute `Builder.exe` and press the compile button.
 </details>
 
 ### Tools
+<details><summary>Builder</summary>
+
+Please consult the [Tools/Builder](Tools/Builder) folder for compilation instructions.
+</details>
+
 <details><summary>MemMapper</summary>
 
 Please consult the [MemMapper](https://github.com/buu342/CPP-MemMapper) repository for compilation instructions.
