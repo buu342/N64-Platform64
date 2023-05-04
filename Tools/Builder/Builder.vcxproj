@@ -22,6 +22,7 @@
     <ClInclude Include="app.h" />
     <ClInclude Include="compunit.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="preferences.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resources\icon_c.h" />
     <ClInclude Include="resources\icon_h.h" />
@@ -32,6 +33,7 @@
     <ClCompile Include="app.cpp" />
     <ClCompile Include="compunit.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="preferences.cpp" />
     <ClCompile Include="traverser.cpp" />
   </ItemGroup>
   <ItemGroup>

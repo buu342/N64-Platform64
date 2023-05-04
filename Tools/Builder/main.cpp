@@ -1,6 +1,7 @@
 #include "main.h"
 #include "app.h"
 #include "traverser.h"
+#include "preferences.h"
 #include <wx/msgdlg.h>
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
@@ -26,9 +27,16 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	wxFlexGridSizer* m_Sizer_Main;
 	m_Sizer_Main = new wxFlexGridSizer(0, 1, 0, 0);
 	m_Sizer_Main->AddGrowableCol(0);
-	m_Sizer_Main->AddGrowableRow(0);
+	m_Sizer_Main->AddGrowableRow(1);
 	m_Sizer_Main->SetFlexibleDirection(wxBOTH);
 	m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+	// Create the compile mode choice select
+	wxString m_Choice_BuildModeChoices[] = { wxT("Autodetect"), wxT("Debug"), wxT("Release") };
+	int m_Choice_BuildModeNChoices = sizeof(m_Choice_BuildModeChoices) / sizeof(wxString);
+	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_BuildModeNChoices, m_Choice_BuildModeChoices, 0);
+	this->m_Choice_BuildMode->SetSelection(0);
+	m_Sizer_Main->Add(this->m_Choice_BuildMode, 0, wxALL | wxEXPAND, 5);
 
 	// Create the tree icons list
 	wxSize iconSize = wxArtProvider::GetSizeHint(wxART_LIST);
@@ -39,7 +47,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_treeIcons->Add(wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FOLDER"))));
 	this->m_treeIcons->Add(iconbm_c);
 	this->m_treeIcons->Add(iconbm_h);
-
+	
 	// Create the tree control
 	this->m_TreeCtrl_ProjectDir = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE | wxTR_HAS_BUTTONS | wxTR_HIDE_ROOT | wxBORDER_SUNKEN);
 	m_Sizer_Main->Add(this->m_TreeCtrl_ProjectDir, 0, wxALL | wxEXPAND, 5);
@@ -57,7 +65,52 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	m_Sizer_Bottom->Add(this->m_Button_Clean, 0, wxALL, 5);
 	this->m_Button_Build = new wxButton(this, wxID_ANY, wxT("Build"), wxDefaultPosition, wxDefaultSize, 0);
 	m_Sizer_Bottom->Add(this->m_Button_Build, 0, wxALL, 5);
+	this->m_Button_Upload = new wxButton(this, wxID_ANY, wxT("Upload"), wxDefaultPosition, wxDefaultSize, 0);
+	m_Sizer_Bottom->Add(this->m_Button_Upload, 0, wxALL, 5);
 	m_Sizer_Main->Add(m_Sizer_Bottom, 1, wxEXPAND, 5);
+
+	// File menu bar
+	this->m_MenuBar = new wxMenuBar(0);
+	this->m_Menu_File = new wxMenu();
+	wxMenuItem* m_MenuItem_Open;
+	m_MenuItem_Open = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Open Project Folder")) + wxT('\t') + wxT("CTRL+O"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_File->Append(m_MenuItem_Open);
+	wxMenuItem* m_MenuItem_Refresh;
+	m_MenuItem_Refresh = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Refresh")) + wxT('\t') + wxT("F5"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_File->Append(m_MenuItem_Refresh);
+	this->m_Menu_File->AppendSeparator();
+	wxMenuItem* m_MenuItem_Exit;
+	m_MenuItem_Exit = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Exit")) + wxT('\t') + wxT("ALF+F4"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_File->Append(m_MenuItem_Exit);
+	this->m_MenuBar->Append(this->m_Menu_File, wxT("File"));
+	this->m_Menu_Build = new wxMenu();
+	wxMenuItem* m_MenuItem_Build;
+
+	// Build menu bar
+	m_MenuItem_Build = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Build")) + wxT('\t') + wxT("CTRL+B"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Build->Append(m_MenuItem_Build);
+	wxMenuItem* m_MenuItem_Clean;
+	m_MenuItem_Clean = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Clean")) + wxT('\t') + wxT("CTRL+C"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Build->Append(m_MenuItem_Clean);
+	wxMenuItem* m_MenuItem_Disassemble;
+	m_MenuItem_Disassemble = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Disassemble")) + wxT('\t') + wxT("CTRL+D"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Build->Append(m_MenuItem_Disassemble);
+	wxMenuItem* m_MenuItem_Upload;
+	m_MenuItem_Upload = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Upload")) + wxT('\t') + wxT("CTRL+U"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Build->Append(m_MenuItem_Upload);
+	this->m_Menu_Build->AppendSeparator();
+	wxMenuItem* m_MenuItem_ForceRebuild;
+	m_MenuItem_ForceRebuild = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Force ROM Rebuild")) + wxT('\t') + wxT("CTRL+R"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Build->Append(m_MenuItem_ForceRebuild);
+	this->m_MenuBar->Append(this->m_Menu_Build, wxT("Build"));
+	this->m_Menu_Settings = new wxMenu();
+	wxMenuItem* m_MenuItem_Config;
+
+	// Settings menu bar
+	m_MenuItem_Config = new wxMenuItem(this->m_Menu_Settings, wxID_ANY, wxString(wxT("Preferences")) + wxT('\t') + wxT("CTRL+P"), wxEmptyString, wxITEM_NORMAL);
+	this->m_Menu_Settings->Append(m_MenuItem_Config);
+	this->m_MenuBar->Append(this->m_Menu_Settings, wxT("Settings"));
+	this->SetMenuBar(this->m_MenuBar);
 
 	// Fix the layout
 	this->RefreshProjectTree();
@@ -66,9 +119,20 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->Centre(wxBOTH);
 
 	// Connect Events
+	this->m_Choice_BuildMode->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Main::m_Choice_BuildMode_OnChoice), NULL, this);
 	this->m_Button_Disassemble->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Disassemble_OnButtonClick), NULL, this);
 	this->m_Button_Clean->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Clean_OnButtonClick), NULL, this);
 	this->m_Button_Build->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Build_OnButtonClick), NULL, this);
+	this->m_Button_Upload->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Upload_OnButtonClick), NULL, this);
+	this->m_Menu_File->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Open_OnSelection), this, m_MenuItem_Open->GetId());
+	this->m_Menu_File->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Refresh_OnSelection), this, m_MenuItem_Refresh->GetId());
+	this->m_Menu_File->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Exit_OnSelection), this, m_MenuItem_Exit->GetId());
+	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Build_OnSelection), this, m_MenuItem_Build->GetId());
+	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Clean_OnSelection), this, m_MenuItem_Clean->GetId());
+	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Disassemble_OnSelection), this, m_MenuItem_Disassemble->GetId());
+	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Upload_OnSelection), this, m_MenuItem_Upload->GetId());
+	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_ForceRebuild_OnSelection), this, m_MenuItem_ForceRebuild->GetId());
+	this->m_Menu_Settings->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Config_OnSelection), this, m_MenuItem_Config->GetId());
 }
 
 Main::~Main()
@@ -78,10 +142,16 @@ Main::~Main()
 	this->m_Button_Disassemble->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Disassemble_OnButtonClick), NULL, this);
 	this->m_Button_Clean->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Clean_OnButtonClick), NULL, this);
 	this->m_Button_Build->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Build_OnButtonClick), NULL, this);
+	this->m_Button_Upload->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Upload_OnButtonClick), NULL, this);
 
 	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 		delete (it->second);
 	delete this->m_CompUnits;
+}
+
+void Main::m_Choice_BuildMode_OnChoice(wxCommandEvent& event)
+{
+
 }
 
 void Main::m_Button_Disassemble_OnButtonClick(wxCommandEvent& event)
@@ -337,6 +407,57 @@ void Main::m_Button_Build_OnButtonClick(wxCommandEvent& event)
 	}
 	else
 		wxLogMessage("Nothing to build");
+}
+
+void Main::m_Button_Upload_OnButtonClick(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Open_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Refresh_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Exit_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Build_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Clean_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Disassemble_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Upload_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event)
+{
+
+}
+
+void Main::m_MenuItem_Config_OnSelection(wxCommandEvent& event)
+{
+	Preferences* pref = new Preferences(this);
+	pref->Show();
 }
 
 void Main::RefreshProjectTree()

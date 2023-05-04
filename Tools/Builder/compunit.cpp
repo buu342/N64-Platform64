@@ -61,16 +61,29 @@ bool CompUnit::ShouldRebuild()
 	stat_input.st_mtime = LastModTime(this->m_File.GetFullPath());
 	stat_output.st_mtime = LastModTime(this->m_Output.GetFullPath());
 
-	// Check if the modification date of the C file superscedes the objectfile
-	if (!wxFileExists(this->m_Output.GetFullPath()) || wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
+	// Check if the object file exists
+	if (!wxFileExists(this->m_Output.GetFullPath()))
+	{
+		wxLogVerbose(this->m_Output.GetFullName() + " does not exist");
 		return true;
+	}
+
+	// Check if the modification date of the C file superscedes the object file
+	if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
+	{
+		wxLogVerbose(this->m_File.GetFullName() + " was modified");
+		return true;
+	}
 
 	// Check if header files superscene the object file
 	for (std::vector<wxFileName>::iterator it = this->m_Dependencies.begin(); it != this->m_Dependencies.end(); ++it)
 	{
 		stat_input.st_mtime = LastModTime((*it).GetFullPath());
 		if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
+		{
+			wxLogVerbose((*it).GetFullName() + " was modified");
 			return true;
+		}
 	}
 	return false;
 }

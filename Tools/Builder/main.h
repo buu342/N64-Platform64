@@ -17,6 +17,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/icon.h>
 #include <wx/sizer.h>
 #include <wx/frame.h>
+#include <wx/choice.h>
 #include <wx/stdpaths.h>
 #include <wx/log.h>
 #include <map>
@@ -55,17 +56,34 @@ class Main : public wxFrame
 	private:
 
 	protected:
+		wxChoice*	 m_Choice_BuildMode;
 		wxImageList* m_treeIcons;
 		wxTreeCtrl*  m_TreeCtrl_ProjectDir;
 		wxButton*    m_Button_Disassemble;
 		wxButton*    m_Button_Clean;
 		wxButton*    m_Button_Build;
+		wxButton*    m_Button_Upload;
+		wxMenuBar*   m_MenuBar;
+		wxMenu   *   m_Menu_File;
+		wxMenu*      m_Menu_Build;
+		wxMenu*      m_Menu_Settings; 
 		wxLogWindow* m_LogWin;
 		std::map<wxTreeItemId, CompUnit*>* m_CompUnits;
 
+		void m_Choice_BuildMode_OnChoice(wxCommandEvent& event);
 		void m_Button_Disassemble_OnButtonClick(wxCommandEvent& event);
 		void m_Button_Clean_OnButtonClick(wxCommandEvent& event);
 		void m_Button_Build_OnButtonClick(wxCommandEvent& event);
+		void m_Button_Upload_OnButtonClick(wxCommandEvent& event);
+		void m_MenuItem_Open_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Refresh_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Exit_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Build_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Clean_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Disassemble_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Upload_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_Config_OnSelection(wxCommandEvent& event);
 		void RefreshProjectTree();
 		bool CheckDebugEnabled();
 
