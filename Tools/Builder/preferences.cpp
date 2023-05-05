@@ -1,3 +1,4 @@
+#include "main.h"
 #include "preferences.h"
 
 wxFileConfig* global_configfile = NULL;
@@ -143,17 +144,19 @@ Preferences::Preferences(wxWindow* parent, wxWindowID id, const wxString& title,
 	this->m_CheckBox_UseEXEW32 = new wxCheckBox(this, wxID_ANY, wxT("Use EXEW32"), wxDefaultPosition, wxDefaultSize, 0);
 	this->m_CheckBox_UseEXEW32->SetValue(global_programconfig.Use_EXEW32);
 	m_Sizer_Checkboxes->Add(this->m_CheckBox_UseEXEW32, 0, wxALL, 5);
-	m_Sizer_Checkboxes->Add(0, 0, 1, wxEXPAND, 5);
-	m_Sizer_Checkboxes->Add(0, 0, 1, wxEXPAND, 5);
 	this->m_CheckBox_UseBuild = new wxCheckBox(this, wxID_ANY, wxT("Leave objects next to source"), wxDefaultPosition, wxDefaultSize, 0);
 	this->m_CheckBox_UseBuild->SetValue(!global_programconfig.Use_Build);
 	m_Sizer_Checkboxes->Add(this->m_CheckBox_UseBuild, 0, wxALL, 5);
-	this->m_CheckBox_UseNRDC = new wxCheckBox(this, wxID_ANY, wxT("Register ROM after building"), wxDefaultPosition, wxDefaultSize, 0);
-	this->m_CheckBox_UseNRDC->SetValue(global_programconfig.Use_NRDC);
-	m_Sizer_Checkboxes->Add(this->m_CheckBox_UseNRDC, 0, wxALL, 5);
+	this->m_CheckBox_SeparateDebug = new wxCheckBox(this, wxID_ANY, wxT("Keep debug objects separate"), wxDefaultPosition, wxDefaultSize, 0);
+	this->m_CheckBox_SeparateDebug->SetValue(global_programconfig.SeparateDebug);
+	m_Sizer_Checkboxes->Add(this->m_CheckBox_SeparateDebug, 0, wxALL, 5);
 	this->m_CheckBox_UseMakemask = new wxCheckBox(this, wxID_ANY, wxT("Makemask ROM"), wxDefaultPosition, wxDefaultSize, 0);
 	this->m_CheckBox_UseMakemask->SetValue(global_programconfig.Use_MakeMask);
 	m_Sizer_Checkboxes->Add(this->m_CheckBox_UseMakemask, 0, wxALL, 5);
+	this->m_CheckBox_UseNRDC = new wxCheckBox(this, wxID_ANY, wxT("Register ROM after building"), wxDefaultPosition, wxDefaultSize, 0);
+	this->m_CheckBox_UseNRDC->SetValue(global_programconfig.Use_NRDC);
+	m_Sizer_Checkboxes->Add(this->m_CheckBox_UseNRDC, 0, wxALL, 5);
+	m_Sizer_Checkboxes->Add(0, 0, 1, wxEXPAND, 5);
 	this->m_CheckBox_MoveROM = new wxCheckBox(this, wxID_ANY, wxT("Move ROM after building"), wxDefaultPosition, wxDefaultSize, 0);
 	this->m_CheckBox_MoveROM->SetValue(global_programconfig.Use_Move);
 	m_Sizer_Checkboxes->Add(this->m_CheckBox_MoveROM, 0, wxALL, 5);
@@ -200,6 +203,7 @@ Preferences::Preferences(wxWindow* parent, wxWindowID id, const wxString& title,
 	this->m_TextCtrl_MoveFolder->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Preferences::m_TextCtrl_MoveFolder_OnText), NULL, this);
 	this->m_TextCtrl_DisassemblyName->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Preferences::m_TextCtrl_DisassemblyName_OnText), NULL, this);
 	this->m_CheckBox_UseEXEW32->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Preferences::m_CheckBox_UseEXEW32_OnCheckBox), NULL, this);
+	this->m_CheckBox_SeparateDebug->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Preferences::m_CheckBox_SeparateDebug_OnCheckBox), NULL, this);
 	this->m_CheckBox_UseBuild->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Preferences::m_CheckBox_UseBuild_OnCheckBox), NULL, this);
 	this->m_CheckBox_UseNRDC->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Preferences::m_CheckBox_UseNRDC_OnCheckBox), NULL, this);
 	this->m_CheckBox_UseMakemask->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Preferences::m_CheckBox_UseMakemask_OnCheckBox), NULL, this);
@@ -218,6 +222,7 @@ Preferences::~Preferences()
 	Config_SaveProjectConfig();
 	delete this->m_Disabler;
 	this->GetParent()->SetFocus();
+	((Main*)this->GetParent())->RefreshProjectTree();
 
 	// Disconnect events
 	this->m_TextCtrl_TargetName->Disconnect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Preferences::m_TextCtrl_TargetName_OnText), NULL, this);
@@ -327,6 +332,11 @@ void Preferences::m_CheckBox_UseEXEW32_OnCheckBox(wxCommandEvent& event)
 	global_programconfig.Use_EXEW32 = event.IsChecked();
 }
 
+void Preferences::m_CheckBox_SeparateDebug_OnCheckBox(wxCommandEvent& event)
+{
+	global_programconfig.SeparateDebug = event.IsChecked();
+}
+
 void Preferences::m_CheckBox_UseBuild_OnCheckBox(wxCommandEvent& event)
 {
 	global_programconfig.Use_Build = !event.IsChecked();
@@ -395,6 +405,7 @@ void Config_SaveProgramConfig()
 	global_configfile->Write("/ProgramConfig/Path_Move", global_programconfig.Path_Move);
 	global_configfile->Write("/ProgramConfig/Path_DisassemblyName", global_programconfig.DissamblyName);
 	global_configfile->Write("/ProgramConfig/Use_EXEW32", global_programconfig.Use_EXEW32);
+	global_configfile->Write("/ProgramConfig/Use_EXEW32", global_programconfig.SeparateDebug);
 	global_configfile->Write("/ProgramConfig/Use_Build", global_programconfig.Use_Build);
 	global_configfile->Write("/ProgramConfig/Use_NRDC", global_programconfig.Use_NRDC);
 	global_configfile->Write("/ProgramConfig/Use_Makemask", global_programconfig.Use_MakeMask);
@@ -414,6 +425,7 @@ void Config_LoadProgramConfig()
 	global_configfile->Read("/ProgramConfig/Path_Move", &global_programconfig.Path_Move);
 	global_configfile->Read("/ProgramConfig/Path_DisassemblyName", &global_programconfig.DissamblyName);
 	global_programconfig.Use_EXEW32 = global_configfile->ReadBool("/ProgramConfig/Use_EXEW32", DEFAULT_USEEXEW32);
+	global_programconfig.SeparateDebug = global_configfile->ReadBool("/ProgramConfig/SeparateDebug", DEFAULT_SEPARATEDEBUG);
 	global_programconfig.Use_Build = global_configfile->ReadBool("/ProgramConfig/Use_Build", DEFAULT_USEBUILD);
 	global_programconfig.Use_NRDC = global_configfile->ReadBool("/ProgramConfig/Use_NRDC", DEFAULT_USENRDC);
 	global_programconfig.Use_MakeMask = global_configfile->ReadBool("/ProgramConfig/Use_Makemask", DEFAULT_USEMAKEMASK);
@@ -432,6 +444,7 @@ void Config_DefaultProgramConfig()
 	global_programconfig.Path_Move = DEFAULT_MOVEPATH;
 	global_programconfig.DissamblyName = DEFAULT_DISASSEMBLY;
 	global_programconfig.Use_EXEW32 = DEFAULT_USEEXEW32;
+	global_programconfig.SeparateDebug = DEFAULT_SEPARATEDEBUG;
 	global_programconfig.Use_Build = DEFAULT_USEBUILD;
 	global_programconfig.Use_NRDC = DEFAULT_USENRDC;
 	global_programconfig.Use_MakeMask = DEFAULT_USEMAKEMASK;
@@ -451,6 +464,8 @@ void Config_DefaultProgramConfig()
 		global_configfile->Write("/ProgramConfig/Path_DisassemblyName", global_programconfig.DissamblyName);
 	if (!global_configfile->HasEntry("/ProgramConfig/Use_EXEW32"))
 		global_configfile->Write("/ProgramConfig/Use_EXEW32", global_programconfig.Use_EXEW32);
+	if (!global_configfile->HasEntry("/ProgramConfig/SeparateDebug"))
+		global_configfile->Write("/ProgramConfig/SeparateDebug", global_programconfig.SeparateDebug);
 	if (!global_configfile->HasEntry("/ProgramConfig/Use_Build"))
 		global_configfile->Write("/ProgramConfig/Use_Build", global_programconfig.Use_Build);
 	if (!global_configfile->HasEntry("/ProgramConfig/Use_NRDC"))

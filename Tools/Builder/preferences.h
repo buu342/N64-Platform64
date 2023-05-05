@@ -30,10 +30,11 @@ typedef struct IUnknown IUnknown;
 #define DEFAULT_ROMHEADER_MANUF    "N"
 #define DEFAULT_ROMHEADER_ID       "HB"
 #define DEFAULT_ROMHEADER_COUNTRY  "E"
-#define DEFAULT_GCCFLAGS           (wxString("-Wall -G 0 ") \
+#define DEFAULT_GCCFLAGS           (wxString("-Wall ") \
 									+"-I. " \
 									+"-I"+global_programconfig.Path_Libultra+"/usr/include/PR " \
 									+"-I"+global_programconfig.Path_Libultra+"/usr/include " \
+									+"-G 0 -c -I"+global_programconfig.Path_Libultra+"/usr/include " \
 								    +"-DF3DEX_GBI_2 -DNOT_SPEC")
 #define DEFAULT_LDFLAGS            (wxString("-L. ") \
 									+"-L"+global_programconfig.Path_Libultra+"/usr/lib " \
@@ -47,6 +48,7 @@ typedef struct IUnknown IUnknown;
 #define DEFAULT_MOVEPATH      "Z:"
 #define DEFAULT_DISASSEMBLY   "disassembly.txt"
 #define DEFAULT_USEEXEW32     true
+#define DEFAULT_SEPARATEDEBUG true
 #define DEFAULT_USEBUILD      true
 #define DEFAULT_USENRDC       true
 #define DEFAULT_USEMAKEMASK   true
@@ -78,6 +80,7 @@ typedef struct
 	wxString Path_Move;
 	wxString DissamblyName;
 	bool     Use_EXEW32;
+	bool     SeparateDebug;
 	bool     Use_Build;
 	bool     Use_NRDC;
 	bool     Use_MakeMask;
@@ -132,6 +135,7 @@ class Preferences : public wxFrame
 		wxStaticText*     m_Text_DisassemblyName;
 		wxTextCtrl*       m_TextCtrl_DisassemblyName;
 		wxCheckBox*       m_CheckBox_UseEXEW32;
+		wxCheckBox*       m_CheckBox_SeparateDebug;
 		wxCheckBox*       m_CheckBox_UseBuild;
 		wxCheckBox*       m_CheckBox_UseNRDC;
 		wxCheckBox*       m_CheckBox_UseMakemask;
@@ -157,6 +161,7 @@ class Preferences : public wxFrame
 		void m_TextCtrl_MoveFolder_OnText(wxCommandEvent& event);
 		void m_TextCtrl_DisassemblyName_OnText(wxCommandEvent& event);
 		void m_CheckBox_UseEXEW32_OnCheckBox(wxCommandEvent& event);
+		void m_CheckBox_SeparateDebug_OnCheckBox(wxCommandEvent& event);
 		void m_CheckBox_UseBuild_OnCheckBox(wxCommandEvent& event);
 		void m_CheckBox_UseNRDC_OnCheckBox(wxCommandEvent& event);
 		void m_CheckBox_UseMakemask_OnCheckBox(wxCommandEvent& event);

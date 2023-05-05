@@ -7,18 +7,29 @@ typedef struct IUnknown IUnknown;
 #include <wx/treectrl.h>
 #include <wx/filename.h>
 #include <map>
+#include <vector>
 
 class Traverser : public wxDirTraverser
 {
-    private:
+    protected:
         wxTreeCtrl*  m_ProjectTree;
         wxTreeItemId m_CurNode;
         wxString     m_CurDir;
+        std::vector<wxString> m_Extensions;
         std::map<wxTreeItemId, CompUnit*>* m_Map;
 
     public:
         wxDirTraverseResult OnFile(const wxString& filename);
         wxDirTraverseResult OnDir(const wxString& dirname);
-        Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map);
+        bool IsWhitelistedExtension(wxString ext);
+        Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions);
         ~Traverser();
+};
+
+class TraverserClean : public Traverser
+{
+    public:
+        wxDirTraverseResult OnFile(const wxString& filename);
+        TraverserClean(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions) : Traverser(path, tree, root, map, extensions) {};
+        ~TraverserClean() {};
 };

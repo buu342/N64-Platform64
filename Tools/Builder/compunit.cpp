@@ -1,6 +1,7 @@
 #include "compunit.h"
 #include "main.h"
 #include "helper.h"
+#include "preferences.h"
 #include <wx/utils.h> 
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
@@ -9,7 +10,6 @@
 
 CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 {
-	/*
 	wxTextFile file;
 	wxString path = "";
 	wxString output = tree->GetItemText(id);
@@ -22,10 +22,13 @@ CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 		path.Prepend(tree->GetItemText(curid)+wxString("/"));
 	}
 
-	// Now set the file pointers
+	// Now set the file paths
 	output.Replace(".c", ".o");
-	this->m_File.Assign(PROJECTPATH + path + tree->GetItemText(id));
-	this->m_Output.Assign(OUTPUTPATH + "/" + path + output);
+	this->m_File.Assign(global_projectconfig.ProjectPath + "/" + path + tree->GetItemText(id));
+	if (global_programconfig.Use_Build)
+		this->m_Output.Assign(global_projectconfig.BuildFolder + "/" + path + output);
+	else
+		this->m_Output.Assign(global_projectconfig.ProjectPath + "/" + path + output);
 
 	// Finally, we need to read the file and check its dependencies
 	file.Open(this->m_File.GetFullPath());
@@ -47,7 +50,6 @@ CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 		}
 	}
 	file.Close();
-	*/
 }
 
 CompUnit::~CompUnit()
@@ -55,18 +57,26 @@ CompUnit::~CompUnit()
 
 }
 
-bool CompUnit::ShouldRebuild()
+wxFileName CompUnit::GetOutputPath(bool debug)
 {
-	/*
+	if (debug && global_programconfig.SeparateDebug)
+		return this->m_Output.GetPath() + "/" + this->m_Output.GetName() + "_d." + this->m_Output.GetExt();
+	else
+		return this->m_Output;
+}
+
+bool CompUnit::ShouldRebuild(bool debug)
+{
 	wxStructStat stat_input;
 	wxStructStat stat_output;
+	wxFileName outputpath = this->GetOutputPath(debug);
 	stat_input.st_mtime = LastModTime(this->m_File.GetFullPath());
-	stat_output.st_mtime = LastModTime(this->m_Output.GetFullPath());
+	stat_output.st_mtime = LastModTime(outputpath.GetFullPath());
 
 	// Check if the object file exists
-	if (!wxFileExists(this->m_Output.GetFullPath()))
+	if (!wxFileExists(outputpath.GetFullPath()))
 	{
-		wxLogVerbose(this->m_Output.GetFullName() + " does not exist");
+		wxLogVerbose(outputpath.GetFullName() + " does not exist");
 		return true;
 	}
 
@@ -88,23 +98,15 @@ bool CompUnit::ShouldRebuild()
 		}
 	}
 	return false;
-	*/
-}
-
-wxFileName CompUnit::GetOutputName()
-{
-	return this->m_Output;
 }
 
 void CompUnit::Compile(bool debug)
 {
-	/*
 	wxString command;
-	wxExecuteEnv env;
 	wxArrayString output;
-	wxEnvVariableHashMap vars;
 	wxString optimizer = "-g";
 	wxString lcdefs = "-DDEBUG";
+	wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
 
 	// Set optimizer flags
 	if (!debug)
@@ -113,28 +115,18 @@ void CompUnit::Compile(bool debug)
 		lcdefs = "-D_FINALROM -DNDEBUG";
 	}
 
-	// Setup the environment
-	vars["ROOT"] = wxString(LIBULTRAPATH);
-	vars["gccdir"] = wxString(LIBULTRAPATH) + wxString("/gcc");
-	vars["PATH"] = MIPSEFULLPATH + wxString(";") + LIBULTRAPATH + wxString("/usr/sbin;C:/WINDOWS/system32;");
-	vars["gccsw"] = wxString("-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__");
-	vars["n64align"] = "on";
-	env.cwd = PROJECTPATH;
-	env.env = vars;
-
 	// Run GCC
-	wxDir::Make(this->m_Output.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
-	command = MIPSEFULLPATH + "/exew32.exe gcc.exe "
+	wxDir::Make(this->GetOutputPath(debug).GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+	command = global_programconfig.Path_Toolkit + "/" + exew32 + "gcc.exe "
 			+ lcdefs + " "
 			+ global_projectconfig.Flags_GCC + " "
 			+ optimizer
 			+ " -c " + this->m_File.GetFullPath()
-			+ " -o " + this->m_Output.GetFullPath();
+			+ " -o " + this->GetOutputPath(debug).GetFullPath();
 	wxLogVerbose("> " + command);
-	wxExecute(command, output, wxEXEC_SYNC,  &env);
+	wxExecute(command, output, wxEXEC_SYNC,  &GetProgramEnvironment());
 
 	// Output errors
 	for (size_t i=0; i<output.size(); i++)
 		wxLogError(output[i]);
-	*/
 }

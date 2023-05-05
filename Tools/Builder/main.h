@@ -21,25 +21,6 @@ typedef struct IUnknown IUnknown;
 #include <wx/log.h>
 #include <map>
 
-/*
-// Build system defs
-#define BUILDFOLDER   "build"
-#define OUTPUTPATH    PROJECTPATH + wxString("/") + wxString(BUILDFOLDER)
-#define DISASSNAME    "disassembly.txt"
-#define DISASSPATH    PROJECTPATH + "/" + DISASSNAME
-
-// Project defs
-#define TARGET        "platform.n64"
-#define TARGETDEBUG   "platform_d.n64"
-#define MOVEROMFOLDER "Z:"
-#define REGISTERINFO  "\"PLATFORM64\" B PF I"
-
-// Libultra 
-#define CODESEGMENT   OUTPUTPATH + "/codesegment.o"
-#define FINALROM      OUTPUTPATH + "/" + TARGET
-#define FINALROM_D    OUTPUTPATH + "/" + TARGETDEBUG
-*/
-
 class Main : public wxFrame
 {
 	private:
@@ -73,10 +54,17 @@ class Main : public wxFrame
 		void m_MenuItem_Upload_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_Config_OnSelection(wxCommandEvent& event);
-		void RefreshProjectTree();
 		bool CheckDebugEnabled();
+		void CleanProject();
+		void BuildProject();
+		void BuildROM();
+		void DisassembleROM();
+		void RegisterROM(wxString target);
+		void MoveROM(wxString target);
+		void UploadROM();
 
 	public:
+		void RefreshProjectTree();
 		Main();
 		~Main();
 };

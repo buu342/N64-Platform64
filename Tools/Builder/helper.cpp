@@ -1,4 +1,5 @@
 #include "helper.h"
+#include "preferences.h"
 #include <wx/file.h>
 #ifndef LINUX
 	#include <Windows.h>
@@ -33,4 +34,18 @@ unsigned int GetMBits(const char* path)
 	v |= v >> 16;
 	v++;
 	return v;
+}
+
+wxExecuteEnv GetProgramEnvironment()
+{
+	wxExecuteEnv env;
+	wxEnvVariableHashMap vars;
+	vars["ROOT"] = wxString(global_programconfig.Path_Libultra);
+	vars["gccdir"] = wxString(global_programconfig.Path_Libultra) + wxString("/gcc");
+	vars["PATH"] = global_programconfig.Path_Toolkit + wxString(";") + global_programconfig.Path_Libultra + wxString("/usr/sbin;C:/WINDOWS/system32;");
+	vars["gccsw"] = wxString("-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__");
+	vars["n64align"] = "on";
+	env.cwd = global_projectconfig.ProjectPath;
+	env.env = vars;
+	return env;
 }

@@ -16,10 +16,10 @@ class CompUnit
 		wxFileName              m_Output;
 
 	public:
+		wxFileName GetOutputPath(bool debug);
+		bool ShouldRebuild(bool debug);
+		void Compile(bool debug);
 		CompUnit(wxTreeCtrl* tree, wxTreeItemId id);
 		~CompUnit();
-		bool ShouldRebuild();
-		void Compile(bool debug);
-		wxFileName GetOutputName();
 };
 
