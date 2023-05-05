@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="helper.h" />
     <ClInclude Include="app.h" />
     <ClInclude Include="compunit.h" />
     <ClInclude Include="main.h" />
@@ -30,6 +31,7 @@
     <ClInclude Include="traverser.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="helper.cpp" />
     <ClCompile Include="app.cpp" />
     <ClCompile Include="compunit.cpp" />
     <ClCompile Include="main.cpp" />

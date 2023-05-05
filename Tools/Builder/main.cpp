@@ -6,6 +6,7 @@
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
 #include <iterator>
+#include "helper.h"
 
 
 /*********************************
@@ -21,6 +22,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	// Setup the log window
 	this->m_LogWin = new wxLogWindow(this, wxT("Compilation Log"), false);
 	this->m_LogWin->SetVerbose(true);
+	this->m_LogWin->GetFrame()->SetIcon(iconbm_prog);
 	this->m_LogWin->DisableTimestamp();
 
 	// Create the main sizer
@@ -32,7 +34,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
 	// Create the compile mode choice select
-	wxString m_Choice_BuildModeChoices[] = { wxT("Autodetect"), wxT("Debug"), wxT("Release") };
+	wxString m_Choice_BuildModeChoices[] = { wxT("Autodetect from debug.h"), wxT("Debug"), wxT("Release") };
 	int m_Choice_BuildModeNChoices = sizeof(m_Choice_BuildModeChoices) / sizeof(wxString);
 	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_BuildModeNChoices, m_Choice_BuildModeChoices, 0);
 	this->m_Choice_BuildMode->SetSelection(0);
@@ -156,6 +158,7 @@ void Main::m_Choice_BuildMode_OnChoice(wxCommandEvent& event)
 
 void Main::m_Button_Disassemble_OnButtonClick(wxCommandEvent& event)
 {
+	/*
 	wxDir builddir(OUTPUTPATH);
 	wxArrayString files;
 	wxFileName candidate;
@@ -188,10 +191,12 @@ void Main::m_Button_Disassemble_OnButtonClick(wxCommandEvent& event)
 	wxRemoveFile(LIBULTRAPATH + wxString("/disassembly.txt"));
 	wxMessageDialog dialog(this, "Dumped to '" + wxString(DISASSNAME) + "'", "Ok");
 	dialog.ShowModal();
+	*/
 }
 
 void Main::m_Button_Clean_OnButtonClick(wxCommandEvent& event)
 {
+	/*
 	if (!wxDirExists(OUTPUTPATH) && !wxFileExists(DISASSPATH))
 	{
 		wxMessageDialog dialog2(this, "Nothing to clean", "Error");
@@ -213,10 +218,12 @@ void Main::m_Button_Clean_OnButtonClick(wxCommandEvent& event)
 		wxMessageDialog dialog2(this, "Project cleaned", "Success");
 		dialog2.ShowModal();
 	}
+	*/
 }
 
 void Main::m_Button_Build_OnButtonClick(wxCommandEvent& event)
 {
+	/*
 	wxDir::Make(OUTPUTPATH, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 	wxArrayString* out = new wxArrayString();
 	bool isdebug = this->CheckDebugEnabled();
@@ -291,12 +298,8 @@ void Main::m_Button_Build_OnButtonClick(wxCommandEvent& event)
 		command = MIPSEFULLPATH + "/exew32.exe ld.exe "
 				+ "-o " + CODESEGMENT + " "
 				+ "-r " + files
-				+ "-L" + LIBULTRAPATH + "/usr/lib "
-				+ "-L" + LIBULTRAPATH + "/usr/lib/PR "
+				+ global_projectconfig.Flags_LD + " "
 				+ libultraver + " "
-				+ "-L. "
-				+ "-L" + LIBULTRAPATH + "/gcc/mipse/lib "
-				+ "-lkmc";
 		wxLogVerbose("> " + command);
 		wxExecute(command, output, wxEXEC_SYNC, &env);
 		stat_newcodeseg.st_mtime = LastModTime(CODESEGMENT);
@@ -407,6 +410,7 @@ void Main::m_Button_Build_OnButtonClick(wxCommandEvent& event)
 	}
 	else
 		wxLogMessage("Nothing to build");
+	*/
 }
 
 void Main::m_Button_Upload_OnButtonClick(wxCommandEvent& event)
@@ -457,6 +461,7 @@ void Main::m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event)
 void Main::m_MenuItem_Config_OnSelection(wxCommandEvent& event)
 {
 	Preferences* pref = new Preferences(this);
+	pref->SetIcon(iconbm_config);
 	pref->Show();
 }
 
@@ -475,7 +480,7 @@ void Main::RefreshProjectTree()
 	this->m_CompUnits = new std::map<wxTreeItemId, CompUnit*>();
 
 	// Open the project directory
-	wxString path = PROJECTPATH;
+	wxString path = global_projectconfig.ProjectPath;
 	wxDir dir(path);
 	if (!dir.IsOpened())
 	{
@@ -495,7 +500,7 @@ bool Main::CheckDebugEnabled()
 {
 	bool retval = false;
 	wxTextFile debugh;
-	if (!wxFileExists(PROJECTPATH + wxString("/debug.h")))
+	if (!wxFileExists(global_projectconfig.ProjectPath + wxString("/debug.h")))
 		return false;
 	debugh.Open("debug.h");
 	while (!debugh.Eof())

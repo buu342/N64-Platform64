@@ -18,14 +18,10 @@ typedef struct IUnknown IUnknown;
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/choice.h>
-#include <wx/stdpaths.h>
 #include <wx/log.h>
 #include <map>
 
-// Program defs
-#define PROGRAM_NAME  "Builder"
-#define PROJECTPATH   (wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath())
-
+/*
 // Build system defs
 #define BUILDFOLDER   "build"
 #define OUTPUTPATH    PROJECTPATH + wxString("/") + wxString(BUILDFOLDER)
@@ -38,18 +34,11 @@ typedef struct IUnknown IUnknown;
 #define MOVEROMFOLDER "Z:"
 #define REGISTERINFO  "\"PLATFORM64\" B PF I"
 
-// Libultra paths
-#define LIBULTRAPATH  "C:/ultra"
-#define MIPSEPATH     "GCC/MIPSE/BIN"
-#define MIPSEFULLPATH (LIBULTRAPATH + wxString("/") + MIPSEPATH)
+// Libultra 
 #define CODESEGMENT   OUTPUTPATH + "/codesegment.o"
 #define FINALROM      OUTPUTPATH + "/" + TARGET
 #define FINALROM_D    OUTPUTPATH + "/" + TARGETDEBUG
-
-// Icons
-extern wxIcon   iconbm_prog;
-extern wxBitmap iconbm_c;
-extern wxBitmap iconbm_h;
+*/
 
 class Main : public wxFrame
 {

@@ -1,22 +1,28 @@
 #include "app.h"
-#ifndef LINUX
-	#include <Windows.h>
-#endif
+#include <wx/dir.h>
 
 // Icons
 #include "resources/icon_prog.h"
 #include "resources/icon_c.h"
 #include "resources/icon_h.h"
+#include "resources/icon_config.h"
 
 wxIMPLEMENT_APP(App);
 
 wxIcon   iconbm_prog = wxNullIcon;
 wxBitmap iconbm_c = wxNullBitmap;
 wxBitmap iconbm_h = wxNullBitmap;
+wxIcon   iconbm_config = wxNullIcon;
 
 App::App()
 {
-	// Nothing
+	this->m_ProgramFrame = NULL;
+	wxDir::Make(wxStandardPaths::Get().GetUserConfigDir() + "/N64" + PROGRAM_NAME + "/", wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+	global_configfile = new wxFileConfig(PROGRAM_NAME, "Buu342", wxStandardPaths::Get().GetUserConfigDir() + "/N64" + PROGRAM_NAME + "/Config.ini");
+	Config_DefaultProgramConfig();
+	Config_LoadProgramConfig();
+	Config_DefaultProjectConfig();
+	Config_LoadProjectConfig();
 }
 
 App::~App()
@@ -26,47 +32,17 @@ App::~App()
 
 bool App::OnInit()
 {
+	wxBitmap temp;
 	if (!wxApp::OnInit())
 		return false;
 	wxInitAllImageHandlers();
-	wxBitmap temp = wxBITMAP_PNG_FROM_DATA(icon_prog);
-	iconbm_prog.CopyFromBitmap(temp);
+	iconbm_prog.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(icon_prog));
 	iconbm_c = wxBITMAP_PNG_FROM_DATA(icon_c);
 	iconbm_h = wxBITMAP_PNG_FROM_DATA(icon_h);
+	iconbm_config.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(icon_config));
 	this->m_ProgramFrame = new Main();
 	this->m_ProgramFrame->SetIcon(iconbm_prog);
 	this->m_ProgramFrame->Show();
 	SetTopWindow(this->m_ProgramFrame);
 	return true;
-}
-
-time_t LastModTime(const char* path)
-{
-	struct stat finfo;
-	if (!wxFileExists(path))
-		return 0;
-	#ifndef LINUX
-		LARGE_INTEGER lt;
-		WIN32_FILE_ATTRIBUTE_DATA fdata;
-		GetFileAttributesExA(path, GetFileExInfoStandard, &fdata);
-		lt.LowPart = fdata.ftLastWriteTime.dwLowDateTime;
-		lt.HighPart = (long)fdata.ftLastWriteTime.dwHighDateTime;
-		finfo.st_mtime = (time_t)(lt.QuadPart * 1e-7);
-	#else
-		stat(path, &finfo);
-	#endif
-	return finfo.st_mtime;
-}
-
-unsigned int GetMBits(const char* path)
-{
-	unsigned int v = 1;
-	v--;
-	v |= v >> 1;
-	v |= v >> 2;
-	v |= v >> 4;
-	v |= v >> 8;
-	v |= v >> 16;
-	v++;
-	return v;
 }

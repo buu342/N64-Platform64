@@ -1,6 +1,6 @@
 #include "compunit.h"
 #include "main.h"
-#include "app.h"
+#include "helper.h"
 #include <wx/utils.h> 
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
@@ -9,6 +9,7 @@
 
 CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 {
+	/*
 	wxTextFile file;
 	wxString path = "";
 	wxString output = tree->GetItemText(id);
@@ -46,7 +47,7 @@ CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 		}
 	}
 	file.Close();
-
+	*/
 }
 
 CompUnit::~CompUnit()
@@ -56,6 +57,7 @@ CompUnit::~CompUnit()
 
 bool CompUnit::ShouldRebuild()
 {
+	/*
 	wxStructStat stat_input;
 	wxStructStat stat_output;
 	stat_input.st_mtime = LastModTime(this->m_File.GetFullPath());
@@ -86,6 +88,7 @@ bool CompUnit::ShouldRebuild()
 		}
 	}
 	return false;
+	*/
 }
 
 wxFileName CompUnit::GetOutputName()
@@ -95,18 +98,19 @@ wxFileName CompUnit::GetOutputName()
 
 void CompUnit::Compile(bool debug)
 {
+	/*
 	wxString command;
 	wxExecuteEnv env;
 	wxArrayString output;
 	wxEnvVariableHashMap vars;
 	wxString optimizer = "-g";
-	wxString lcdefs = "-Wall -Werror -DDEBUG -DF3DEX_GBI_2 -DNOT_SPEC";
+	wxString lcdefs = "-DDEBUG";
 
 	// Set optimizer flags
 	if (!debug)
 	{
 		optimizer = "-O2";
-		lcdefs = "-D_FINALROM -DNDEBUG -DF3DEX_GBI_2 -DNOT_SPEC";
+		lcdefs = "-D_FINALROM -DNDEBUG";
 	}
 
 	// Setup the environment
@@ -122,12 +126,7 @@ void CompUnit::Compile(bool debug)
 	wxDir::Make(this->m_Output.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 	command = MIPSEFULLPATH + "/exew32.exe gcc.exe "
 			+ lcdefs + " "
-			+ "-I. "
-			+ "-I" + LIBULTRAPATH + "/usr/include/PR "
-			+ "-I" + LIBULTRAPATH + "/usr/include "
-			+ "-G 0 -c "
-			+ "-I" + LIBULTRAPATH + "/usr/include "
-			+ "-D_MIPS_SZLONG=32 -D_MIPS_SZINT=32 "
+			+ global_projectconfig.Flags_GCC + " "
 			+ optimizer
 			+ " -c " + this->m_File.GetFullPath()
 			+ " -o " + this->m_Output.GetFullPath();
@@ -137,4 +136,5 @@ void CompUnit::Compile(bool debug)
 	// Output errors
 	for (size_t i=0; i<output.size(); i++)
 		wxLogError(output[i]);
+	*/
 }
