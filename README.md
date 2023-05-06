@@ -1,6 +1,7 @@
 <img align="center" src=".github/Logo.png" width="470" height="98" />
 
 ---
+[![Build Status](https://dev.azure.com/buu342/Platform64/_apis/build/status/buu342.N64-Platform64?branchName=master)](https://dev.azure.com/buu342/Platform64/_build/latest?definitionId=1&branchName=master)
 
 A free and open source 2.5D side-scrolling adventure game for the Nintendo 64.
 

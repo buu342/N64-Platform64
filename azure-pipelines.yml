@@ -33,7 +33,8 @@ jobs:
       
   - script: |
           cd $BUILD_SOURCESDIRECTORY
-          cd "Tools/NRDC"
+          cd Tools
+          cd NRDC
           makeme.bat
       
   - script: |
