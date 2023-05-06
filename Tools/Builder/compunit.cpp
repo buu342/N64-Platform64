@@ -93,6 +93,8 @@ bool CompUnit::ShouldRebuild(bool debug)
 		stat_input.st_mtime = LastModTime((*it).GetFullPath());
 		if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
 		{
+			if (global_modifieddebug && (*it).GetFullName() == "debug.h")
+				continue;
 			wxLogVerbose((*it).GetFullName() + " was modified");
 			return true;
 		}

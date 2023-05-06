@@ -8,6 +8,8 @@
 #include <iterator>
 #include "helper.h"
 
+bool global_modifieddebug = false;
+
 
 /*********************************
            Constructors
@@ -34,10 +36,8 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
 	// Create the compile mode choice select
-	wxString m_Choice_BuildModeChoices[] = { wxT("Autodetect from debug.h"), wxT("Debug"), wxT("Release") };
-	int m_Choice_BuildModeNChoices = sizeof(m_Choice_BuildModeChoices) / sizeof(wxString);
-	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_BuildModeNChoices, m_Choice_BuildModeChoices, 0);
-	this->m_Choice_BuildMode->SetSelection(0);
+	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, 0);
+	this->PopulateCompileChoices();
 	m_Sizer_Main->Add(this->m_Choice_BuildMode, 0, wxALL | wxEXPAND, 5);
 
 	// Create the tree icons list
@@ -187,12 +187,14 @@ void Main::m_MenuItem_Open_OnSelection(wxCommandEvent& event)
 		global_projectconfig.ProjectPath = dlg.GetPath();
 		Config_LoadProjectConfig();
 		this->RefreshProjectTree();
+		this->PopulateCompileChoices();
 	}
 }
 
 void Main::m_MenuItem_Refresh_OnSelection(wxCommandEvent& event)
 {
 	this->RefreshProjectTree();
+	this->PopulateCompileChoices();
 }
 
 void Main::m_MenuItem_Exit_OnSelection(wxCommandEvent& event)
@@ -232,6 +234,26 @@ void Main::m_MenuItem_Config_OnSelection(wxCommandEvent& event)
 	pref->Show();
 }
 
+void Main::PopulateCompileChoices()
+{
+	int oldcount = this->m_Choice_BuildMode->GetCount();
+	wxString choices[3] = {wxT("Release"), wxT("Debug"), wxT("Autodetect from debug.h") };
+
+	if (wxFileExists(global_projectconfig.ProjectPath + "/debug.h") && (oldcount == 0 || oldcount == 2))
+	{
+		this->m_Choice_BuildMode->Clear();
+		this->m_Choice_BuildMode->Append(3, choices);
+		this->m_Choice_BuildMode->SetSelection(2);
+	}
+	else if (!wxFileExists(global_projectconfig.ProjectPath + "/debug.h") && (oldcount == 0 || oldcount == 3))
+	{
+		this->m_Choice_BuildMode->Clear();
+		this->m_Choice_BuildMode->Append(2, choices);
+		this->m_Choice_BuildMode->SetSelection(1);
+	}
+	this->Refresh();
+}
+
 void Main::RefreshProjectTree()
 {
 	// Clear the project tree
@@ -265,33 +287,69 @@ void Main::RefreshProjectTree()
 
 bool Main::CheckDebugEnabled()
 {
-	bool retval = false;
+	if (this->m_Choice_BuildMode->GetSelection() == 2)
+	{
+		bool retval = false;
+		wxTextFile debugh;
+		debugh.Open("debug.h");
+		while (!debugh.Eof())
+		{
+			wxString str = debugh.GetNextLine();
+			if (str.Find("#define DEBUG_MODE") != wxNOT_FOUND)
+			{
+				wxStringTokenizer tokenizer(str, " ");
+				while (tokenizer.HasMoreTokens())
+				{
+					wxString token = tokenizer.GetNextToken();
+					if (token == "1")
+					{
+						retval = true;
+						goto done;
+					}
+					else if (token == "0")
+						goto done;
+				}
+			}
+		}
+		done:
+			debugh.Close();
+			return retval;
+	}
+	else
+		return (this->m_Choice_BuildMode->GetSelection());
+}
+
+void Main::ModifyDebugH()
+{
 	wxTextFile debugh;
-	if (!wxFileExists(global_projectconfig.ProjectPath + wxString("/debug.h")))
-		return false;
-	debugh.Open("debug.h");
+	wxTextFile copy;
+	if (!wxFileExists("debug.h") || global_modifieddebug || this->m_Choice_BuildMode->GetSelection() == 2)
+		return;
+	if (this->CheckDebugEnabled() == (this->m_Choice_BuildMode->GetSelection() == 1))
+		return;
+	wxRenameFile("debug.h", "_debug.h");
+	debugh.Open("_debug.h");
+	copy.Open("debug.h");
 	while (!debugh.Eof())
 	{
 		wxString str = debugh.GetNextLine();
 		if (str.Find("#define DEBUG_MODE") != wxNOT_FOUND)
-		{
-			wxStringTokenizer tokenizer(str, " ");
-			while (tokenizer.HasMoreTokens())
-			{
-				wxString token = tokenizer.GetNextToken();
-				if (token == "1")
-				{
-					retval = true;
-					goto done;
-				}
-				else if (token == "0")
-					goto done;
-			}
-		}
+			copy.AddLine("#define DEBUG_MODE " + wxString::Format("%d", this->m_Choice_BuildMode->GetSelection()));
+		else
+			copy.AddLine(str);
 	}
-	done:
-		debugh.Close();
-		return retval;
+	debugh.Close();
+	copy.Close();
+	global_modifieddebug = true;
+}
+
+void Main::FixDebugH()
+{
+	if (!global_modifieddebug)
+		return;
+	wxRemoveFile("debug.h");
+	wxRenameFile("_debug.h", "debug.h");
+	global_modifieddebug = false;
 }
 
 void Main::CleanProject()
@@ -352,6 +410,7 @@ void Main::BuildProject()
 		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
 		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
 	}
+	this->ModifyDebugH();
 
 	// Setup the log window
 	this->m_LogWin->Show(true);
@@ -377,7 +436,8 @@ void Main::BuildProject()
 	// Check if everything compiled
 	if (compilefail)
 	{
-		wxLogError("An error occurred during compilation");
+		wxLogError("An error occurred during compilation\n\n");
+		this->FixDebugH();
 		return;
 	}
 
@@ -428,7 +488,8 @@ void Main::BuildProject()
 	// Check if everything compiled
 	if (compilefail)
 	{
-		wxLogError("An error occurred during compilation");
+		wxLogError("An error occurred during compilation\n\n");
+		this->FixDebugH();
 		return;
 	}
 
@@ -436,7 +497,8 @@ void Main::BuildProject()
 	if (builtsomething || !wxFileExists(target.GetFullPath()))
 		this->BuildROM();
 	else
-		wxLogMessage("Nothing to build");
+		wxLogMessage("Nothing to build\n\n");
+	this->FixDebugH();
 }
 
 void Main::BuildROM()
@@ -466,6 +528,7 @@ void Main::BuildROM()
 		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
 	}
 	this->m_LogWin->Show(true);
+	this->ModifyDebugH();
 
 	// Log what we're doing
 	wxLogMessage("Generating ROM");
@@ -531,7 +594,8 @@ void Main::BuildROM()
 		wxLogMessage("Success!\n\n");
 	}
 	else
-		wxLogError("An error occurred during compilation");
+		wxLogError("An error occurred during compilation\n\n");
+	this->FixDebugH();
 }
 
 void Main::DisassembleROM()
