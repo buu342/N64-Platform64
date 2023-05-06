@@ -34,8 +34,8 @@ typedef struct IUnknown IUnknown;
 									+"-I. " \
 									+"-I"+global_programconfig.Path_Libultra+"/usr/include/PR " \
 									+"-I"+global_programconfig.Path_Libultra+"/usr/include " \
-									+"-G 0 -c -I"+global_programconfig.Path_Libultra+"/usr/include " \
-								    +"-DF3DEX_GBI_2 -DNOT_SPEC")
+									+"-G 0 " \
+								    +"-DF3DEX_GBI_2 -DNOT_SPEC -D_MIPS_SZLONG=32 -D_MIPS_SZINT=32 ")
 #define DEFAULT_LDFLAGS            (wxString("-L. ") \
 									+"-L"+global_programconfig.Path_Libultra+"/usr/lib " \
 									+"-L"+global_programconfig.Path_Libultra+"/usr/lib/PR " \

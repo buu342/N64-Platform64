@@ -19,7 +19,7 @@ CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
 	while (tree->GetItemParent(curid) != NULL)
 	{
 		curid = tree->GetItemParent(curid);
-		path.Prepend(tree->GetItemText(curid)+wxString("/"));
+		path.Prepend(tree->GetItemText(curid)+"/");
 	}
 
 	// Now set the file paths

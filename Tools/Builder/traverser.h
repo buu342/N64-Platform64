@@ -12,7 +12,7 @@ typedef struct IUnknown IUnknown;
 class Traverser : public wxDirTraverser
 {
     protected:
-        wxTreeCtrl*  m_ProjectTree;
+        wxTreeCtrl*  m_Tree;
         wxTreeItemId m_CurNode;
         wxString     m_CurDir;
         std::vector<wxString> m_Extensions;
@@ -22,14 +22,7 @@ class Traverser : public wxDirTraverser
         wxDirTraverseResult OnFile(const wxString& filename);
         wxDirTraverseResult OnDir(const wxString& dirname);
         bool IsWhitelistedExtension(wxString ext);
+        void DeleteFiles(wxTreeItemId node);
         Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions);
         ~Traverser();
-};
-
-class TraverserClean : public Traverser
-{
-    public:
-        wxDirTraverseResult OnFile(const wxString& filename);
-        TraverserClean(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions) : Traverser(path, tree, root, map, extensions) {};
-        ~TraverserClean() {};
 };

@@ -297,15 +297,15 @@ bool Main::CheckDebugEnabled()
 void Main::CleanProject()
 {
 	// First, check if there are objects to clean
-	wxTreeCtrl cleantree(NULL);
-	wxTreeItemId root = cleantree.AddRoot("Project");
+	wxTreeCtrl cleantree(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE);
+	wxTreeItemId root = cleantree.AddRoot(global_projectconfig.ProjectPath+"/");
 	wxDir dir(global_projectconfig.ProjectPath);
 	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, NULL, {"o", "out", "n64"});
 	dir.Traverse(traverser);
 	dir.Close();
 
 	// Stop if there's nothing to clean
-	if (cleantree.GetChildrenCount(root) == 0 && !wxDirExists(global_projectconfig.BuildFolder) && !wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
+	if (cleantree.GetCount() == 0 && !wxDirExists(global_projectconfig.BuildFolder) && !wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
 	{
 		wxMessageDialog dialog2(this, "Nothing to clean", "Error");
 		dialog2.ShowModal();
@@ -317,15 +317,7 @@ void Main::CleanProject()
 	if (!global_programconfig.Prompt_Clean || dialog1.ShowModal() == wxID_YES)
 	{
 		// Delete compiled objects
-		if (!global_programconfig.Use_Build)
-		{
-			cleantree.DeleteAllItems();
-			root = cleantree.AddRoot("Project");
-			dir.Open(global_projectconfig.ProjectPath);
-			TraverserClean traverser(global_projectconfig.ProjectPath, &cleantree, root, NULL, {"o", "out", "n64"});
-			dir.Traverse(traverser);
-			dir.Close();
-		}
+		traverser.DeleteFiles(root);
 
 		// Delete the build folder
 		if (global_programconfig.Use_Build && wxDirExists(global_projectconfig.BuildFolder))
@@ -345,19 +337,20 @@ void Main::BuildProject()
 	bool builtsomething = false;
 	bool compilefail = false;
 	wxArrayString* out = new wxArrayString();
-	wxString target = global_projectconfig.TargetName;
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
 	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
 
 	// Setup before building
 	if (global_programconfig.Use_Build)
 	{
 		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
 		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
 	}
 	if (isdebug && global_programconfig.SeparateDebug)
 	{
-		target = wxFileName(target).GetName() + wxString("_d.") + wxFileName(target).GetExt();
-		codeseg = wxFileName(codeseg).GetName() + wxString("_d.") + wxFileName(codeseg).GetExt();
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
 	}
 
 	// Setup the log window
@@ -415,8 +408,8 @@ void Main::BuildProject()
 		command = global_programconfig.Path_Toolkit + "/" + exew32 + "ld.exe "
 				+ "-o " + codeseg.GetFullPath() + " "
 				+ "-r " + files
-				+ global_projectconfig.Flags_LD + " "
-				+ libultraver + " ";
+				+ libultraver + " " 
+				+ global_projectconfig.Flags_LD;
 		wxLogVerbose("> " + command);
 		wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
 		stat_newcodeseg.st_mtime = LastModTime(codeseg.GetFullPath());
@@ -440,7 +433,7 @@ void Main::BuildProject()
 	}
 
 	// Call MakeROM
-	if (builtsomething || !wxFileExists(target))
+	if (builtsomething || !wxFileExists(target.GetFullPath()))
 		this->BuildROM();
 	else
 		wxLogMessage("Nothing to build");
@@ -452,9 +445,11 @@ void Main::BuildROM()
 	wxArrayString output;
 	wxStructStat stat_oldrom;
 	wxStructStat stat_newrom;
+	wxExecuteEnv env = GetProgramEnvironment();
+	wxEnvVariableHashMap vars = env.env;
 	wxString flags = "-d";
 	bool isdebug = this->CheckDebugEnabled();
-	wxString target = global_projectconfig.TargetName;
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
 	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
 	wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
 
@@ -462,12 +457,13 @@ void Main::BuildROM()
 	if (global_programconfig.Use_Build)
 	{
 		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
 		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
 	}
 	if (isdebug && global_programconfig.SeparateDebug)
 	{
-		target = wxFileName(target).GetName() + wxString("_d.") + wxFileName(target).GetExt();
-		codeseg = wxFileName(codeseg).GetName() + wxString("_d.") + wxFileName(codeseg).GetExt();
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
 	}
 	this->m_LogWin->Show(true);
 
@@ -478,17 +474,21 @@ void Main::BuildROM()
 	if (!isdebug)
 		flags = "";
 
+	// Add the codesegment to the environment variables
+	vars["CODESEGMENT"] = "\"" + codeseg.GetFullPath() + "\"";
+	env.env = vars;
+
 	// Run makerom
-	stat_oldrom.st_mtime = LastModTime(target);
+	stat_oldrom.st_mtime = LastModTime(target.GetFullPath());
 	command = global_programconfig.Path_Toolkit + "/" + exew32 +"mild.exe "
 			+ global_projectconfig.ProjectPath + "/spec "
 			+ flags + " "
-			+ "-r " + target + " "
-			+ "-e " + wxFileName(target).GetPath() + "/" + wxFileName(target).GetName() + ".out"
+			+ "-r " + target.GetFullPath() + " "
+			+ "-e " + target.GetPath() + "/" + target.GetName() + ".out"
 			+ global_projectconfig.Flags_MILD;
 	wxLogVerbose("> " + command);
-	wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
-	stat_newrom.st_mtime = LastModTime(target);
+	wxExecute(command, output, wxEXEC_SYNC, &env);
+	stat_newrom.st_mtime = LastModTime(target.GetFullPath());
 
 	// Log makrom output
 	for (size_t i = 0; i < output.size(); i++)
@@ -506,13 +506,13 @@ void Main::BuildROM()
 	}
 
 	// Check for success
-	if (wxFileExists(target) && wxDateTime(stat_newrom.st_mtime).IsLaterThan(wxDateTime(stat_oldrom.st_mtime)))
+	if (wxFileExists(target.GetFullPath()) && wxDateTime(stat_newrom.st_mtime).IsLaterThan(wxDateTime(stat_oldrom.st_mtime)))
 	{
 		// Makemask
 		if (global_programconfig.Use_MakeMask)
 		{
 			output.clear();
-			command = global_programconfig.Path_Toolkit + "/" + exew32 + "makemask.exe " + target;
+			command = global_programconfig.Path_Toolkit + "/" + exew32 + "makemask.exe " + target.GetFullPath();
 			wxLogVerbose("> " + command);
 			wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
 			for (size_t i = 0; i < output.size(); i++)
@@ -521,14 +521,14 @@ void Main::BuildROM()
 
 		// NRDC
 		if (global_programconfig.Use_NRDC)
-			this->RegisterROM(target);
+			this->RegisterROM(target.GetFullPath());
 
 		// Move the ROM to the USB folder
 		if (global_programconfig.Use_Move)
-			this->MoveROM(target);
+			this->MoveROM(target.GetFullPath());
 
 		// Done!
-		wxLogMessage("Success!");
+		wxLogMessage("Success!\n\n");
 	}
 	else
 		wxLogError("An error occurred during compilation");
@@ -536,38 +536,32 @@ void Main::BuildROM()
 
 void Main::DisassembleROM()
 {
-	wxDir builddir;
-	wxArrayString files;
-	wxFileName candidate;
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
+
+	// Get the right name
 	if (global_programconfig.Use_Build)
-		builddir.Open(global_projectconfig.BuildFolder);
-	else
-		builddir.Open(global_projectconfig.ProjectPath);
-	builddir.GetAllFiles(builddir.GetName(), &files, "*.out");
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
+	if (global_programconfig.SeparateDebug)
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+	target = target.GetPath() + "/" + target.GetName() + ".out";
 
 	// Make sure we have a .out to disassemble
-	if (files.IsEmpty())
+	if (!wxFileExists(target.GetFullPath()))
 	{
 		wxMessageDialog dialog(this, "No .out found to disassemble. Did you build the project?", "Error", wxICON_ERROR);
 		dialog.ShowModal();
 		return;
 	}
 
-	// Find the largest .out file, as it's likely to have the ELF information we need
-	candidate.Assign(files[0]);
-	for (size_t i=1; i<files.size(); i++)
-		if (wxFileName(files[i]).GetSize() > candidate.GetSize())
-			candidate.Assign(files[i]);
-
 	// Alright, we have the .out, lets disassemble it.
 	// To workaround EXEGCC bugs, make a copy of it and move it to the libultra folder
-	wxCopyFile(builddir.GetName() + "/" + candidate.GetFullName(), global_programconfig.Path_Libultra + wxString("/d.out"), true);
+	wxCopyFile(target.GetFullPath(), global_programconfig.Path_Libultra + wxString("/d.out"), true);
 
-	// Run objdump
+	// Run objdump and move the disassembly over
 	wxShell(global_programconfig.Path_Toolkit + "/objdump.exe --disassemble-all --source  --wide --all-header --line-numbers " + global_programconfig.Path_Libultra + "/d.out > " + global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName);
+	wxCopyFile(global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName, global_projectconfig.ProjectPath + "/" + global_programconfig.DissamblyName, true);
 
 	// Cleanup
-	wxCopyFile(global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName, builddir.GetName() + "/" + global_programconfig.DissamblyName, true);
 	wxRemoveFile(global_programconfig.Path_Libultra + "/d.out");
 	wxRemoveFile(global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName);
 	wxMessageDialog dialog(this, "Dumped to '" + global_programconfig.DissamblyName + "'", "Ok");
