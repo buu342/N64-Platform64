@@ -6,6 +6,9 @@
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
 #include <iterator>
+#include "helper.h"
+
+bool global_modifieddebug = false;
 
 
 /*********************************
@@ -21,6 +24,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	// Setup the log window
 	this->m_LogWin = new wxLogWindow(this, wxT("Compilation Log"), false);
 	this->m_LogWin->SetVerbose(true);
+	this->m_LogWin->GetFrame()->SetIcon(iconbm_prog);
 	this->m_LogWin->DisableTimestamp();
 
 	// Create the main sizer
@@ -32,10 +36,8 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
 	// Create the compile mode choice select
-	wxString m_Choice_BuildModeChoices[] = { wxT("Autodetect"), wxT("Debug"), wxT("Release") };
-	int m_Choice_BuildModeNChoices = sizeof(m_Choice_BuildModeChoices) / sizeof(wxString);
-	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_BuildModeNChoices, m_Choice_BuildModeChoices, 0);
-	this->m_Choice_BuildMode->SetSelection(0);
+	this->m_Choice_BuildMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, 0);
+	this->PopulateCompileChoices();
 	m_Sizer_Main->Add(this->m_Choice_BuildMode, 0, wxALL | wxEXPAND, 5);
 
 	// Create the tree icons list
@@ -66,6 +68,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_Button_Build = new wxButton(this, wxID_ANY, wxT("Build"), wxDefaultPosition, wxDefaultSize, 0);
 	m_Sizer_Bottom->Add(this->m_Button_Build, 0, wxALL, 5);
 	this->m_Button_Upload = new wxButton(this, wxID_ANY, wxT("Upload"), wxDefaultPosition, wxDefaultSize, 0);
+	this->m_Button_Upload->Enable(false);
 	m_Sizer_Bottom->Add(this->m_Button_Upload, 0, wxALL, 5);
 	m_Sizer_Main->Add(m_Sizer_Bottom, 1, wxEXPAND, 5);
 
@@ -97,6 +100,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_Menu_Build->Append(m_MenuItem_Disassemble);
 	wxMenuItem* m_MenuItem_Upload;
 	m_MenuItem_Upload = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Upload")) + wxT('\t') + wxT("CTRL+U"), wxEmptyString, wxITEM_NORMAL);
+	m_MenuItem_Upload->Enable(false);
 	this->m_Menu_Build->Append(m_MenuItem_Upload);
 	this->m_Menu_Build->AppendSeparator();
 	wxMenuItem* m_MenuItem_ForceRebuild;
@@ -156,308 +160,98 @@ void Main::m_Choice_BuildMode_OnChoice(wxCommandEvent& event)
 
 void Main::m_Button_Disassemble_OnButtonClick(wxCommandEvent& event)
 {
-	wxDir builddir(OUTPUTPATH);
-	wxArrayString files;
-	wxFileName candidate;
-	builddir.GetAllFiles(builddir.GetName(), &files, "*.out");
-
-	// Make sure we have a .out to disassemble
-	if (files.IsEmpty())
-	{
-		wxMessageDialog dialog(this, "No .out found to disassemble. Did you build the project?", "Error", wxICON_ERROR);
-		dialog.ShowModal();
-		return;
-	}
-
-	// Find the largest .out file, as it's likely to have the ELF information we need
-	candidate.Assign(files[0]);
-	for (size_t i=1; i<files.size(); i++)
-		if (wxFileName(files[i]).GetSize() > candidate.GetSize())
-			candidate.Assign(files[i]);
-
-	// Alright, we have the .out, lets disassemble it.
-	// To workaround EXEGCC bugs, make a copy of it and move it to the libultra folder
-	wxCopyFile(builddir.GetName() + wxString("/") + candidate.GetFullName(), LIBULTRAPATH + wxString("/d.out"), true);
-
-	// Run objdump
-	wxShell(wxString(MIPSEFULLPATH) + wxString("/objdump.exe --disassemble-all --source  --wide --all-header --line-numbers ") + LIBULTRAPATH + wxString("/d.out > ") + LIBULTRAPATH + wxString("/disassembly.txt"));
-
-	// Cleanup
-	wxCopyFile(LIBULTRAPATH + wxString("/disassembly.txt"), DISASSPATH, true);
-	wxRemoveFile(LIBULTRAPATH + wxString("/d.out"));
-	wxRemoveFile(LIBULTRAPATH + wxString("/disassembly.txt"));
-	wxMessageDialog dialog(this, "Dumped to '" + wxString(DISASSNAME) + "'", "Ok");
-	dialog.ShowModal();
+	this->DisassembleROM();
 }
 
 void Main::m_Button_Clean_OnButtonClick(wxCommandEvent& event)
 {
-	if (!wxDirExists(OUTPUTPATH) && !wxFileExists(DISASSPATH))
-	{
-		wxMessageDialog dialog2(this, "Nothing to clean", "Error");
-		dialog2.ShowModal();
-		return;
-	}
-
-	// Ask for confirmation
-	wxMessageDialog dialog1(this, "Clean up the build?", "Cleanup?" , wxYES_NO | wxICON_QUESTION);
-	if (dialog1.ShowModal() == wxID_YES)
-	{
-		// Delete the build folder
-		if (wxDirExists(OUTPUTPATH))
-			wxFileName(OUTPUTPATH+"/").Rmdir(wxPATH_RMDIR_RECURSIVE);
-
-		// Remove the disassembly file
-		if (wxFileExists(DISASSPATH))
-			wxRemoveFile(DISASSPATH);
-		wxMessageDialog dialog2(this, "Project cleaned", "Success");
-		dialog2.ShowModal();
-	}
+	this->CleanProject();
 }
 
 void Main::m_Button_Build_OnButtonClick(wxCommandEvent& event)
 {
-	wxDir::Make(OUTPUTPATH, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
-	wxArrayString* out = new wxArrayString();
-	bool isdebug = this->CheckDebugEnabled();
-	bool builtsomething = false;
-	bool compilefail = false;
-	wxString target = isdebug ? FINALROM_D : FINALROM;
-
-	// Setup the log window
-	this->m_LogWin->Show(true);
-
-	// Rebuild what is necessary
-	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
-	{
-		if (it->second->ShouldRebuild())
-		{
-			if (!builtsomething)
-			{
-				if (isdebug)
-					wxLogMessage("Debug Mode Enabled");
-				else
-					wxLogMessage("Debug Mode Disabled");
-				builtsomething = true;
-			}
-			wxLogMessage(it->second->GetOutputName().GetFullName() + wxString(" needs to be rebuilt"));
-			it->second->Compile(isdebug);
-			if (it->second->ShouldRebuild())
-				compilefail = true;
-		}
-	}
-
-	// Check if everything compiled
-	if (compilefail)
-	{
-		wxLogError("An error occurred during compilation");
-		return;
-	}
-
-	// Link the codesegment together
-	if (!wxFileExists(CODESEGMENT) || builtsomething)
-	{
-		wxExecuteEnv env;
-		wxString command;
-		wxArrayString output;
-		wxEnvVariableHashMap vars;
-		wxStructStat stat_oldcodeseg;
-		wxStructStat stat_newcodeseg;
-		wxString libultraver = "-lgultra_d";
-		wxString files = "";
-
-		// Log what we're doing
-		wxLogMessage("Generating codesegment");
-
-		// Set debug flags
-		if (!isdebug)
-			libultraver = "-lgultra_rom";
-
-		// Setup the environment
-		vars["ROOT"] = LIBULTRAPATH;
-		vars["gccdir"] = LIBULTRAPATH + wxString("/gcc");
-		vars["PATH"] = MIPSEFULLPATH + ";" + LIBULTRAPATH + "/usr/sbin;C:/WINDOWS/system32;";
-		vars["gccsw"] = "-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__";
-		vars["n64align"] = "on";
-		env.cwd = PROJECTPATH;
-		env.env = vars;
-
-		// Get all the files we compiled
-		for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
-			files += it->second->GetOutputName().GetFullPath() + " ";
-
-		// Run LD
-		stat_oldcodeseg.st_mtime = LastModTime(CODESEGMENT);
-		command = MIPSEFULLPATH + "/exew32.exe ld.exe "
-				+ "-o " + CODESEGMENT + " "
-				+ "-r " + files
-				+ "-L" + LIBULTRAPATH + "/usr/lib "
-				+ "-L" + LIBULTRAPATH + "/usr/lib/PR "
-				+ libultraver + " "
-				+ "-L. "
-				+ "-L" + LIBULTRAPATH + "/gcc/mipse/lib "
-				+ "-lkmc";
-		wxLogVerbose("> " + command);
-		wxExecute(command, output, wxEXEC_SYNC, &env);
-		stat_newcodeseg.st_mtime = LastModTime(CODESEGMENT);
-		
-		// Output errors
-		for (size_t i = 0; i < output.size(); i++)
-			wxLogError(output[i]);
-
-		// Check for success
-		if (!wxFileExists(CODESEGMENT) || !wxDateTime(stat_newcodeseg.st_mtime).IsLaterThan(wxDateTime(stat_oldcodeseg.st_mtime)))
-			compilefail = true;
-		else
-			builtsomething = true;
-	}
-
-	// Check if everything compiled
-	if (compilefail)
-	{
-		wxLogError("An error occurred during compilation");
-		return;
-	}
-
-	// Call MakeROM
-	if (builtsomething || !wxFileExists(target))
-	{
-		wxExecuteEnv env;
-		wxString command;
-		wxArrayString output;
-		wxEnvVariableHashMap vars;
-		wxStructStat stat_oldrom;
-		wxStructStat stat_newrom;
-		wxString flags = "-d";
-
-		// Log what we're doing
-		wxLogMessage("Generating ROM");
-
-		// Handle debug differences
-		if (!isdebug)
-		{
-			target = FINALROM;
-			flags = "";
-		}
-
-		// Setup the environment
-		vars["ROOT"] = LIBULTRAPATH;
-		vars["gccdir"] = LIBULTRAPATH + wxString("/gcc");
-		vars["PATH"] = MIPSEFULLPATH + ";" + LIBULTRAPATH + "/usr/sbin;C:/WINDOWS/system32;";
-		vars["gccsw"] = "-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTENSIONS__";
-		vars["n64align"] = "on";
-		env.cwd = PROJECTPATH;
-		env.env = vars;
-
-		// Run makerom
-		stat_oldrom.st_mtime = LastModTime(target);
-		command = MIPSEFULLPATH + "/exew32.exe mild.exe "
-				+ PROJECTPATH + "/spec "
-				+ flags + " "
-				+ "-r " + target + " "
-				+ "-e " + wxFileName(target).GetPath() + "/" + wxFileName(target).GetName() + ".out";
-		wxLogVerbose("> " + command);
-		wxExecute(command, output, wxEXEC_SYNC, &env);
-		stat_newrom.st_mtime = LastModTime(target);
-
-		// Log makrom output
-		for (size_t i = 0; i < output.size(); i++)
-			wxLogMessage(output[i]);
-
-		// Cleanup temp files created by makerom
-		if (isdebug)
-		{
-			wxRemoveFile(PROJECTPATH + "/a.out");
-			wxRemoveFile(PROJECTPATH + "/aaaaa000.cmd");
-			wxRemoveFile(PROJECTPATH + "/aaaaa000.o");
-			wxRemoveFile(PROJECTPATH + "/aaaaa000.s");
-			wxRemoveFile(PROJECTPATH + "/aaaaa000.spc");
-			wxRemoveFile(PROJECTPATH + "/spec.cvt");
-		}
-
-		// Check for success
-		if (wxFileExists(target) && wxDateTime(stat_newrom.st_mtime).IsLaterThan(wxDateTime(stat_oldrom.st_mtime)))
-		{
-			// Makemask
-			output.clear();
-			command = MIPSEFULLPATH + "/exew32.exe makemask.exe " + target;
-			wxLogVerbose("> " + command);
-			wxExecute(command, output, wxEXEC_SYNC, &env);
-			for (size_t i = 0; i < output.size(); i++)
-				wxLogMessage(output[i]);
-
-			// NRDC
-			output.clear();
-			command = MIPSEFULLPATH + "/nrdc.exe " + target + " " + REGISTERINFO;
-			wxLogVerbose("> " + command);
-			wxExecute(command, output, wxEXEC_SYNC, &env);
-			for (size_t i = 0; i < output.size(); i++)
-				wxLogMessage(output[i]);
-
-			// Move the ROM to the USB folder
-			wxMessageDialog dialog1(this, "Move the compiled ROM to the USB directory?", "Move?", wxYES_NO | wxICON_QUESTION);
-			if (dialog1.ShowModal() == wxID_YES)
-				wxCopyFile(target, MOVEROMFOLDER + wxString("/") + wxFileName(target).GetFullName());
-
-			// Done!
-			wxLogMessage("Success!");
-		}
-		else
-			wxLogError("An error occurred during compilation");
-	}
-	else
-		wxLogMessage("Nothing to build");
+	this->BuildProject();
 }
 
 void Main::m_Button_Upload_OnButtonClick(wxCommandEvent& event)
 {
-
+	this->UploadROM();
 }
 
 void Main::m_MenuItem_Open_OnSelection(wxCommandEvent& event)
 {
-
+	wxDirDialog dlg(this, "Open project folder", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if (dlg.ShowModal() == wxID_OK)
+	{
+		Config_DefaultProjectConfig();
+		global_projectconfig.ProjectPath = dlg.GetPath();
+		Config_LoadProjectConfig();
+		this->RefreshProjectTree();
+		this->PopulateCompileChoices();
+	}
 }
 
 void Main::m_MenuItem_Refresh_OnSelection(wxCommandEvent& event)
 {
-
+	this->RefreshProjectTree();
+	this->PopulateCompileChoices();
 }
 
 void Main::m_MenuItem_Exit_OnSelection(wxCommandEvent& event)
 {
-
+	this->Close();
 }
 
 void Main::m_MenuItem_Build_OnSelection(wxCommandEvent& event)
 {
-
+	this->BuildProject();
 }
 
 void Main::m_MenuItem_Clean_OnSelection(wxCommandEvent& event)
 {
-
+	this->CleanProject();
 }
 
 void Main::m_MenuItem_Disassemble_OnSelection(wxCommandEvent& event)
 {
-
+	this->DisassembleROM();
 }
 
 void Main::m_MenuItem_Upload_OnSelection(wxCommandEvent& event)
 {
-
+	this->UploadROM();
 }
 
 void Main::m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event)
 {
-
+	this->BuildROM();
 }
 
 void Main::m_MenuItem_Config_OnSelection(wxCommandEvent& event)
 {
 	Preferences* pref = new Preferences(this);
+	pref->SetIcon(iconbm_config);
 	pref->Show();
+}
+
+void Main::PopulateCompileChoices()
+{
+	int oldcount = this->m_Choice_BuildMode->GetCount();
+	wxString choices[3] = {wxT("Release"), wxT("Debug"), wxT("Autodetect from debug.h") };
+
+	if (wxFileExists(global_projectconfig.ProjectPath + "/debug.h") && (oldcount == 0 || oldcount == 2))
+	{
+		this->m_Choice_BuildMode->Clear();
+		this->m_Choice_BuildMode->Append(3, choices);
+		this->m_Choice_BuildMode->SetSelection(2);
+	}
+	else if (!wxFileExists(global_projectconfig.ProjectPath + "/debug.h") && (oldcount == 0 || oldcount == 3))
+	{
+		this->m_Choice_BuildMode->Clear();
+		this->m_Choice_BuildMode->Append(2, choices);
+		this->m_Choice_BuildMode->SetSelection(1);
+	}
+	this->Refresh();
 }
 
 void Main::RefreshProjectTree()
@@ -475,7 +269,7 @@ void Main::RefreshProjectTree()
 	this->m_CompUnits = new std::map<wxTreeItemId, CompUnit*>();
 
 	// Open the project directory
-	wxString path = PROJECTPATH;
+	wxString path = global_projectconfig.ProjectPath;
 	wxDir dir(path);
 	if (!dir.IsOpened())
 	{
@@ -485,7 +279,7 @@ void Main::RefreshProjectTree()
 	}
 
 	// Traverse the tree
-	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits);
+	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits, {"c", "h"});
 	dir.Traverse(traverser);
 	dir.Close();
 
@@ -493,31 +287,375 @@ void Main::RefreshProjectTree()
 
 bool Main::CheckDebugEnabled()
 {
-	bool retval = false;
+	if (this->m_Choice_BuildMode->GetSelection() == 2)
+	{
+		bool retval = false;
+		wxTextFile debugh;
+		debugh.Open("debug.h");
+		while (!debugh.Eof())
+		{
+			wxString str = debugh.GetNextLine();
+			if (str.Find("#define DEBUG_MODE") != wxNOT_FOUND)
+			{
+				wxStringTokenizer tokenizer(str, " ");
+				while (tokenizer.HasMoreTokens())
+				{
+					wxString token = tokenizer.GetNextToken();
+					if (token == "1")
+					{
+						retval = true;
+						goto done;
+					}
+					else if (token == "0")
+						goto done;
+				}
+			}
+		}
+		done:
+			debugh.Close();
+			return retval;
+	}
+	else
+		return (this->m_Choice_BuildMode->GetSelection());
+}
+
+void Main::ModifyDebugH()
+{
 	wxTextFile debugh;
-	if (!wxFileExists(PROJECTPATH + wxString("/debug.h")))
-		return false;
-	debugh.Open("debug.h");
+	wxTextFile copy;
+	if (!wxFileExists("debug.h") || global_modifieddebug || this->m_Choice_BuildMode->GetSelection() == 2)
+		return;
+	if (this->CheckDebugEnabled() == (this->m_Choice_BuildMode->GetSelection() == 1))
+		return;
+	wxRenameFile("debug.h", "_debug.h");
+	debugh.Open("_debug.h");
+	copy.Open("debug.h");
 	while (!debugh.Eof())
 	{
 		wxString str = debugh.GetNextLine();
 		if (str.Find("#define DEBUG_MODE") != wxNOT_FOUND)
+			copy.AddLine("#define DEBUG_MODE " + wxString::Format("%d", this->m_Choice_BuildMode->GetSelection()));
+		else
+			copy.AddLine(str);
+	}
+	debugh.Close();
+	copy.Close();
+	global_modifieddebug = true;
+}
+
+void Main::FixDebugH()
+{
+	if (!global_modifieddebug)
+		return;
+	wxRemoveFile("debug.h");
+	wxRenameFile("_debug.h", "debug.h");
+	global_modifieddebug = false;
+}
+
+void Main::CleanProject()
+{
+	// First, check if there are objects to clean
+	wxTreeCtrl cleantree(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE);
+	wxTreeItemId root = cleantree.AddRoot(global_projectconfig.ProjectPath+"/");
+	wxDir dir(global_projectconfig.ProjectPath);
+	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, NULL, {"o", "out", "n64"});
+	dir.Traverse(traverser);
+	dir.Close();
+
+	// Stop if there's nothing to clean
+	if (cleantree.GetCount() == 0 && !wxDirExists(global_projectconfig.BuildFolder) && !wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
+	{
+		wxMessageDialog dialog2(this, "Nothing to clean", "Error");
+		dialog2.ShowModal();
+		return;
+	}
+
+	// Ask for confirmation?
+	wxMessageDialog dialog1(this, "Clean up the build?", "Cleanup?" , wxYES_NO | wxICON_QUESTION);
+	if (!global_programconfig.Prompt_Clean || dialog1.ShowModal() == wxID_YES)
+	{
+		// Delete compiled objects
+		traverser.DeleteFiles(root);
+
+		// Delete the build folder
+		if (global_programconfig.Use_Build && wxDirExists(global_projectconfig.BuildFolder))
+			wxFileName(global_projectconfig.BuildFolder+"/").Rmdir(wxPATH_RMDIR_RECURSIVE);
+
+		// Remove the disassembly file
+		if (wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
+			wxRemoveFile(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName);
+		wxMessageDialog dialog2(this, "Project cleaned", "Success");
+		dialog2.ShowModal();
+	}
+}
+
+void Main::BuildProject()
+{
+	bool isdebug = this->CheckDebugEnabled();
+	bool builtsomething = false;
+	bool compilefail = false;
+	wxArrayString* out = new wxArrayString();
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
+	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
+
+	// Setup before building
+	if (global_programconfig.Use_Build)
+	{
+		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
+		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
+	}
+	if (isdebug && global_programconfig.SeparateDebug)
+	{
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
+	}
+	this->ModifyDebugH();
+
+	// Setup the log window
+	this->m_LogWin->Show(true);
+	if (isdebug)
+		wxLogMessage("Debug Mode Enabled");
+	else
+		wxLogMessage("Debug Mode Disabled");
+
+	// Rebuild what is necessary
+	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+	{
+		if (it->second->ShouldRebuild(isdebug))
 		{
-			wxStringTokenizer tokenizer(str, " ");
-			while (tokenizer.HasMoreTokens())
-			{
-				wxString token = tokenizer.GetNextToken();
-				if (token == "1")
-				{
-					retval = true;
-					goto done;
-				}
-				else if (token == "0")
-					goto done;
-			}
+			if (!builtsomething)
+				builtsomething = true;
+			wxLogMessage(it->second->GetOutputPath(isdebug).GetFullName() + wxString(" needs to be rebuilt"));
+			it->second->Compile(isdebug);
+			if (it->second->ShouldRebuild(isdebug))
+				compilefail = true;
 		}
 	}
-	done:
-		debugh.Close();
-		return retval;
+
+	// Check if everything compiled
+	if (compilefail)
+	{
+		wxLogError("An error occurred during compilation\n\n");
+		this->FixDebugH();
+		return;
+	}
+
+	// Link the codesegment together
+	if (!wxFileExists(codeseg.GetFullPath()) || builtsomething)
+	{
+		wxString command;
+		wxArrayString output;
+		wxStructStat stat_oldcodeseg;
+		wxStructStat stat_newcodeseg;
+		wxString libultraver = "-lgultra_d";
+		wxString files = "";
+		wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
+
+		// Log what we're doing
+		wxLogMessage("Generating codesegment");
+
+		// Set debug flags
+		if (!isdebug)
+			libultraver = "-lgultra_rom";
+
+		// Get all the files we compiled
+		for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+			files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
+
+		// Run LD
+		stat_oldcodeseg.st_mtime = LastModTime(codeseg.GetFullPath());
+		command = global_programconfig.Path_Toolkit + "/" + exew32 + "ld.exe "
+				+ "-o " + codeseg.GetFullPath() + " "
+				+ "-r " + files
+				+ libultraver + " " 
+				+ global_projectconfig.Flags_LD;
+		wxLogVerbose("> " + command);
+		wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
+		stat_newcodeseg.st_mtime = LastModTime(codeseg.GetFullPath());
+		
+		// Output errors
+		for (size_t i = 0; i < output.size(); i++)
+			wxLogError(output[i]);
+
+		// Check for success
+		if (!wxFileExists(codeseg.GetFullPath()) || !wxDateTime(stat_newcodeseg.st_mtime).IsLaterThan(wxDateTime(stat_oldcodeseg.st_mtime)))
+			compilefail = true;
+		else
+			builtsomething = true;
+	}
+
+	// Check if everything compiled
+	if (compilefail)
+	{
+		wxLogError("An error occurred during compilation\n\n");
+		this->FixDebugH();
+		return;
+	}
+
+	// Call MakeROM
+	if (builtsomething || !wxFileExists(target.GetFullPath()))
+		this->BuildROM();
+	else
+		wxLogMessage("Nothing to build\n\n");
+	this->FixDebugH();
+}
+
+void Main::BuildROM()
+{
+	wxString command;
+	wxArrayString output;
+	wxStructStat stat_oldrom;
+	wxStructStat stat_newrom;
+	wxExecuteEnv env = GetProgramEnvironment();
+	wxEnvVariableHashMap vars = env.env;
+	wxString flags = "-d";
+	bool isdebug = this->CheckDebugEnabled();
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
+	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
+	wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
+
+	// Setup before building
+	if (global_programconfig.Use_Build)
+	{
+		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
+		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
+	}
+	if (isdebug && global_programconfig.SeparateDebug)
+	{
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
+	}
+	this->m_LogWin->Show(true);
+	this->ModifyDebugH();
+
+	// Log what we're doing
+	wxLogMessage("Generating ROM");
+
+	// Handle debug differences
+	if (!isdebug)
+		flags = "";
+
+	// Add the codesegment to the environment variables
+	vars["CODESEGMENT"] = "\"" + codeseg.GetFullPath() + "\"";
+	env.env = vars;
+
+	// Run makerom
+	stat_oldrom.st_mtime = LastModTime(target.GetFullPath());
+	command = global_programconfig.Path_Toolkit + "/" + exew32 +"mild.exe "
+			+ global_projectconfig.ProjectPath + "/spec "
+			+ flags + " "
+			+ "-r " + target.GetFullPath() + " "
+			+ "-e " + target.GetPath() + "/" + target.GetName() + ".out"
+			+ global_projectconfig.Flags_MILD;
+	wxLogVerbose("> " + command);
+	wxExecute(command, output, wxEXEC_SYNC, &env);
+	stat_newrom.st_mtime = LastModTime(target.GetFullPath());
+
+	// Log makrom output
+	for (size_t i = 0; i < output.size(); i++)
+		wxLogMessage(output[i]);
+
+	// Cleanup temp files created by makerom
+	if (isdebug)
+	{
+		wxRemoveFile(global_projectconfig.ProjectPath + "/a.out");
+		wxRemoveFile(global_projectconfig.ProjectPath + "/aaaaa000.cmd");
+		wxRemoveFile(global_projectconfig.ProjectPath + "/aaaaa000.o");
+		wxRemoveFile(global_projectconfig.ProjectPath + "/aaaaa000.s");
+		wxRemoveFile(global_projectconfig.ProjectPath + "/aaaaa000.spc");
+		wxRemoveFile(global_projectconfig.ProjectPath + "/spec.cvt");
+	}
+
+	// Check for success
+	if (wxFileExists(target.GetFullPath()) && wxDateTime(stat_newrom.st_mtime).IsLaterThan(wxDateTime(stat_oldrom.st_mtime)))
+	{
+		// Makemask
+		if (global_programconfig.Use_MakeMask)
+		{
+			output.clear();
+			command = global_programconfig.Path_Toolkit + "/" + exew32 + "makemask.exe " + target.GetFullPath();
+			wxLogVerbose("> " + command);
+			wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
+			for (size_t i = 0; i < output.size(); i++)
+				wxLogMessage(output[i]);
+		}
+
+		// NRDC
+		if (global_programconfig.Use_NRDC)
+			this->RegisterROM(target.GetFullPath());
+
+		// Move the ROM to the USB folder
+		if (global_programconfig.Use_Move)
+			this->MoveROM(target.GetFullPath());
+
+		// Done!
+		wxLogMessage("Success!\n\n");
+	}
+	else
+		wxLogError("An error occurred during compilation\n\n");
+	this->FixDebugH();
+}
+
+void Main::DisassembleROM()
+{
+	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
+
+	// Get the right name
+	if (global_programconfig.Use_Build)
+		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
+	if (global_programconfig.SeparateDebug)
+		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
+	target = target.GetPath() + "/" + target.GetName() + ".out";
+
+	// Make sure we have a .out to disassemble
+	if (!wxFileExists(target.GetFullPath()))
+	{
+		wxMessageDialog dialog(this, "No .out found to disassemble. Did you build the project?", "Error", wxICON_ERROR);
+		dialog.ShowModal();
+		return;
+	}
+
+	// Alright, we have the .out, lets disassemble it.
+	// To workaround EXEGCC bugs, make a copy of it and move it to the libultra folder
+	wxCopyFile(target.GetFullPath(), global_programconfig.Path_Libultra + wxString("/d.out"), true);
+
+	// Run objdump and move the disassembly over
+	wxShell(global_programconfig.Path_Toolkit + "/objdump.exe --disassemble-all --source  --wide --all-header --line-numbers " + global_programconfig.Path_Libultra + "/d.out > " + global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName);
+	wxCopyFile(global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName, global_projectconfig.ProjectPath + "/" + global_programconfig.DissamblyName, true);
+
+	// Cleanup
+	wxRemoveFile(global_programconfig.Path_Libultra + "/d.out");
+	wxRemoveFile(global_programconfig.Path_Libultra + "/" + global_programconfig.DissamblyName);
+	wxMessageDialog dialog(this, "Dumped to '" + global_programconfig.DissamblyName + "'", "Ok");
+	dialog.ShowModal();
+}
+
+void Main::RegisterROM(wxString target)
+{
+	wxString command;
+	wxArrayString output;
+	command = global_programconfig.Path_Toolkit + "/nrdc.exe " + target
+		+ " \"" + global_projectconfig.ROMHeader_Name + "\""
+		+ " " + global_projectconfig.ROMHeader_Manufacturer
+		+ " " + global_projectconfig.ROMHeader_ID
+		+ " " + global_projectconfig.ROMHeader_Country;
+	wxLogVerbose("> " + command);
+	wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
+	for (size_t i = 0; i < output.size(); i++)
+		wxLogMessage(output[i]);
+}
+
+void Main::MoveROM(wxString target)
+{
+	wxMessageDialog dialog(this, "Move the compiled ROM to the USB directory?", "Move?", wxYES_NO | wxICON_QUESTION);
+	if (!global_programconfig.Prompt_Move || dialog.ShowModal() == wxID_YES)
+		wxCopyFile(target, global_programconfig.Path_Move + "/" + wxFileName(target).GetFullName());
+}
+
+void Main::UploadROM()
+{
+	wxMessageDialog dialog(this, "Not implemented yet.", "Sorry");
+	dialog.ShowModal();
 }

@@ -18,38 +18,10 @@ typedef struct IUnknown IUnknown;
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/choice.h>
-#include <wx/stdpaths.h>
 #include <wx/log.h>
 #include <map>
 
-// Program defs
-#define PROGRAM_NAME  "Builder"
-#define PROJECTPATH   (wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath())
-
-// Build system defs
-#define BUILDFOLDER   "build"
-#define OUTPUTPATH    PROJECTPATH + wxString("/") + wxString(BUILDFOLDER)
-#define DISASSNAME    "disassembly.txt"
-#define DISASSPATH    PROJECTPATH + "/" + DISASSNAME
-
-// Project defs
-#define TARGET        "platform.n64"
-#define TARGETDEBUG   "platform_d.n64"
-#define MOVEROMFOLDER "Z:"
-#define REGISTERINFO  "\"PLATFORM64\" B PF I"
-
-// Libultra paths
-#define LIBULTRAPATH  "C:/ultra"
-#define MIPSEPATH     "GCC/MIPSE/BIN"
-#define MIPSEFULLPATH (LIBULTRAPATH + wxString("/") + MIPSEPATH)
-#define CODESEGMENT   OUTPUTPATH + "/codesegment.o"
-#define FINALROM      OUTPUTPATH + "/" + TARGET
-#define FINALROM_D    OUTPUTPATH + "/" + TARGETDEBUG
-
-// Icons
-extern wxIcon   iconbm_prog;
-extern wxBitmap iconbm_c;
-extern wxBitmap iconbm_h;
+extern bool global_modifieddebug;
 
 class Main : public wxFrame
 {
@@ -84,10 +56,20 @@ class Main : public wxFrame
 		void m_MenuItem_Upload_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_Config_OnSelection(wxCommandEvent& event);
-		void RefreshProjectTree();
+		void PopulateCompileChoices();
 		bool CheckDebugEnabled();
+		void ModifyDebugH();
+		void FixDebugH();
+		void CleanProject();
+		void BuildProject();
+		void BuildROM();
+		void DisassembleROM();
+		void RegisterROM(wxString target);
+		void MoveROM(wxString target);
+		void UploadROM();
 
 	public:
+		void RefreshProjectTree();
 		Main();
 		~Main();
 };

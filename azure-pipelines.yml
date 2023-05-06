@@ -1,0 +1,53 @@
+trigger:
+  branches:
+    include: ["master", "develop*", "release*", "refs/tags/*" ]
+  paths:
+    exclude: [ "doc", "*.md", ".gitignore" ]
+
+jobs:
+- job: Building_Toolkit
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - script: |
+      echo Download wxWidgets
+      pip install gdown
+      gdown --fuzzy https://drive.google.com/u/0/uc?id=1Dg5BZtatClyEX0zPYXjYKiNGHGMkbQ4G&export=download
+      ren *.zip wxWidgets.zip
+      7z x wxWidgets.zip -oD:/
+      dir
+      cd D:/
+      dir
+    
+  # Visual Studio build
+  # Build with MSBuild and set the Visual Studio version property
+  - task: VSBuild@1
+    displayName: Build Tools
+    env:
+      WXWIN: D:/wxWidgets/
+    inputs:
+      configuration: 'release'
+      solution: '**\*.sln' 
+      vsVersion: '16.0' # Optional. Options: latest, 16.0, 15.0, 14.0, 12.0, 11.0
+      msbuildArchitecture: 'x86' # Optional. Options: x86, x64
+      
+  - script: |
+          cd $BUILD_SOURCESDIRECTORY
+          cd "Tools/NRDC"
+          makeme.bat
+      
+  - script: |
+      cd $BUILD_SOURCESDIRECTORY
+      cd Tools
+      mkdir ToolsRelease
+      for /r . %x in (*.exe) do move "%x" "ToolsRelease"
+      tar.exe -a -c -f Tools.zip ToolsRelease/*
+    
+  # Publish build artifacts to Azure Artifacts/TFS or a file share
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts
+    inputs:
+      pathtoPublish: '$(Build.SourcesDirectory)/Tools/Tools.zip'
+      artifactName: 'chorizo-windows' 
+      publishLocation: 'Container' # Options: container, filePath
+      parallel: true # Optional

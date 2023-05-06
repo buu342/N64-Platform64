@@ -5,6 +5,7 @@
 *.cvt
 *.exe
 *.n64
+*.aps
 Tools/*/Debug/*
 Tools/*/Release/*
 Tools/*/.vs
