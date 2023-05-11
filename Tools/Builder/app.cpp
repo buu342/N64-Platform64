@@ -21,6 +21,7 @@ App::App()
 	global_configfile = new wxFileConfig(PROGRAM_NAME, "Buu342", wxStandardPaths::Get().GetUserConfigDir() + "/N64" + PROGRAM_NAME + "/Config.ini");
 	Config_DefaultProgramConfig();
 	Config_LoadProgramConfig();
+	global_projectconfig.ProjectPath = DEFAULT_PROJECTPATH;
 	Config_DefaultProjectConfig();
 	Config_LoadProjectConfig();
 }

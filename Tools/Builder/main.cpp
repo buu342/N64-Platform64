@@ -159,9 +159,11 @@ Main::~Main()
 void Main::m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event)
 {
 	wxTreeListItem id = event.GetItem();
-	wxTextEntryDialog dialog(this, "Please enter the segment name:", "Segment name", this->m_TreeCtrl_ProjectDir->GetItemText(id, 1), wxOK | wxCANCEL);
+	wxTextEntryDialog dialog(this, "Enter the segment name:", "Segment name", this->m_TreeCtrl_ProjectDir->GetItemText(id, 1), wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK)
 	{
+		CompUnit* unit = this->m_CompUnits->find(id)->second;
+		wxString oldseg = unit->GetSegment().GetName();
 		wxString seg = "codesegment";
 
 		// If the segment name is invalid, then rename it to codesegment
@@ -169,8 +171,47 @@ void Main::m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event)
 			seg = dialog.GetValue();
 
 		// Insert it into a new map entry and change the column text
-		this->m_CompUnits->find(id)->second->SetSegment(seg);
+		unit->SetSegment(seg);
 		this->m_TreeCtrl_ProjectDir->SetItemText(id, 1, seg);
+
+		// Remove from the old segment in the project config
+		if (oldseg != "codesegment")
+		{
+			wxString str = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/Segment_"+oldseg);
+			str.Replace("\"" + RelativeProjectPath(unit->GetFilePath().GetFullPath()) + "\"" + " ", wxEmptyString);
+
+			// Delete the old segment list if it's empty, otherwise remove just the deleted file
+			if (str == wxEmptyString)
+			{
+				global_configfile->DeleteEntry("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + oldseg);
+				str = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/SegmentList");
+				str.Replace("\"" + oldseg + "\"" + " ", wxEmptyString);
+				
+				// Delete the segment list entry if it's empty, otherwise remove just the deleted segment
+				if (str == wxEmptyString)
+					global_configfile->DeleteEntry("/Project_" + global_projectconfig.ProjectPath + "/SegmentList");
+				else
+					global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/SegmentList", str);
+			}
+			else
+				global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + oldseg, str);
+		}
+
+		// Add to the new segment in the project config
+		if (seg != "codesegment")
+		{
+			wxString str = wxEmptyString;
+			if (global_configfile->HasEntry("/Project_" + global_projectconfig.ProjectPath + "/SegmentList"))
+				str = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/SegmentList");
+			if (!str.Contains("\"" + seg + "\"" + " "))
+				global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/SegmentList", str + "\"" + seg + "\"" + " ");
+			str = wxEmptyString;
+			if (global_configfile->HasEntry("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + seg))
+				str = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + seg);
+			str = str + "\"" + RelativeProjectPath(unit->GetFilePath().GetFullPath()) + "\"" + " ";
+			global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + seg, str);
+		}
+		global_configfile->Flush();
 	}
 }
 

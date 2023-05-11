@@ -253,11 +253,15 @@ Preferences::~Preferences()
 void Preferences::m_TextCtrl_TargetName_OnText(wxCommandEvent& event)
 {
 	global_projectconfig.TargetName = event.GetString();
+	if (global_projectconfig.TargetName == "")
+		global_projectconfig.TargetName = DEFAULT_ROMNAME;
 }
 
 void Preferences::m_TextCtrl_BuildFolder_OnText(wxCommandEvent& event)
 {
 	global_projectconfig.BuildFolder = event.GetString();
+	if (global_projectconfig.BuildFolder == "")
+		global_projectconfig.BuildFolder = DEFAULT_BUILDPATH;
 }
 
 void Preferences::m_TextCtrl_ROMHeader_Title_OnText(wxCommandEvent& event)
@@ -489,43 +493,33 @@ void Config_DefaultProgramConfig()
 
 void Config_SaveProjectConfig()
 {
-	wxString fixedpath;
-	fixedpath = global_projectconfig.ProjectPath;
-	fixedpath.Replace("/", "_");
-	fixedpath.Replace("\\", "_");
-	global_configfile->Write("/Project_"+fixedpath+"/TargetName", global_projectconfig.TargetName);
-	global_configfile->Write("/Project_"+fixedpath+"/BuildFolder", global_projectconfig.BuildFolder);
-	global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
-	global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
-	global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
-	global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Country", global_projectconfig.ROMHeader_Country);
-	global_configfile->Write("/Project_"+fixedpath+"/Flags_GCC", global_projectconfig.Flags_GCC);
-	global_configfile->Write("/Project_"+fixedpath+"/Flags_LD", global_projectconfig.Flags_LD);
-	global_configfile->Write("/Project_"+fixedpath+"/Flags_MILD", global_projectconfig.Flags_MILD);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/TargetName", global_projectconfig.TargetName);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder", global_projectconfig.BuildFolder);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Country", global_projectconfig.ROMHeader_Country);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC", global_projectconfig.Flags_GCC);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD", global_projectconfig.Flags_LD);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD", global_projectconfig.Flags_MILD);
 	global_configfile->Flush();
 }
 
 void Config_LoadProjectConfig()
 {
-	wxString fixedpath;
-	fixedpath = global_projectconfig.ProjectPath;
-	fixedpath.Replace("/", "_");
-	fixedpath.Replace("\\", "_");
-	global_configfile->Read("/Project_"+fixedpath+"/TargetName", &global_projectconfig.TargetName);
-	global_configfile->Read("/Project_"+fixedpath+"/BuildFolder", &global_projectconfig.BuildFolder);
-	global_configfile->Read("/Project_"+fixedpath+"/ROMHeader_Name", &global_projectconfig.ROMHeader_Name);
-	global_configfile->Read("/Project_"+fixedpath+"/ROMHeader_Manufacturer", &global_projectconfig.ROMHeader_Manufacturer);
-	global_configfile->Read("/Project_"+fixedpath+"/ROMHeader_ID", &global_projectconfig.ROMHeader_ID);
-	global_configfile->Read("/Project_"+fixedpath+"/ROMHeader_Country", &global_projectconfig.ROMHeader_Country);
-	global_configfile->Read("/Project_"+fixedpath+"/Flags_GCC", &global_projectconfig.Flags_GCC);
-	global_configfile->Read("/Project_"+fixedpath+"/Flags_LD", &global_projectconfig.Flags_LD);
-	global_configfile->Read("/Project_"+fixedpath+"/Flags_MILD", &global_projectconfig.Flags_MILD);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/TargetName", &global_projectconfig.TargetName);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder", &global_projectconfig.BuildFolder);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Name", &global_projectconfig.ROMHeader_Name);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Manufacturer", &global_projectconfig.ROMHeader_Manufacturer);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_ID", &global_projectconfig.ROMHeader_ID);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Country", &global_projectconfig.ROMHeader_Country);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC", &global_projectconfig.Flags_GCC);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD", &global_projectconfig.Flags_LD);
+	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD", &global_projectconfig.Flags_MILD);
 }
 
 void Config_DefaultProjectConfig()
 {
-	wxString fixedpath;
-	global_projectconfig.ProjectPath = DEFAULT_PROJECTPATH;
 	global_projectconfig.TargetName  = DEFAULT_ROMNAME;
 	global_projectconfig.BuildFolder = DEFAULT_BUILDPATH;
 	global_projectconfig.ROMHeader_Name = DEFAULT_ROMHEADER_NAME;
@@ -535,26 +529,23 @@ void Config_DefaultProjectConfig()
 	global_projectconfig.Flags_GCC = DEFAULT_GCCFLAGS;
 	global_projectconfig.Flags_LD = DEFAULT_LDFLAGS;
 	global_projectconfig.Flags_MILD = DEFAULT_MILDFLAGS;
-	fixedpath = global_projectconfig.ProjectPath;
-	fixedpath.Replace("/", "_");
-	fixedpath.Replace("\\", "_");
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/TargetName"))
-		global_configfile->Write("/Project_"+fixedpath+"/TargetName", global_projectconfig.TargetName);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/BuildFolder"))
-		global_configfile->Write("/Project_"+fixedpath+"/BuildFolder", global_projectconfig.BuildFolder);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/ROMHeader_Name"))
-		global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/ROMHeader_Manufacturer"))
-		global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/ROMHeader_ID"))
-		global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/ROMHeader_Country"))
-		global_configfile->Write("/Project_"+fixedpath+"/ROMHeader_Country", global_projectconfig.ROMHeader_Country);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/Flags_GCC"))
-		global_configfile->Write("/Project_"+fixedpath+"/Flags_GCC", global_projectconfig.Flags_GCC);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/Flags_LD"))
-		global_configfile->Write("/Project_"+fixedpath+"/Flags_LD", global_projectconfig.Flags_LD);
-	if (!global_configfile->HasEntry("/Project_"+fixedpath+"/Flags_MILD"))
-		global_configfile->Write("/Project_"+fixedpath+"/Flags_MILD", global_projectconfig.Flags_MILD);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/TargetName"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/TargetName", global_projectconfig.TargetName);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder", global_projectconfig.BuildFolder);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Name"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Manufacturer"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_ID"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Country"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Country", global_projectconfig.ROMHeader_Country);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC", global_projectconfig.Flags_GCC);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD", global_projectconfig.Flags_LD);
+	if (!global_configfile->HasEntry("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD"))
+		global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD", global_projectconfig.Flags_MILD);
 	global_configfile->Flush();
 }

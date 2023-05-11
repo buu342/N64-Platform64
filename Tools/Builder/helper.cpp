@@ -49,3 +49,10 @@ wxExecuteEnv GetProgramEnvironment()
 	env.env = vars;
 	return env;
 }
+
+wxString RelativeProjectPath(wxFileName file)
+{
+	wxString str = file.GetFullPath();
+	str.Replace(global_projectconfig.ProjectPath, "");
+	return str;
+}

@@ -14,7 +14,8 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 	wxString path = "";
 	wxString output = tree->GetItemText(id);
 	wxTreeListItem curid = id;
-	wxFileName segment = global_projectconfig.ProjectPath + "/" + "codesegment" + ".o";
+	wxString segmentname = "codesegment";
+	wxFileName segmentpath;
 
 	// First, generate the path
 	while (tree->GetItemParent(curid) != NULL)
@@ -32,9 +33,38 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 		this->m_Output.Assign(global_projectconfig.ProjectPath + "/" + path + output);
 
 	// Set the segment
+	if (global_configfile->HasEntry("/Project_" + global_projectconfig.ProjectPath + "/SegmentList"))
+	{
+		std::vector<wxString> segments = std::vector<wxString>();
+		wxString parse = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/SegmentList");
+		while (parse.size() > 0)
+		{
+			parse = parse.AfterFirst('\"');
+			segments.push_back(parse.BeforeFirst('\"'));
+			parse = parse.AfterFirst('\"');
+			parse = parse.AfterFirst(' ');
+		}
+		for (std::vector<wxString>::iterator it = segments.begin(); it != segments.end(); ++it)
+		{
+			parse = global_configfile->Read("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + (*it));
+			while (parse.size() > 0)
+			{
+				parse = parse.AfterFirst('\"');
+				if (parse.BeforeFirst('\"') == RelativeProjectPath(this->m_File.GetFullPath()))
+				{
+					segmentname = (*it);
+					break;
+				}
+				parse = parse.AfterFirst('\"');
+				parse = parse.AfterFirst(' ');
+			}
+		}
+	}
 	if (global_programconfig.Use_Build)
-		segment = global_projectconfig.BuildFolder + "/" + "codesegment" + ".o";
-	this->m_Segment = segment;
+		segmentpath = global_projectconfig.BuildFolder + "/" + segmentname + ".o";
+	else
+		segmentpath = global_projectconfig.ProjectPath + "/" + segmentname + ".o";
+	this->m_Segment = segmentpath;
 
 	// Finally, we need to read the file and check its dependencies
 	file.Open(this->m_File.GetFullPath());
@@ -61,6 +91,11 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 CompUnit::~CompUnit()
 {
 
+}
+
+wxFileName CompUnit::GetFilePath()
+{
+	return this->m_File;
 }
 
 wxFileName CompUnit::GetOutputPath(bool debug)

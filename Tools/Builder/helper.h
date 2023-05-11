@@ -13,3 +13,4 @@ typedef struct IUnknown IUnknown;
 time_t LastModTime(const char* path);
 unsigned int GetMBits(const char* path);
 wxExecuteEnv GetProgramEnvironment();
+wxString RelativeProjectPath(wxFileName file);

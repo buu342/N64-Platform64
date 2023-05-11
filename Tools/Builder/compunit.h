@@ -17,6 +17,7 @@ class CompUnit
 		wxFileName              m_Segment;
 
 	public:
+		wxFileName GetFilePath();
 		wxFileName GetOutputPath(bool debug);
 		wxFileName GetSegment();
 		void SetSegment(wxString segment);

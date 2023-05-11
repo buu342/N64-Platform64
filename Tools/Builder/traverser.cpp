@@ -39,10 +39,12 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
         if (name.GetExt() == "c")
         {
             wxTreeListItem id = this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
-            wxString segment = "codesegment";
-            this->m_Tree->SetItemText(id, 1, segment);
             if (this->m_Map != NULL)
-                this->m_Map->insert(std::pair<wxTreeListItem, CompUnit* >(id, new CompUnit(this->m_Tree, id)));
+            {
+                CompUnit* unit = new CompUnit(this->m_Tree, id);
+                this->m_Map->insert(std::pair<wxTreeListItem, CompUnit* >(id, unit));
+                this->m_Tree->SetItemText(id, 1, unit->GetSegment().GetName());
+            }
         }
         else
             this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 2);
