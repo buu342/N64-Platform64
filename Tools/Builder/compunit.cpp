@@ -8,12 +8,12 @@
 #include <wx/log.h>
 #include <wx/dir.h>
 
-CompUnit::CompUnit(wxTreeCtrl* tree, wxTreeItemId id)
+CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 {
 	wxTextFile file;
 	wxString path = "";
 	wxString output = tree->GetItemText(id);
-	wxTreeItemId curid = id;
+	wxTreeListItem curid = id;
 
 	// First, generate the path
 	while (tree->GetItemParent(curid) != NULL)

@@ -4,7 +4,7 @@ typedef struct IUnknown IUnknown;
 
 #include "compunit.h"
 #include <wx/dir.h>
-#include <wx/treectrl.h>
+#include <wx/treelist.h>
 #include <wx/filename.h>
 #include <map>
 #include <vector>
@@ -12,17 +12,19 @@ typedef struct IUnknown IUnknown;
 class Traverser : public wxDirTraverser
 {
     protected:
-        wxTreeCtrl*  m_Tree;
-        wxTreeItemId m_CurNode;
-        wxString     m_CurDir;
+        wxTreeListCtrl*  m_Tree;
+        wxTreeListItem   m_CurNode;
+        wxString         m_CurDir;
         std::vector<wxString> m_Extensions;
-        std::map<wxTreeItemId, CompUnit*>* m_Map;
+        std::map<wxTreeListItem, CompUnit*>* m_Map;
+        std::map<wxString, std::vector<wxFileName>*>* m_Segments;
 
     public:
         wxDirTraverseResult OnFile(const wxString& filename);
         wxDirTraverseResult OnDir(const wxString& dirname);
         bool IsWhitelistedExtension(wxString ext);
-        void DeleteFiles(wxTreeItemId node);
-        Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions);
+        void DeleteFiles(wxTreeListItem node);
+        Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions);
+        Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::map<wxString, std::vector<wxFileName>*>* segments, std::vector<wxString> extensions);
         ~Traverser();
 };

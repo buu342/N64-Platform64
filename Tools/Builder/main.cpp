@@ -19,7 +19,9 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 {
 	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 	this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT));
-	this->m_CompUnits = new std::map<wxTreeItemId, CompUnit*>();
+	this->m_CompUnits = new std::map<wxTreeListItem, CompUnit*>();
+	this->m_Segments = new std::map<wxString, std::vector<wxFileName>*>();
+	this->m_Segments->insert(std::pair<wxString, std::vector<wxFileName>*>("codesegment", new std::vector<wxFileName>()));
 
 	// Setup the log window
 	this->m_LogWin = new wxLogWindow(this, wxT("Compilation Log"), false);
@@ -51,9 +53,11 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_treeIcons->Add(iconbm_h);
 	
 	// Create the tree control
-	this->m_TreeCtrl_ProjectDir = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE | wxTR_HAS_BUTTONS | wxTR_HIDE_ROOT | wxBORDER_SUNKEN);
-	m_Sizer_Main->Add(this->m_TreeCtrl_ProjectDir, 0, wxALL | wxEXPAND, 5);
+	this->m_TreeCtrl_ProjectDir = new wxTreeListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_DEFAULT_STYLE);
+	this->m_TreeCtrl_ProjectDir->AppendColumn(wxT("File"), 500, wxALIGN_LEFT, wxCOL_RESIZABLE);
+	this->m_TreeCtrl_ProjectDir->AppendColumn(wxT("Segment"), wxCOL_WIDTH_DEFAULT, wxALIGN_CENTER, wxCOL_RESIZABLE);
 	this->m_TreeCtrl_ProjectDir->AssignImageList(this->m_treeIcons);
+	m_Sizer_Main->Add(this->m_TreeCtrl_ProjectDir, 0, wxALL | wxEXPAND, 5);
 
 	// Create the bottom sizer
 	wxBoxSizer* m_Sizer_Bottom;
@@ -123,6 +127,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->Centre(wxBOTH);
 
 	// Connect Events
+	this->m_TreeCtrl_ProjectDir->Connect(wxEVT_TREELIST_ITEM_ACTIVATED, wxTreeListEventHandler(Main::m_TreeCtrl_ProjectDir_OnActivated), NULL, this);
 	this->m_Choice_BuildMode->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Main::m_Choice_BuildMode_OnChoice), NULL, this);
 	this->m_Button_Disassemble->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Disassemble_OnButtonClick), NULL, this);
 	this->m_Button_Clean->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Clean_OnButtonClick), NULL, this);
@@ -148,9 +153,30 @@ Main::~Main()
 	this->m_Button_Build->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Build_OnButtonClick), NULL, this);
 	this->m_Button_Upload->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Upload_OnButtonClick), NULL, this);
 
-	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 		delete (it->second);
 	delete this->m_CompUnits;
+	for (std::map<wxString, std::vector<wxFileName>*>::iterator it = this->m_Segments->begin(); it != this->m_Segments->end(); it++)
+		delete (it->second);
+	delete this->m_Segments;
+}
+
+void Main::m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event)
+{
+	wxTreeListItem id = event.GetItem();
+	wxTextEntryDialog dialog(this, "Please enter the segment name:", "Segment name", this->m_TreeCtrl_ProjectDir->GetItemText(id, 1), wxOK | wxCANCEL);
+	if (dialog.ShowModal() == wxID_OK)
+	{
+		wxString seg = "codesegment";
+
+		// If the segment name is invalid, then rename it to codesegment
+		if (dialog.GetValue() != "")
+			seg = dialog.GetValue();
+
+		// Insert it into a new map entry and change the column text
+		SetTreeSegment(id, seg, this->m_TreeCtrl_ProjectDir, this->m_Segments);
+		this->m_TreeCtrl_ProjectDir->SetItemText(id, 1, seg);
+	}
 }
 
 void Main::m_Choice_BuildMode_OnChoice(wxCommandEvent& event)
@@ -258,15 +284,15 @@ void Main::RefreshProjectTree()
 {
 	// Clear the project tree
 	this->m_TreeCtrl_ProjectDir->DeleteAllItems();
-	wxTreeItemId root = this->m_TreeCtrl_ProjectDir->AddRoot("Project");
+	wxTreeListItem root = this->m_TreeCtrl_ProjectDir->GetRootItem();
 
 	// Clean up the map
-	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 		delete (it->second);
 	delete this->m_CompUnits;
 
 	// Make a new one
-	this->m_CompUnits = new std::map<wxTreeItemId, CompUnit*>();
+	this->m_CompUnits = new std::map<wxTreeListItem, CompUnit*>();
 
 	// Open the project directory
 	wxString path = global_projectconfig.ProjectPath;
@@ -279,7 +305,7 @@ void Main::RefreshProjectTree()
 	}
 
 	// Traverse the tree
-	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits, {"c", "h"});
+	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits, this->m_Segments, {"c", "h"});
 	dir.Traverse(traverser);
 	dir.Close();
 
@@ -355,15 +381,15 @@ void Main::FixDebugH()
 void Main::CleanProject()
 {
 	// First, check if there are objects to clean
-	wxTreeCtrl cleantree(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE);
-	wxTreeItemId root = cleantree.AddRoot(global_projectconfig.ProjectPath+"/");
+	wxTreeListCtrl cleantree(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_DEFAULT_STYLE);
+	wxTreeListItem root = cleantree.GetRootItem();
 	wxDir dir(global_projectconfig.ProjectPath);
-	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, NULL, {"o", "out", "n64"});
+	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, {"o", "out", "n64"});
 	dir.Traverse(traverser);
 	dir.Close();
 
 	// Stop if there's nothing to clean
-	if (cleantree.GetCount() == 0 && !wxDirExists(global_projectconfig.BuildFolder) && !wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
+	if (!cleantree.GetFirstChild(root).IsOk() && !wxDirExists(global_projectconfig.BuildFolder) && !wxFileExists(global_projectconfig.ProjectPath+"/"+global_programconfig.DissamblyName))
 	{
 		wxMessageDialog dialog2(this, "Nothing to clean", "Error");
 		dialog2.ShowModal();
@@ -420,7 +446,7 @@ void Main::BuildProject()
 		wxLogMessage("Debug Mode Disabled");
 
 	// Rebuild what is necessary
-	for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 	{
 		if (it->second->ShouldRebuild(isdebug))
 		{
@@ -460,7 +486,7 @@ void Main::BuildProject()
 			libultraver = "-lgultra_rom";
 
 		// Get all the files we compiled
-		for (std::map<wxTreeItemId, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+		for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 			files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
 
 		// Run LD

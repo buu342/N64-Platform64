@@ -5,7 +5,7 @@ typedef struct IUnknown IUnknown;
 #include "compunit.h"
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
-#include <wx/treectrl.h>
+#include <wx/treelist.h>
 #include <wx/gdicmn.h>
 #include <wx/font.h>
 #include <wx/colour.h>
@@ -19,6 +19,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/frame.h>
 #include <wx/choice.h>
 #include <wx/log.h>
+#include <vector>
 #include <map>
 
 extern bool global_modifieddebug;
@@ -28,20 +29,22 @@ class Main : public wxFrame
 	private:
 
 	protected:
-		wxChoice*	 m_Choice_BuildMode;
-		wxImageList* m_treeIcons;
-		wxTreeCtrl*  m_TreeCtrl_ProjectDir;
-		wxButton*    m_Button_Disassemble;
-		wxButton*    m_Button_Clean;
-		wxButton*    m_Button_Build;
-		wxButton*    m_Button_Upload;
-		wxMenuBar*   m_MenuBar;
-		wxMenu   *   m_Menu_File;
-		wxMenu*      m_Menu_Build;
-		wxMenu*      m_Menu_Settings; 
-		wxLogWindow* m_LogWin;
-		std::map<wxTreeItemId, CompUnit*>* m_CompUnits;
+		wxChoice*	    m_Choice_BuildMode;
+		wxImageList*    m_treeIcons;
+		wxTreeListCtrl* m_TreeCtrl_ProjectDir;
+		wxButton*       m_Button_Disassemble;
+		wxButton*       m_Button_Clean;
+		wxButton*       m_Button_Build;
+		wxButton*       m_Button_Upload;
+		wxMenuBar*      m_MenuBar;
+		wxMenu   *      m_Menu_File;
+		wxMenu*         m_Menu_Build;
+		wxMenu*         m_Menu_Settings; 
+		wxLogWindow*    m_LogWin;
+		std::map<wxTreeListItem, CompUnit*>* m_CompUnits;
+		std::map<wxString, std::vector<wxFileName>*>* m_Segments;
 
+		void m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event);
 		void m_Choice_BuildMode_OnChoice(wxCommandEvent& event);
 		void m_Button_Disassemble_OnButtonClick(wxCommandEvent& event);
 		void m_Button_Clean_OnButtonClick(wxCommandEvent& event);

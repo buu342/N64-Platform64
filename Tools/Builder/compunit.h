@@ -4,7 +4,7 @@ typedef struct IUnknown IUnknown;
 
 #include <wx/datetime.h>
 #include <wx/file.h>
-#include <wx/treectrl.h>
+#include <wx/treelist.h>
 #include <wx/filename.h>
 #include <vector>
 
@@ -19,7 +19,7 @@ class CompUnit
 		wxFileName GetOutputPath(bool debug);
 		bool ShouldRebuild(bool debug);
 		void Compile(bool debug);
-		CompUnit(wxTreeCtrl* tree, wxTreeItemId id);
+		CompUnit(wxTreeListCtrl* tree, wxTreeListItem id);
 		~CompUnit();
 };
 

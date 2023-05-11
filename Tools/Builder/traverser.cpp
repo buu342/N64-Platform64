@@ -1,15 +1,22 @@
 #include "traverser.h"
 #include "preferences.h"
+#include "helper.h"
 #include <wx/artprov.h>
 #include <iterator>
 
-Traverser::Traverser(wxString path, wxTreeCtrl* tree, wxTreeItemId root, std::map<wxTreeItemId, CompUnit*>* map, std::vector<wxString> extensions)
+Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::map<wxString, std::vector<wxFileName>*>* segments, std::vector<wxString> extensions)
 {
     this->m_CurDir = path;
     this->m_Tree = tree;
+    this->m_Segments = segments;
     this->m_CurNode = root;
     this->m_Map = map;
     this->m_Extensions = extensions;
+}
+
+Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions)
+{
+    Traverser(path, tree, root, NULL, NULL, extensions);
 }
 
 Traverser::~Traverser()
@@ -32,9 +39,13 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
     {
         if (name.GetExt() == "c")
         {
-            wxTreeItemId id = this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
+            wxTreeListItem id = this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
+            wxString segment = "codesegment";
+            this->m_Tree->SetItemText(id, 1, segment);
+            if (this->m_Segments != NULL)
+                SetTreeSegment(id, segment, this->m_Tree, this->m_Segments);
             if (this->m_Map != NULL)
-                this->m_Map->insert(std::pair<wxTreeItemId, CompUnit* >(id, new CompUnit(this->m_Tree, id)));
+                this->m_Map->insert(std::pair<wxTreeListItem, CompUnit* >(id, new CompUnit(this->m_Tree, id)));
         }
         else
             this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 2);
@@ -45,7 +56,7 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
 wxDirTraverseResult Traverser::OnDir(const wxString& dirname)
 {
 	wxDir dir(dirname);
-    wxTreeItemId oldnode = this->m_CurNode;
+    wxTreeListItem oldnode = this->m_CurNode;
 
     // Check for errors
 	if (!dir.IsOpened())
@@ -53,14 +64,14 @@ wxDirTraverseResult Traverser::OnDir(const wxString& dirname)
     this->m_CurNode = this->m_Tree->AppendItem(this->m_CurNode, wxFileName(dirname).GetName(), 0);
 	
     // Traverse recursively
-    Traverser traverser(dirname, this->m_Tree, this->m_CurNode, this->m_Map, this->m_Extensions);
+    Traverser traverser(dirname, this->m_Tree, this->m_CurNode, this->m_Map, this->m_Segments, this->m_Extensions);
 	dir.Traverse(traverser);
     dir.Close();
 
     // Remove the node if it's empty
-    if (this->m_Tree->GetChildrenCount(this->m_CurNode) == 0)
+    if (!this->m_Tree->GetFirstChild(this->m_CurNode).IsOk())
     {
-        this->m_Tree->Delete(this->m_CurNode);
+        this->m_Tree->DeleteItem(this->m_CurNode);
         this->m_CurNode = oldnode;
     }
     else
@@ -70,17 +81,16 @@ wxDirTraverseResult Traverser::OnDir(const wxString& dirname)
     return wxDIR_IGNORE;
 }
 
-void Traverser::DeleteFiles(wxTreeItemId node)
+void Traverser::DeleteFiles(wxTreeListItem node)
 {
-    wxTreeItemIdValue cookie;
     wxString name = this->m_Tree->GetItemText(node);
-    wxTreeItemId child = this->m_Tree->GetFirstChild(node, cookie);
+    wxTreeListItem child = this->m_Tree->GetFirstChild(node);
 
     // Recursively find the child node
     while (child.IsOk())
     {
         this->DeleteFiles(child);
-        child = this->m_Tree->GetNextChild(child, cookie);
+        child = this->m_Tree->GetNextItem(child);
     }
 
     // Do the delete
