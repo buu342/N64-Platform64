@@ -2,6 +2,7 @@
 
 typedef struct IUnknown IUnknown;
 
+#include "compunit.h"
 #include <sys/stat.h>
 #include <wx/utils.h>
 #include <wx/treelist.h>
@@ -12,4 +13,3 @@ typedef struct IUnknown IUnknown;
 time_t LastModTime(const char* path);
 unsigned int GetMBits(const char* path);
 wxExecuteEnv GetProgramEnvironment();
-void SetTreeSegment(wxTreeListItem id, wxString seg, wxTreeListCtrl* tree, std::map<wxString, std::vector<wxFileName>*>* segments);

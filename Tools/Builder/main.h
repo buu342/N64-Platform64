@@ -19,7 +19,6 @@ typedef struct IUnknown IUnknown;
 #include <wx/frame.h>
 #include <wx/choice.h>
 #include <wx/log.h>
-#include <vector>
 #include <map>
 
 extern bool global_modifieddebug;
@@ -42,10 +41,8 @@ class Main : public wxFrame
 		wxMenu*         m_Menu_Settings; 
 		wxLogWindow*    m_LogWin;
 		std::map<wxTreeListItem, CompUnit*>* m_CompUnits;
-		std::map<wxString, std::vector<wxFileName>*>* m_Segments;
 
 		void m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event);
-		void m_Choice_BuildMode_OnChoice(wxCommandEvent& event);
 		void m_Button_Disassemble_OnButtonClick(wxCommandEvent& event);
 		void m_Button_Clean_OnButtonClick(wxCommandEvent& event);
 		void m_Button_Build_OnButtonClick(wxCommandEvent& event);

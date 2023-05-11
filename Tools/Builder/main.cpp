@@ -6,6 +6,7 @@
 #include <wx/textfile.h>
 #include <wx/tokenzr.h>
 #include <iterator>
+#include <vector>
 #include "helper.h"
 
 bool global_modifieddebug = false;
@@ -20,8 +21,6 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 	this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT));
 	this->m_CompUnits = new std::map<wxTreeListItem, CompUnit*>();
-	this->m_Segments = new std::map<wxString, std::vector<wxFileName>*>();
-	this->m_Segments->insert(std::pair<wxString, std::vector<wxFileName>*>("codesegment", new std::vector<wxFileName>()));
 
 	// Setup the log window
 	this->m_LogWin = new wxLogWindow(this, wxT("Compilation Log"), false);
@@ -128,7 +127,6 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 
 	// Connect Events
 	this->m_TreeCtrl_ProjectDir->Connect(wxEVT_TREELIST_ITEM_ACTIVATED, wxTreeListEventHandler(Main::m_TreeCtrl_ProjectDir_OnActivated), NULL, this);
-	this->m_Choice_BuildMode->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Main::m_Choice_BuildMode_OnChoice), NULL, this);
 	this->m_Button_Disassemble->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Disassemble_OnButtonClick), NULL, this);
 	this->m_Button_Clean->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Clean_OnButtonClick), NULL, this);
 	this->m_Button_Build->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Main::m_Button_Build_OnButtonClick), NULL, this);
@@ -156,9 +154,6 @@ Main::~Main()
 	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 		delete (it->second);
 	delete this->m_CompUnits;
-	for (std::map<wxString, std::vector<wxFileName>*>::iterator it = this->m_Segments->begin(); it != this->m_Segments->end(); it++)
-		delete (it->second);
-	delete this->m_Segments;
 }
 
 void Main::m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event)
@@ -174,14 +169,9 @@ void Main::m_TreeCtrl_ProjectDir_OnActivated(wxTreeListEvent& event)
 			seg = dialog.GetValue();
 
 		// Insert it into a new map entry and change the column text
-		SetTreeSegment(id, seg, this->m_TreeCtrl_ProjectDir, this->m_Segments);
+		this->m_CompUnits->find(id)->second->SetSegment(seg);
 		this->m_TreeCtrl_ProjectDir->SetItemText(id, 1, seg);
 	}
-}
-
-void Main::m_Choice_BuildMode_OnChoice(wxCommandEvent& event)
-{
-
 }
 
 void Main::m_Button_Disassemble_OnButtonClick(wxCommandEvent& event)
@@ -305,7 +295,7 @@ void Main::RefreshProjectTree()
 	}
 
 	// Traverse the tree
-	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits, this->m_Segments, {"c", "h"});
+	Traverser traverser(path, this->m_TreeCtrl_ProjectDir, root, this->m_CompUnits, {"c", "h"});
 	dir.Traverse(traverser);
 	dir.Close();
 
@@ -422,20 +412,16 @@ void Main::BuildProject()
 	bool compilefail = false;
 	wxArrayString* out = new wxArrayString();
 	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
-	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
-
+	std::map<wxString, std::vector<CompUnit*>> segments;
+	
 	// Setup before building
 	if (global_programconfig.Use_Build)
 	{
 		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
-		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
 	}
 	if (isdebug && global_programconfig.SeparateDebug)
-	{
 		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
-		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
-	}
 	this->ModifyDebugH();
 
 	// Setup the log window
@@ -448,13 +434,21 @@ void Main::BuildProject()
 	// Rebuild what is necessary
 	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 	{
-		if (it->second->ShouldRebuild(isdebug))
+		CompUnit* unit = it->second;
+
+		// Add this unit to the segment list
+		if (segments.count(unit->GetSegment().GetFullPath()) == 0)
+			segments.insert(std::pair<wxString, std::vector<CompUnit*>>(unit->GetSegment().GetFullPath(), std::vector<CompUnit*>()));
+		segments.find(unit->GetSegment().GetFullPath())->second.push_back(unit);
+
+		// Rebuild if necessary
+		if (unit->ShouldRebuild(isdebug))
 		{
 			if (!builtsomething)
 				builtsomething = true;
 			wxLogMessage(it->second->GetOutputPath(isdebug).GetFullName() + wxString(" needs to be rebuilt"));
-			it->second->Compile(isdebug);
-			if (it->second->ShouldRebuild(isdebug))
+			unit->Compile(isdebug);
+			if (unit->ShouldRebuild(isdebug))
 				compilefail = true;
 		}
 	}
@@ -467,48 +461,79 @@ void Main::BuildProject()
 		return;
 	}
 
-	// Link the codesegment together
-	if (!wxFileExists(codeseg.GetFullPath()) || builtsomething)
+	// Link the objects into segments
+	for (std::map<wxString, std::vector<CompUnit*>>::iterator it = segments.begin(); it != segments.end(); ++it)
 	{
-		wxString command;
-		wxArrayString output;
-		wxStructStat stat_oldcodeseg;
-		wxStructStat stat_newcodeseg;
-		wxString libultraver = "-lgultra_d";
-		wxString files = "";
-		wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
+		bool rebuild = false;
+		wxFileName seg = it->first;
 
-		// Log what we're doing
-		wxLogMessage("Generating codesegment");
+		// Setup before building
+		if (isdebug && global_programconfig.SeparateDebug)
+			seg = seg.GetPath() + "/" + seg.GetName() + "_d." + seg.GetExt();
 
-		// Set debug flags
-		if (!isdebug)
-			libultraver = "-lgultra_rom";
+		// Rebuild if the filepath does not exist, or if the objects were updated
+		if (wxFileExists(seg.GetFullPath()))
+		{
+			wxStructStat stat_output;
+			stat_output.st_mtime = LastModTime(seg.GetFullPath());
 
-		// Get all the files we compiled
-		for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
-			files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
-
-		// Run LD
-		stat_oldcodeseg.st_mtime = LastModTime(codeseg.GetFullPath());
-		command = global_programconfig.Path_Toolkit + "/" + exew32 + "ld.exe "
-				+ "-o " + codeseg.GetFullPath() + " "
-				+ "-r " + files
-				+ libultraver + " " 
-				+ global_projectconfig.Flags_LD;
-		wxLogVerbose("> " + command);
-		wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
-		stat_newcodeseg.st_mtime = LastModTime(codeseg.GetFullPath());
-		
-		// Output errors
-		for (size_t i = 0; i < output.size(); i++)
-			wxLogError(output[i]);
-
-		// Check for success
-		if (!wxFileExists(codeseg.GetFullPath()) || !wxDateTime(stat_newcodeseg.st_mtime).IsLaterThan(wxDateTime(stat_oldcodeseg.st_mtime)))
-			compilefail = true;
+			for (std::vector<CompUnit*>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+			{
+				wxStructStat stat_input;
+				stat_input.st_mtime = LastModTime((*it2)->GetOutputPath(isdebug).GetFullPath());
+				if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
+				{
+					rebuild = true;
+					break;
+				}
+			}
+		}
 		else
-			builtsomething = true;
+			rebuild = true;
+
+		// Do the actual rebuilding if necessary
+		if (rebuild)
+		{
+			wxString command;
+			wxArrayString output;
+			wxStructStat stat_oldcodeseg;
+			wxStructStat stat_newcodeseg;
+			wxString libultraver = "-lgultra_d";
+			wxString files = "";
+			wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
+
+			// Log what we're doing
+			wxLogMessage("Generating codesegment");
+
+			// Set debug flags
+			if (!isdebug)
+				libultraver = "-lgultra_rom";
+
+			// Get all the files we compiled
+			for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+				files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
+
+			// Run LD
+			stat_oldcodeseg.st_mtime = LastModTime(seg.GetFullPath());
+			command = global_programconfig.Path_Toolkit + "/" + exew32 + "ld.exe "
+				+ "-o " + seg.GetFullPath() + " "
+				+ "-r " + files
+				+ libultraver + " "
+				+ global_projectconfig.Flags_LD;
+			wxLogVerbose("> " + command);
+			wxExecute(command, output, wxEXEC_SYNC, &GetProgramEnvironment());
+			stat_newcodeseg.st_mtime = LastModTime(seg.GetFullPath());
+
+			// Output errors
+			for (size_t i = 0; i < output.size(); i++)
+				wxLogError(output[i]);
+
+			// Check for success
+			if (!wxFileExists(seg.GetFullPath()) || !wxDateTime(stat_newcodeseg.st_mtime).IsLaterThan(wxDateTime(stat_oldcodeseg.st_mtime)))
+				compilefail = true;
+			else
+				builtsomething = true;
+		}
 	}
 
 	// Check if everything compiled
@@ -538,21 +563,18 @@ void Main::BuildROM()
 	wxString flags = "-d";
 	bool isdebug = this->CheckDebugEnabled();
 	wxFileName target = global_projectconfig.ProjectPath + "/" + global_projectconfig.TargetName;
-	wxFileName codeseg = global_projectconfig.ProjectPath + "/codesegment.o";
 	wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
+	std::map<wxString, std::vector<CompUnit*>> segments;
 
 	// Setup before building
 	if (global_programconfig.Use_Build)
 	{
 		wxDir::Make(global_projectconfig.BuildFolder, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 		target = global_projectconfig.BuildFolder + "/" + global_projectconfig.TargetName;
-		codeseg = global_projectconfig.BuildFolder + "/codesegment.o";
 	}
 	if (isdebug && global_programconfig.SeparateDebug)
-	{
 		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
-		codeseg = codeseg.GetPath() + "/" + codeseg.GetName() + "_d." + codeseg.GetExt();
-	}
+
 	this->m_LogWin->Show(true);
 	this->ModifyDebugH();
 
@@ -563,8 +585,20 @@ void Main::BuildROM()
 	if (!isdebug)
 		flags = "";
 
-	// Add the codesegment to the environment variables
-	vars["CODESEGMENT"] = "\"" + codeseg.GetFullPath() + "\"";
+	// Add the segments to the environment variables
+
+	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
+	{
+		wxString segment = it->second->GetSegment().GetName();
+		segment.MakeUpper();
+		if (vars.count(segment) == 0)
+		{
+			wxFileName finalname = it->second->GetSegment();
+			if (isdebug && global_programconfig.SeparateDebug)
+				finalname = finalname.GetPath() + "/" + finalname.GetName() + "_d." + finalname.GetExt();
+			vars[segment] = "\"" + finalname.GetFullPath() + "\"";
+		}
+	}
 	env.env = vars;
 
 	// Run makerom

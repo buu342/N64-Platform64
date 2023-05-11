@@ -14,6 +14,7 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 	wxString path = "";
 	wxString output = tree->GetItemText(id);
 	wxTreeListItem curid = id;
+	wxFileName segment = global_projectconfig.ProjectPath + "/" + "codesegment" + ".o";
 
 	// First, generate the path
 	while (tree->GetItemParent(curid) != NULL)
@@ -29,6 +30,11 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 		this->m_Output.Assign(global_projectconfig.BuildFolder + "/" + path + output);
 	else
 		this->m_Output.Assign(global_projectconfig.ProjectPath + "/" + path + output);
+
+	// Set the segment
+	if (global_programconfig.Use_Build)
+		segment = global_projectconfig.BuildFolder + "/" + "codesegment" + ".o";
+	this->m_Segment = segment;
 
 	// Finally, we need to read the file and check its dependencies
 	file.Open(this->m_File.GetFullPath());
@@ -63,6 +69,16 @@ wxFileName CompUnit::GetOutputPath(bool debug)
 		return this->m_Output.GetPath() + "/" + this->m_Output.GetName() + "_d." + this->m_Output.GetExt();
 	else
 		return this->m_Output;
+}
+
+wxFileName CompUnit::GetSegment()
+{
+	return this->m_Segment;
+}
+
+void CompUnit::SetSegment(wxString segment)
+{
+	this->m_Segment = this->m_Segment.GetPath() + "/" + segment + ".o";
 }
 
 bool CompUnit::ShouldRebuild(bool debug)

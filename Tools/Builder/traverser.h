@@ -17,7 +17,6 @@ class Traverser : public wxDirTraverser
         wxString         m_CurDir;
         std::vector<wxString> m_Extensions;
         std::map<wxTreeListItem, CompUnit*>* m_Map;
-        std::map<wxString, std::vector<wxFileName>*>* m_Segments;
 
     public:
         wxDirTraverseResult OnFile(const wxString& filename);
@@ -25,6 +24,6 @@ class Traverser : public wxDirTraverser
         bool IsWhitelistedExtension(wxString ext);
         void DeleteFiles(wxTreeListItem node);
         Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions);
-        Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::map<wxString, std::vector<wxFileName>*>* segments, std::vector<wxString> extensions);
+        Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::vector<wxString> extensions);
         ~Traverser();
 };

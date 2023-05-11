@@ -49,36 +49,3 @@ wxExecuteEnv GetProgramEnvironment()
 	env.env = vars;
 	return env;
 }
-
-void SetTreeSegment(wxTreeListItem id, wxString seg, wxTreeListCtrl* tree, std::map<wxString, std::vector<wxFileName>*>* segments)
-{
-	wxString filename = tree->GetItemText(id, 0);
-	wxString oldseg = tree->GetItemText(id, 1);
-	std::vector<wxFileName>* oldvec;
-
-	// Remove from the old vector
-	oldvec = segments->at(oldseg);
-	if (oldvec->size() != 0)
-	{
-		for (size_t i = 0; i < oldvec->size(); i++)
-		{
-			if (oldvec->at(i) == filename)
-			{
-				oldvec->erase(oldvec->begin() + i);
-				break;
-			}
-		}
-
-		// If the map entry is now empty, remove it
-		if (oldvec->size() == 0)
-		{
-			segments->erase(oldseg);
-			delete oldvec;
-		}
-	}
-
-	// Insert it into the relevant map entry
-	if (segments->count(seg) == 0)
-		segments->insert(std::pair<wxString, std::vector<wxFileName>*>(seg, new std::vector<wxFileName>()));
-	segments->at(seg)->push_back(filename);
-}

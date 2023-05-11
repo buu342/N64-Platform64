@@ -4,11 +4,10 @@
 #include <wx/artprov.h>
 #include <iterator>
 
-Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::map<wxString, std::vector<wxFileName>*>* segments, std::vector<wxString> extensions)
+Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::vector<wxString> extensions)
 {
     this->m_CurDir = path;
     this->m_Tree = tree;
-    this->m_Segments = segments;
     this->m_CurNode = root;
     this->m_Map = map;
     this->m_Extensions = extensions;
@@ -16,7 +15,7 @@ Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, s
 
 Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions)
 {
-    Traverser(path, tree, root, NULL, NULL, extensions);
+    Traverser(path, tree, root, NULL, extensions);
 }
 
 Traverser::~Traverser()
@@ -42,8 +41,6 @@ wxDirTraverseResult Traverser::OnFile(const wxString& filename)
             wxTreeListItem id = this->m_Tree->AppendItem(this->m_CurNode, name.GetFullName(), 1);
             wxString segment = "codesegment";
             this->m_Tree->SetItemText(id, 1, segment);
-            if (this->m_Segments != NULL)
-                SetTreeSegment(id, segment, this->m_Tree, this->m_Segments);
             if (this->m_Map != NULL)
                 this->m_Map->insert(std::pair<wxTreeListItem, CompUnit* >(id, new CompUnit(this->m_Tree, id)));
         }
@@ -64,7 +61,7 @@ wxDirTraverseResult Traverser::OnDir(const wxString& dirname)
     this->m_CurNode = this->m_Tree->AppendItem(this->m_CurNode, wxFileName(dirname).GetName(), 0);
 	
     // Traverse recursively
-    Traverser traverser(dirname, this->m_Tree, this->m_CurNode, this->m_Map, this->m_Segments, this->m_Extensions);
+    Traverser traverser(dirname, this->m_Tree, this->m_CurNode, this->m_Map, this->m_Extensions);
 	dir.Traverse(traverser);
     dir.Close();
 

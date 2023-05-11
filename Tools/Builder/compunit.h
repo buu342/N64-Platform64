@@ -14,9 +14,12 @@ class CompUnit
 		wxFileName              m_File;
 		std::vector<wxFileName> m_Dependencies;
 		wxFileName              m_Output;
+		wxFileName              m_Segment;
 
 	public:
 		wxFileName GetOutputPath(bool debug);
+		wxFileName GetSegment();
+		void SetSegment(wxString segment);
 		bool ShouldRebuild(bool debug);
 		void Compile(bool debug);
 		CompUnit(wxTreeListCtrl* tree, wxTreeListItem id);
