@@ -6,8 +6,6 @@ A C++ GUI application for compiling N64 projects. This tool was written to super
 
 If you are on Windows, ensure you have wxWidgets installed (instructions available [here](https://docs.wxwidgets.org/trunk/plat_msw_install.html)), and a copy of Visual Studio 2019 with [Platform Toolset v140_xp](https://stackoverflow.com/questions/58755564/visual-studio-2019-how-to-use-platform-toolset-v140-xp/58755565#58755565) installed. If all of that is set up, then simply open the solution file in Visual Studio and compile. 
 
-Once compiled, you should move the compiled program over to the project's main source directory, since it will only seek files relative to the executable's path.
-
 ### Usage
 
 I recommend placing the executable in the same folder as your project's source, as that will make it so that the program loads the project from the get-go instead of requiring you to manually open the project folder.
