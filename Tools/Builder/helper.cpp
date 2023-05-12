@@ -52,7 +52,6 @@ wxExecuteEnv GetProgramEnvironment()
 
 wxString RelativeProjectPath(wxFileName file)
 {
-	wxString str = file.GetFullPath();
-	str.Replace(global_projectconfig.ProjectPath, "");
-	return str;
+	file.MakeRelativeTo(global_projectconfig.ProjectPath);
+	return file.GetFullPath();
 }

@@ -495,7 +495,7 @@ void Config_DefaultProgramConfig()
 void Config_SaveProjectConfig()
 {
 	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/TargetName", global_projectconfig.TargetName);
-	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder", global_projectconfig.BuildFolder);
+	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/BuildFolder", RelativeProjectPath(global_projectconfig.BuildFolder));
 	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
 	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
 	global_configfile->Write("/Project_"+global_projectconfig.ProjectPath+"/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
@@ -517,13 +517,14 @@ void Config_LoadProjectConfig()
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC", &global_projectconfig.Flags_GCC);
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD", &global_projectconfig.Flags_LD);
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD", &global_projectconfig.Flags_MILD);
+	wxFileName(global_projectconfig.BuildFolder).MakeAbsolute(global_projectconfig.ProjectPath);
 }
 
-void Config_SaveExternalProjectConfig(wxFileName path)
+void Config_SaveExternalProjectConfig(wxFileName path, std::map<wxTreeListItem, CompUnit*>* compunits)
 {
 	wxFileConfig file(PROGRAM_NAME, "Buu342", path.GetFullPath());
 	file.Write("/N64Project/TargetName", global_projectconfig.TargetName);
-	file.Write("/N64Project/BuildFolder", global_projectconfig.BuildFolder);
+	file.Write("/N64Project/BuildFolder", RelativeProjectPath(global_projectconfig.BuildFolder));
 	file.Write("/N64Project/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
 	file.Write("/N64Project/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
 	file.Write("/N64Project/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
@@ -532,6 +533,36 @@ void Config_SaveExternalProjectConfig(wxFileName path)
 	file.Write("/N64Project/Flags_LD", global_projectconfig.Flags_LD);
 	file.Write("/N64Project/Flags_MILD", global_projectconfig.Flags_MILD);
 	file.Flush();
+
+	// Get the list of segments
+	std::map<wxString, std::vector<wxFileName>> segments = std::map<wxString, std::vector<wxFileName>>();
+	for (std::map<wxTreeListItem, CompUnit*>::iterator it = compunits->begin(); it != compunits->end(); ++it)
+	{
+		if (it->second->GetSegment().GetName() != "codesegment")
+		{
+			wxString segment = it->second->GetSegment().GetName();
+			if (segments.count(segment) == 0)
+				segments.insert(std::pair<wxString, std::vector<wxFileName>>(segment, std::vector<wxFileName>()));
+			segments.at(segment).push_back(it->second->GetFilePath());
+		}
+	}
+
+	// Write the segment data
+	if (segments.size() > 0)
+	{
+		wxString segmentlist = wxEmptyString;
+		for (std::map<wxString, std::vector<wxFileName>>::iterator it = segments.begin(); it != segments.end(); ++it)
+			segmentlist = segmentlist + "\"" + it->first + "\"" + " ";
+		file.Write("/N64Project/SegmentList", segmentlist);
+		for (std::map<wxString, std::vector<wxFileName>>::iterator it = segments.begin(); it != segments.end(); ++it)
+		{
+			wxString filelist = wxEmptyString;
+			for (std::vector<wxFileName>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+				filelist = filelist + "\"" + RelativeProjectPath(*it2) + "\"" + " ";
+			file.Write("/N64Project/Segment_"+it->first, filelist);
+		}
+		file.Flush();
+	}
 }
 
 void Config_LoadExternalProjectConfig(wxFileName path)
@@ -546,6 +577,30 @@ void Config_LoadExternalProjectConfig(wxFileName path)
 	file.Read("/N64Project/Flags_GCC", &global_projectconfig.Flags_GCC);
 	file.Read("/N64Project/Flags_LD", &global_projectconfig.Flags_LD);
 	file.Read("/N64Project/Flags_MILD", &global_projectconfig.Flags_MILD);
+	wxFileName(global_projectconfig.BuildFolder).MakeAbsolute(global_projectconfig.ProjectPath);
+
+	// Handle segments
+	if (file.HasEntry("/N64Project/SegmentList"))
+	{
+		std::vector<wxString> segments = std::vector<wxString>();
+		wxString parse = file.Read("/N64Project/SegmentList");
+
+		// Get the list of segments
+		while (parse.size() > 0)
+		{
+			parse = parse.AfterFirst('\"');
+			segments.push_back(parse.BeforeFirst('\"'));
+			parse = parse.AfterFirst('\"');
+			parse = parse.AfterFirst(' ');
+		}
+
+		// Now transpile them over to the project config file
+		global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/SegmentList", file.Read("/N64Project/SegmentList"));
+		for (std::vector<wxString>::iterator it = segments.begin(); it != segments.end(); ++it)
+			global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/Segment_" + (*it), file.Read("/N64Project/Segment_"+(*it)));
+		global_configfile->Write("/Project_" + global_projectconfig.ProjectPath + "/SegmentList", file.Read("/N64Project/SegmentList"));
+		global_configfile->Flush();
+	}
 }
 
 void Config_DefaultProjectConfig()

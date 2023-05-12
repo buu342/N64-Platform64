@@ -21,11 +21,13 @@ typedef struct IUnknown IUnknown;
 #include <wx/frame.h>
 #include <wx/fileconf.h>
 #include <wx/stdpaths.h>
+#include "helper.h"
+#include "compunit.h"
 
 // Default project config
 #define DEFAULT_PROJECTPATH        (wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath())
 #define DEFAULT_ROMNAME            "homebrew.n64"
-#define DEFAULT_BUILDPATH          (global_projectconfig.ProjectPath+"/build")
+#define DEFAULT_BUILDPATH          global_projectconfig.ProjectPath+"/build"
 #define DEFAULT_ROMHEADER_NAME     "MY HOMEBREW GAME"
 #define DEFAULT_ROMHEADER_MANUF    "N"
 #define DEFAULT_ROMHEADER_ID       "HB"
@@ -103,7 +105,7 @@ void Config_DefaultProgramConfig();
 void Config_SaveProjectConfig();
 void Config_LoadProjectConfig();
 void Config_DefaultProjectConfig();
-void Config_SaveExternalProjectConfig(wxFileName path);
+void Config_SaveExternalProjectConfig(wxFileName path, std::map<wxTreeListItem, CompUnit*>* compunits);
 void Config_LoadExternalProjectConfig(wxFileName path);
 
 class Preferences : public wxFrame

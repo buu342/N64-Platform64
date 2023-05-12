@@ -249,8 +249,9 @@ void Main::m_MenuItem_Open_OnSelection(wxCommandEvent& event)
 	wxDirDialog dlg(this, "Open project folder", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
 	if (dlg.ShowModal() == wxID_OK)
 	{
-		Config_DefaultProjectConfig();
 		global_projectconfig.ProjectPath = dlg.GetPath();
+		wxSetWorkingDirectory(global_projectconfig.ProjectPath);
+		Config_DefaultProjectConfig();
 		Config_LoadProjectConfig();
 		this->RefreshProjectTree();
 		this->PopulateCompileChoices();
@@ -304,14 +305,18 @@ void Main::m_MenuItem_ImportProject_OnSelection(wxCommandEvent& event)
 {
 	wxFileDialog dialog(this, "Open NBP file", "", "", "NBP files (*.nbp)|*.nbp", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (dialog.ShowModal() == wxID_OK)
+	{
 		Config_LoadExternalProjectConfig(dialog.GetPath());
+		Config_SaveProjectConfig();
+		this->RefreshProjectTree();
+	}
 }
 
 void Main::m_MenuItem_ExportProject_OnSelection(wxCommandEvent& event)
 {
 	wxFileDialog dialog(this, "Save NBP file", "", wxFileName(global_projectconfig.TargetName).GetName(), "NBP files (*.nbp)|*.nbp", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_OK)
-		Config_SaveExternalProjectConfig(dialog.GetPath());
+		Config_SaveExternalProjectConfig(dialog.GetPath(), this->m_CompUnits);
 }
 
 void Main::PopulateCompileChoices()
@@ -650,7 +655,6 @@ void Main::BuildROM()
 		flags = "";
 
 	// Add the segments to the environment variables
-
 	for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
 	{
 		wxString segment = it->second->GetSegment().GetName();
