@@ -13,11 +13,6 @@ Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, s
     this->m_Extensions = extensions;
 }
 
-Traverser::Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions)
-{
-    Traverser(path, tree, root, NULL, extensions);
-}
-
 Traverser::~Traverser()
 {
 

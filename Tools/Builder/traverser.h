@@ -23,7 +23,6 @@ class Traverser : public wxDirTraverser
         wxDirTraverseResult OnDir(const wxString& dirname);
         bool IsWhitelistedExtension(wxString ext);
         void DeleteFiles(wxTreeListItem node);
-        Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::vector<wxString> extensions);
         Traverser(wxString path, wxTreeListCtrl* tree, wxTreeListItem root, std::map<wxTreeListItem, CompUnit*>* map, std::vector<wxString> extensions);
         ~Traverser();
 };

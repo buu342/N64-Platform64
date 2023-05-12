@@ -415,7 +415,7 @@ void Main::CleanProject()
 	wxTreeListCtrl cleantree(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_DEFAULT_STYLE);
 	wxTreeListItem root = cleantree.GetRootItem();
 	wxDir dir(global_projectconfig.ProjectPath);
-	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, {"o", "out", "n64"});
+	Traverser traverser(global_projectconfig.ProjectPath, &cleantree, root, NULL, {"o", "out", "n64"});
 	dir.Traverse(traverser);
 	dir.Close();
 
