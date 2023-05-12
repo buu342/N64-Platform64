@@ -79,7 +79,7 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_MenuBar = new wxMenuBar(0);
 	this->m_Menu_File = new wxMenu();
 	wxMenuItem* m_MenuItem_Open;
-	m_MenuItem_Open = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Open Project Folder")) + wxT('\t') + wxT("CTRL+O"), wxEmptyString, wxITEM_NORMAL);
+	m_MenuItem_Open = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Open project folder")) + wxT('\t') + wxT("CTRL+O"), wxEmptyString, wxITEM_NORMAL);
 	this->m_Menu_File->Append(m_MenuItem_Open);
 	wxMenuItem* m_MenuItem_Refresh;
 	m_MenuItem_Refresh = new wxMenuItem(this->m_Menu_File, wxID_ANY, wxString(wxT("Refresh")) + wxT('\t') + wxT("F5"), wxEmptyString, wxITEM_NORMAL);
@@ -107,16 +107,23 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_Menu_Build->Append(m_MenuItem_Upload);
 	this->m_Menu_Build->AppendSeparator();
 	wxMenuItem* m_MenuItem_ForceRebuild;
-	m_MenuItem_ForceRebuild = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Force ROM Rebuild")) + wxT('\t') + wxT("CTRL+R"), wxEmptyString, wxITEM_NORMAL);
+	m_MenuItem_ForceRebuild = new wxMenuItem(this->m_Menu_Build, wxID_ANY, wxString(wxT("Force ROM rebuild")) + wxT('\t') + wxT("CTRL+R"), wxEmptyString, wxITEM_NORMAL);
 	this->m_Menu_Build->Append(m_MenuItem_ForceRebuild);
 	this->m_MenuBar->Append(this->m_Menu_Build, wxT("Build"));
 	this->m_Menu_Settings = new wxMenu();
-	wxMenuItem* m_MenuItem_Config;
 
 	// Settings menu bar
+	wxMenuItem* m_MenuItem_Config;
 	m_MenuItem_Config = new wxMenuItem(this->m_Menu_Settings, wxID_ANY, wxString(wxT("Preferences")) + wxT('\t') + wxT("CTRL+P"), wxEmptyString, wxITEM_NORMAL);
 	this->m_Menu_Settings->Append(m_MenuItem_Config);
 	this->m_MenuBar->Append(this->m_Menu_Settings, wxT("Settings"));
+	m_Menu_Settings->AppendSeparator();
+	wxMenuItem* m_MenuItem_ImportProject;
+	m_MenuItem_ImportProject = new wxMenuItem(m_Menu_Settings, wxID_ANY, wxString(wxT("Import project settings")), wxEmptyString, wxITEM_NORMAL);
+	m_Menu_Settings->Append(m_MenuItem_ImportProject);
+	wxMenuItem* m_MenuItem_ExportProject;
+	m_MenuItem_ExportProject = new wxMenuItem(m_Menu_Settings, wxID_ANY, wxString(wxT("Export project settings")), wxEmptyString, wxITEM_NORMAL);
+	m_Menu_Settings->Append(m_MenuItem_ExportProject);
 	this->SetMenuBar(this->m_MenuBar);
 
 	// Fix the layout
@@ -140,6 +147,8 @@ Main::Main() : wxFrame(nullptr, wxID_ANY, PROGRAM_NAME, wxPoint(0, 0), wxSize(64
 	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Upload_OnSelection), this, m_MenuItem_Upload->GetId());
 	this->m_Menu_Build->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_ForceRebuild_OnSelection), this, m_MenuItem_ForceRebuild->GetId());
 	this->m_Menu_Settings->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_Config_OnSelection), this, m_MenuItem_Config->GetId());
+	this->m_Menu_Settings->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_ImportProject_OnSelection), this, m_MenuItem_ImportProject->GetId());
+	this->m_Menu_Settings->Bind(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(Main::m_MenuItem_ExportProject_OnSelection), this, m_MenuItem_ExportProject->GetId());
 }
 
 Main::~Main()
@@ -289,6 +298,20 @@ void Main::m_MenuItem_Config_OnSelection(wxCommandEvent& event)
 	Preferences* pref = new Preferences(this);
 	pref->SetIcon(iconbm_config);
 	pref->Show();
+}
+
+void Main::m_MenuItem_ImportProject_OnSelection(wxCommandEvent& event)
+{
+	wxFileDialog dialog(this, "Open NBP file", "", "", "NBP files (*.nbp)|*.nbp", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (dialog.ShowModal() == wxID_OK)
+		Config_LoadExternalProjectConfig(dialog.GetPath());
+}
+
+void Main::m_MenuItem_ExportProject_OnSelection(wxCommandEvent& event)
+{
+	wxFileDialog dialog(this, "Save NBP file", "", wxFileName(global_projectconfig.TargetName).GetName(), "NBP files (*.nbp)|*.nbp", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_OK)
+		Config_SaveExternalProjectConfig(dialog.GetPath());
 }
 
 void Main::PopulateCompileChoices()

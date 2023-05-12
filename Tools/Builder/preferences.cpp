@@ -1,5 +1,6 @@
 #include "main.h"
 #include "preferences.h"
+#include "app.h"
 
 wxFileConfig* global_configfile = NULL;
 ConfigProject global_projectconfig;
@@ -516,6 +517,35 @@ void Config_LoadProjectConfig()
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_GCC", &global_projectconfig.Flags_GCC);
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_LD", &global_projectconfig.Flags_LD);
 	global_configfile->Read("/Project_"+global_projectconfig.ProjectPath+"/Flags_MILD", &global_projectconfig.Flags_MILD);
+}
+
+void Config_SaveExternalProjectConfig(wxFileName path)
+{
+	wxFileConfig file(PROGRAM_NAME, "Buu342", path.GetFullPath());
+	file.Write("/N64Project/TargetName", global_projectconfig.TargetName);
+	file.Write("/N64Project/BuildFolder", global_projectconfig.BuildFolder);
+	file.Write("/N64Project/ROMHeader_Name", global_projectconfig.ROMHeader_Name);
+	file.Write("/N64Project/ROMHeader_Manufacturer", global_projectconfig.ROMHeader_Manufacturer);
+	file.Write("/N64Project/ROMHeader_ID", global_projectconfig.ROMHeader_ID);
+	file.Write("/N64Project/ROMHeader_Country", global_projectconfig.ROMHeader_Country);
+	file.Write("/N64Project/Flags_GCC", global_projectconfig.Flags_GCC);
+	file.Write("/N64Project/Flags_LD", global_projectconfig.Flags_LD);
+	file.Write("/N64Project/Flags_MILD", global_projectconfig.Flags_MILD);
+	file.Flush();
+}
+
+void Config_LoadExternalProjectConfig(wxFileName path)
+{
+	wxFileConfig file(PROGRAM_NAME, "Buu342", path.GetFullPath());
+	file.Read("/N64Project/TargetName", &global_projectconfig.TargetName);
+	file.Read("/N64Project/BuildFolder", &global_projectconfig.BuildFolder);
+	file.Read("/N64Project/ROMHeader_Name", &global_projectconfig.ROMHeader_Name);
+	file.Read("/N64Project/ROMHeader_Manufacturer", &global_projectconfig.ROMHeader_Manufacturer);
+	file.Read("/N64Project/ROMHeader_ID", &global_projectconfig.ROMHeader_ID);
+	file.Read("/N64Project/ROMHeader_Country", &global_projectconfig.ROMHeader_Country);
+	file.Read("/N64Project/Flags_GCC", &global_projectconfig.Flags_GCC);
+	file.Read("/N64Project/Flags_LD", &global_projectconfig.Flags_LD);
+	file.Read("/N64Project/Flags_MILD", &global_projectconfig.Flags_MILD);
 }
 
 void Config_DefaultProjectConfig()

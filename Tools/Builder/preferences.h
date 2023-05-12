@@ -103,6 +103,8 @@ void Config_DefaultProgramConfig();
 void Config_SaveProjectConfig();
 void Config_LoadProjectConfig();
 void Config_DefaultProjectConfig();
+void Config_SaveExternalProjectConfig(wxFileName path);
+void Config_LoadExternalProjectConfig(wxFileName path);
 
 class Preferences : public wxFrame
 {

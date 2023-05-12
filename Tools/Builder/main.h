@@ -56,6 +56,8 @@ class Main : public wxFrame
 		void m_MenuItem_Upload_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_ForceRebuild_OnSelection(wxCommandEvent& event);
 		void m_MenuItem_Config_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_ImportProject_OnSelection(wxCommandEvent& event);
+		void m_MenuItem_ExportProject_OnSelection(wxCommandEvent& event);
 		void PopulateCompileChoices();
 		bool CheckDebugEnabled();
 		void ModifyDebugH();
