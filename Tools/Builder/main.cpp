@@ -469,6 +469,10 @@ void Main::BuildProject()
 	{
 		CompUnit* unit = it->second;
 
+		// Don't build if we're in release mode and it's a debug file
+		if (!isdebug && unit->IsDebugFile())
+			continue;
+
 		// Add this unit to the segment list
 		if (segments.count(unit->GetSegment().GetFullPath()) == 0)
 			segments.insert(std::pair<wxString, std::vector<CompUnit*>>(unit->GetSegment().GetFullPath(), std::vector<CompUnit*>()));
@@ -543,7 +547,8 @@ void Main::BuildProject()
 
 			// Get all the files we compiled
 			for (std::map<wxTreeListItem, CompUnit*>::iterator it = this->m_CompUnits->begin(); it != this->m_CompUnits->end(); it++)
-				files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
+				if (isdebug || !it->second->IsDebugFile())
+					files += it->second->GetOutputPath(isdebug).GetFullPath() + " ";
 
 			// Run LD
 			stat_oldcodeseg.st_mtime = LastModTime(seg.GetFullPath());

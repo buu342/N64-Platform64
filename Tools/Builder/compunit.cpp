@@ -65,6 +65,12 @@ CompUnit::CompUnit(wxTreeListCtrl* tree, wxTreeListItem id)
 		segmentpath = global_projectconfig.ProjectPath + "/" + segmentname + ".o";
 	this->m_Segment = segmentpath;
 
+	// Check if we have a debug file
+	if (this->m_File.GetFullName() == "debug.c" || this->m_File.GetFullName() == "usb.c")
+		this->m_IsDebugFile = true;
+	else
+		this->m_IsDebugFile = false;
+
 	// Finally, we need to read the file and check its dependencies
 	file.Open(this->m_File.GetFullPath());
 	while (!file.Eof())
@@ -108,6 +114,11 @@ wxFileName CompUnit::GetOutputPath(bool debug)
 wxFileName CompUnit::GetSegment()
 {
 	return this->m_Segment;
+}
+
+bool CompUnit::IsDebugFile()
+{
+	return this->m_IsDebugFile;
 }
 
 void CompUnit::SetSegment(wxString segment)

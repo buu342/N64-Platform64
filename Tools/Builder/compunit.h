@@ -15,11 +15,13 @@ class CompUnit
 		std::vector<wxFileName> m_Dependencies;
 		wxFileName              m_Output;
 		wxFileName              m_Segment;
+		bool                    m_IsDebugFile;
 
 	public:
 		wxFileName GetFilePath();
 		wxFileName GetOutputPath(bool debug);
 		wxFileName GetSegment();
+		bool IsDebugFile();
 		void SetSegment(wxString segment);
 		bool ShouldRebuild(bool debug);
 		void Compile(bool debug);
