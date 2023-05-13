@@ -14,8 +14,9 @@ Below are instructions for compiling different parts of Platform64.
 <details><summary>N64</summary>
 
 1) Ensure you have libultra installed.
-2) If you haven't already, you must first compile the [Builder](Tools/Builder) tool and place it in the project's source directory.
-3) To compile, simply execute `Builder.exe` and press the compile button.
+2) If you haven't already, you must first compile the [Builder](Tools/Builder) tool, and preferably place it in the project's source directory. Launch the tool once and ensure it is configured to match your libultra install.
+3) Execute `Builder.exe` and go to `Settings->Import project settings`. Load `platform.nbp`.
+4) Press the compile button to generate the ROM.
 </details>
 
 ### Tools
