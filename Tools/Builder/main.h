@@ -21,8 +21,6 @@ typedef struct IUnknown IUnknown;
 #include <wx/log.h>
 #include <map>
 
-extern bool global_modifieddebug;
-
 class Main : public wxFrame
 {
 	private:
@@ -60,8 +58,6 @@ class Main : public wxFrame
 		void m_MenuItem_ExportProject_OnSelection(wxCommandEvent& event);
 		void PopulateCompileChoices();
 		bool CheckDebugEnabled();
-		void ModifyDebugH();
-		void FixDebugH();
 		void CleanProject();
 		void BuildProject();
 		void BuildROM();

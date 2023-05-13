@@ -1,5 +1,4 @@
 #include "compunit.h"
-#include "main.h"
 #include "helper.h"
 #include "preferences.h"
 #include <wx/utils.h> 
@@ -144,8 +143,6 @@ bool CompUnit::ShouldRebuild(bool debug)
 		stat_input.st_mtime = LastModTime((*it).GetFullPath());
 		if (wxDateTime(stat_input.st_mtime).IsLaterThan(wxDateTime(stat_output.st_mtime)))
 		{
-			if (global_modifieddebug && (*it).GetFullName() == "debug.h")
-				continue;
 			wxLogVerbose((*it).GetFullName() + " was modified");
 			return true;
 		}
@@ -158,14 +155,14 @@ void CompUnit::Compile(bool debug)
 	wxString command;
 	wxArrayString output;
 	wxString optimizer = "-g";
-	wxString lcdefs = "-DDEBUG";
+	wxString lcdefs = "-DDEBUG -DDEBUG_MODE=1";
 	wxString exew32 = global_programconfig.Use_EXEW32 ? "exew32.exe " : "";
 
 	// Set optimizer flags
 	if (!debug)
 	{
 		optimizer = "-O2";
-		lcdefs = "-D_FINALROM -DNDEBUG";
+		lcdefs = "-D_FINALROM -DNDEBUG -DDEBUG_MODE=0";
 	}
 
 	// Run GCC

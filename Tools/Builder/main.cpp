@@ -9,8 +9,6 @@
 #include <vector>
 #include "helper.h"
 
-bool global_modifieddebug = false;
-
 
 /*********************************
            Constructors
@@ -404,39 +402,6 @@ bool Main::CheckDebugEnabled()
 		return (this->m_Choice_BuildMode->GetSelection());
 }
 
-void Main::ModifyDebugH()
-{
-	wxTextFile debugh;
-	wxTextFile copy;
-	if (!wxFileExists("debug.h") || global_modifieddebug || this->m_Choice_BuildMode->GetSelection() == 2)
-		return;
-	if (this->CheckDebugEnabled() == (this->m_Choice_BuildMode->GetSelection() == 1))
-		return;
-	wxRenameFile("debug.h", "_debug.h");
-	debugh.Open("_debug.h");
-	copy.Open("debug.h");
-	while (!debugh.Eof())
-	{
-		wxString str = debugh.GetNextLine();
-		if (str.Find("#define DEBUG_MODE") != wxNOT_FOUND)
-			copy.AddLine("#define DEBUG_MODE " + wxString::Format("%d", this->m_Choice_BuildMode->GetSelection()));
-		else
-			copy.AddLine(str);
-	}
-	debugh.Close();
-	copy.Close();
-	global_modifieddebug = true;
-}
-
-void Main::FixDebugH()
-{
-	if (!global_modifieddebug)
-		return;
-	wxRemoveFile("debug.h");
-	wxRenameFile("_debug.h", "debug.h");
-	global_modifieddebug = false;
-}
-
 void Main::CleanProject()
 {
 	// First, check if there are objects to clean
@@ -491,7 +456,6 @@ void Main::BuildProject()
 	}
 	if (isdebug && global_programconfig.SeparateDebug)
 		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
-	this->ModifyDebugH();
 
 	// Setup the log window
 	this->m_LogWin->Show(true);
@@ -526,7 +490,6 @@ void Main::BuildProject()
 	if (compilefail)
 	{
 		wxLogError("An error occurred during compilation\n\n");
-		this->FixDebugH();
 		return;
 	}
 
@@ -609,7 +572,6 @@ void Main::BuildProject()
 	if (compilefail)
 	{
 		wxLogError("An error occurred during compilation\n\n");
-		this->FixDebugH();
 		return;
 	}
 
@@ -618,7 +580,6 @@ void Main::BuildProject()
 		this->BuildROM();
 	else
 		wxLogMessage("Nothing to build\n\n");
-	this->FixDebugH();
 }
 
 void Main::BuildROM()
@@ -645,7 +606,6 @@ void Main::BuildROM()
 		target = target.GetPath() + "/" + target.GetName() + "_d." + target.GetExt();
 
 	this->m_LogWin->Show(true);
-	this->ModifyDebugH();
 
 	// Log what we're doing
 	wxLogMessage("Generating ROM");
@@ -723,7 +683,6 @@ void Main::BuildROM()
 	}
 	else
 		wxLogError("An error occurred during compilation\n\n");
-	this->FixDebugH();
 }
 
 void Main::DisassembleROM()
