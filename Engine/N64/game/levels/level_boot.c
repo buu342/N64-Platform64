@@ -90,5 +90,7 @@ void level_boot_render()
     gDPPipeSync(g_displistp++);
     
     // Print some debug info
-    debug_printf("Frametime %fms. Subtick %f. Xpos %f\n", engine_get_frametime()*1000.0f, engine_get_subtick(), l_rectpos.x);
+    #if DEBUG_MODE
+        debug_printf("Frametime %fms. Subtick %f. Xpos %f\n", engine_get_frametime()*1000.0f, engine_get_subtick(), l_rectpos.x);
+    #endif
 }

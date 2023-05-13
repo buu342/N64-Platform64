@@ -407,7 +407,9 @@ void graphics_register_fbuffer(bool ishd, void* address)
     // Increase the number of active framebuffers if applicable
     if (s_framebuffers_active == l_targetbuffers)
         s_framebuffers_activecount++;
-    debug_printf("Successfully registered a new %s framebuffer at address %p\n", (ishd ? "HD" : "SD"), address);
+    #if DEBUG_MODE
+        debug_printf("Successfully registered a new %s framebuffer at address %p\n", (ishd ? "HD" : "SD"), address);
+    #endif
 }
 
 
@@ -422,7 +424,9 @@ void graphics_register_fbuffer(bool ishd, void* address)
 void graphics_register_zbuffer(bool ishd, void* address)
 {
     ishd ? (s_zbuffer_hd = address) : (s_zbuffer_sd = address);
-    debug_printf("Successfully registered %s Z-buffer to address %p\n", (ishd ? "HD" : "SD"), address);
+    #if DEBUG_MODE
+        debug_printf("Successfully registered %s Z-buffer to address %p\n", (ishd ? "HD" : "SD"), address);
+    #endif
 }
 
 
@@ -507,7 +511,9 @@ void graphics_unregister_fbuffer(bool ishd, void* address)
                 debug_printf("Warning: Only %d %s framebuffers are registered.\n\tI hope you know what you're doing.\n", s_framebuffers_activecount, (ishd ? "HD" : "SD"));
         #endif
     }
-    debug_printf("Successfully unregistered %s framebuffer at address %p.\n", (ishd ? "HD" : "SD"), address);
+    #if DEBUG_MODE
+        debug_printf("Successfully unregistered %s framebuffer at address %p.\n", (ishd ? "HD" : "SD"), address);
+    #endif
 }
 
 

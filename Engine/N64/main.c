@@ -23,7 +23,9 @@ Handles the boot process of the ROM.
 
 static void threadfunc_idle(void *arg);
 static void threadfunc_main(void *arg);
-static void toggle_lag();
+#if DEBUG_MODE
+    static void toggle_lag();
+#endif
 
 // Unexposed engine.c functions
 inline void engine_set_subtick(f32 subtick);
@@ -184,12 +186,14 @@ static void threadfunc_main(void *arg)
 }
 
 
-/*==============================
-    toggle_lag
-    Toggles lag when called
-==============================*/
+#if DEBUG_MODE
+    /*==============================
+        toggle_lag
+        Toggles lag when called
+    ==============================*/
 
-static void toggle_lag()
-{
-    s_shouldlag = !s_shouldlag;
-}
+    static void toggle_lag()
+    {
+        s_shouldlag = !s_shouldlag;
+    }
+#endif
