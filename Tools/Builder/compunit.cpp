@@ -176,7 +176,12 @@ void CompUnit::Compile(bool debug)
 	wxLogVerbose("> " + command);
 	wxExecute(command, output, wxEXEC_SYNC,  &GetProgramEnvironment());
 
-	// Output errors
+	// Output warnings + errors
 	for (size_t i=0; i<output.size(); i++)
-		wxLogError(output[i]);
+	{
+		if (output[i].Contains(": warning: "))
+			wxLogWarning(output[i]);
+		else
+			wxLogError(output[i]);
+	}
 }
