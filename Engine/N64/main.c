@@ -143,11 +143,11 @@ static void threadfunc_main(void *arg)
         {
             OSTime l_curtime = osGetTime();
             OSTime l_frametime = l_curtime - l_oldtime;
+            engine_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
             
             // In order to prevent problems if the game slows down significantly, we will clamp the maximum timestep the simulation can take
             if (l_frametime > OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f)))
                 l_frametime = OS_USEC_TO_CYCLES(SEC_TO_USEC(0.25f));
-            engine_set_frametime(USEC_TO_SEC(OS_CYCLES_TO_USEC(l_frametime)));
             l_oldtime = l_curtime;
             
             // Perform the update in discrete steps (ticks)
