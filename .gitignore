@@ -1,3 +1,4 @@
+.directory
 *.o
 *.d
 *.a
@@ -9,3 +10,4 @@
 Tools/*/Debug/*
 Tools/*/Release/*
 Tools/*/.vs
+Tools/CompilerSuite/*

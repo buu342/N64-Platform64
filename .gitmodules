@@ -13,3 +13,13 @@
 	url = https://github.com/buu342/CPP-MemMapper.git
 	branch = master
     ignore = dirty
+[submodule "Tools/Binutils"]
+	path = Tools/Binutils
+	url = git://sourceware.org/git/binutils-gdb.git
+    branch = master
+    ignore = dirty
+[submodule "Tools/GCC"]
+	path = Tools/GCC
+	url = git://gcc.gnu.org/git/gcc.git
+    branch = master
+    ignore = dirty
