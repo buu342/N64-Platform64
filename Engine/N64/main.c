@@ -79,7 +79,6 @@ static void threadfunc_idle(void *arg)
     
     // Initialize debug mode
     debug_initialize();
-    debug_64drivebutton(toggle_lag, TRUE);
     
     // Start the main thread
     osCreateThread(&s_threadstruct_main, THREADID_MAIN, threadfunc_main, NULL, STACKREALSTART_MAIN, THREADPRI_MAIN);
@@ -89,7 +88,7 @@ static void threadfunc_idle(void *arg)
     osSetThreadPri(0, 0);
     while (1)
     {
-        //debug_printf("Idle Thread: Spinning\n");
+        debug_printf("Idle Thread: Spinning\n");
     }
 }
 
@@ -114,6 +113,9 @@ static void threadfunc_main(void *arg)
     controller_initialize();
     controller_rumble_init();
     memset(l_oldstick, 0, sizeof(Vector2D)*MAXCONTROLLERS);
+    
+    // Initialize other debug library stuff now that it's safe to do so
+    debug_64drivebutton(toggle_lag, TRUE);
     
     // Register framebuffers we are going to use
     graphics_register_fbuffer(FALSE, FRAMEBUFF_ADDR1_SD);
