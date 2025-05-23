@@ -148,6 +148,7 @@
     #define THREADID_AUDIO       6
     #define THREADID_FAULT       13 // From debug.h, included here for completion sake
     #define THREADID_USB         14 // From debug.h, included here for completion sake
+    #define THREADID_RDB         15 // From debug.h, included here for completion sake
     
     // Thread Priorities
     #define THREADPRI_IDLE        1
@@ -158,6 +159,7 @@
     #define THREADPRI_AUDIO       25
     #define THREADPRI_FAULT       125 // From debug.h, included here for completion sake
     #define THREADPRI_USB         126 // From debug.h, included here for completion sake
+    #define THREADPRI_RDB         124 // From debug.h, included here for completion sake
     
     
     /*********************************
@@ -165,7 +167,11 @@
     *********************************/
     
     #define HEAP_START  (FRAMEBUFF_ADDRZ_SD - 1)
-    #define HEAP_SIZE   0x080000 // Half a megabyte of heap memory
+    #define HEAP_SIZE   0x080000 // Half a megabyte of code heap memory
+    
+    // Audio Heap 
+    #define HEAP_AUDIO_START  (RAMBANK_3)
+    #define HEAP_AUDIO_SIZE   0x040000 // Quarter of a megabyte of audio heap memory
     
     
     /*********************************
