@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="app.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="app.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="main.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Main.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{142ec698-7c61-4413-9fc5-eecb412e4693}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\Default">
+      <UniqueIdentifier>{74d194d9-9f61-43ce-984f-711911d9c4f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\Icons">
+      <UniqueIdentifier>{d350a2bb-fe1e-41fa-80d7-b13b232f8790}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{0ac4a092-de69-4b7b-8241-e4626ebc59d5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Platform64SDK.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Icons\Icon_Main.ico">
+      <Filter>Resources\Icons</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
