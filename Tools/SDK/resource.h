@@ -7,3 +7,13 @@
         #define _APS_NEXT_SYMED_VALUE           101
     #endif
 #endif
+
+#ifdef _WX_WX_H_
+    #include "Resources/Icons/Icon_Main.h"
+    #include "Resources/Icons/Icon_Texture.h"
+    #include "Resources/Icons/Icon_Material.h"
+
+    extern wxIcon Icon_Main;
+    extern wxIcon Icon_Texture;
+    extern wxIcon Icon_Material;
+#endif

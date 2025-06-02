@@ -15,11 +15,17 @@
     <ClInclude Include="main.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Resources</Filter>
-    </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_Main.h">
       <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Texture.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Material.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

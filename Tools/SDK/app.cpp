@@ -5,7 +5,7 @@ This file handles the wxWidgets initialization.
 ***************************************************************/
 
 #include "app.h"
-#include "Resources/Icons/Icon_Main.h"
+#include "resource.h"
 
 wxIMPLEMENT_APP(App);
 
@@ -15,6 +15,8 @@ wxIMPLEMENT_APP(App);
 *********************************/
 
 wxIcon   Icon_Main = wxNullIcon;
+wxIcon   Icon_Texture = wxNullIcon;
+wxIcon   Icon_Material = wxNullIcon;
 wxCursor Cursor_Blank = wxNullCursor;
 
 
@@ -57,6 +59,10 @@ bool App::OnInit()
     // Initialize icons
     wxBitmap temp = wxBITMAP_PNG_FROM_DATA(Icon_Main);
     Icon_Main.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_Texture);
+    Icon_Texture.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_Material);
+    Icon_Material.CopyFromBitmap(temp);
 
     // Initialize blank cursor
     wxBitmap img = wxBitmap(1, 1, 1);

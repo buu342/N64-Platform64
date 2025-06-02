@@ -23,6 +23,8 @@
     <ClInclude Include="Resources\Icons\Icon_Main.h" />
     <ClInclude Include="app.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="Resources\Icons\Icon_Material.h" />
+    <ClInclude Include="Resources\Icons\Icon_Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp" />

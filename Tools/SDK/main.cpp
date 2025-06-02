@@ -1,5 +1,6 @@
+#include "app.h"
 #include "main.h"
-
+#include "resource.h"
 
 /*==============================
     Frame_Main (Constructor)
@@ -19,7 +20,10 @@ Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDef
 	m_DataViewListCtrl_Main = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
 	m_Sizer_Main->Add(m_DataViewListCtrl_Main, 0, wxALL|wxEXPAND, 5);
 	this->m_DataViewListCtrl_Main->AppendIconTextColumn(wxString(), wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	items.push_back((wxVariant)wxDataViewIconText(wxString("Image Browser"), wxNullIcon));
+	items.push_back((wxVariant)wxDataViewIconText(wxString("Image Browser"), Icon_Texture));
+	this->m_DataViewListCtrl_Main->AppendItem(items);
+	items.pop_back();
+	items.push_back((wxVariant)wxDataViewIconText(wxString("Material Browser"), Icon_Material));
 	this->m_DataViewListCtrl_Main->AppendItem(items);
 
 	// Finalize the layout
