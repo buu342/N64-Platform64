@@ -12,13 +12,13 @@ typedef struct IUnknown IUnknown;
 
 class App : public wxApp
 {
-	private:
-		Frame_Main* m_Frame = nullptr;
+    private:
+        Frame_Main* m_Frame = nullptr;
         
-	protected:
+    protected:
     
-	public:
-		App();
-		~App();
-		virtual bool OnInit();
+    public:
+        App();
+        ~App();
+        virtual bool OnInit();
 };

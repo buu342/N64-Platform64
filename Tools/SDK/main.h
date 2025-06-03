@@ -19,13 +19,13 @@
 
 class Frame_Main : public wxFrame
 {
-	private:
-		wxDataViewListCtrl* m_DataViewListCtrl_Main;
-		void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
+    private:
+        wxDataViewListCtrl* m_DataViewListCtrl_Main;
+        void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
 
-	protected:
+    protected:
 
-	public:
-		Frame_Main();
-		~Frame_Main();
+    public:
+        Frame_Main();
+        ~Frame_Main();
 };

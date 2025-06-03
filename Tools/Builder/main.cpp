@@ -638,10 +638,10 @@ void Main::BuildROM()
 	stat_oldrom.st_mtime = LastModTime(target.GetFullPath());
 	command = global_programconfig.Path_Toolkit + "/" + exew32 +"mild.exe "
 			+ global_projectconfig.ProjectPath + "/spec "
+			+ global_projectconfig.Flags_MILD + " "
 			+ flags + " "
 			+ "-r " + target.GetFullPath() + " "
-			+ "-e " + target.GetPath() + "/" + target.GetName() + ".out"
-			+ global_projectconfig.Flags_MILD;
+			+ "-e " + target.GetPath() + "/" + target.GetName() + ".out";
 	wxLogVerbose("> " + command);
 	wxExecute(command, output, wxEXEC_SYNC, &env);
 	stat_newrom.st_mtime = LastModTime(target.GetFullPath());

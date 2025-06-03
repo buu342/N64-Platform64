@@ -2,6 +2,36 @@
 #include "main.h"
 #include "resource.h"
 
+
+/*********************************
+              Types
+*********************************/
+
+typedef struct {
+    wxString name;
+    wxIcon icon;
+    void* function;
+} Tools;
+
+
+/*********************************
+             Globals
+*********************************/
+
+static std::vector<Tools> g_tools;
+
+
+/*==============================
+    Frame_Main (Constructor)
+    Initializes the class
+==============================*/
+
+static void Initialize_Tools()
+{
+    g_tools.push_back({wxString("Image Browser"), Icon_Texture, NULL});
+    g_tools.push_back({wxString("Material Browser"), Icon_Material, NULL});
+}
+
 /*==============================
     Frame_Main (Constructor)
     Initializes the class
@@ -9,30 +39,32 @@
 
 Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDefaultPosition, wxSize(300, 400), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL)
 {
-	wxVector<wxVariant> items;
+    Initialize_Tools();
 
-	// Create the main sizer
-	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
-	wxGridSizer* m_Sizer_Main;
-	m_Sizer_Main = new wxGridSizer(0, 1, 0, 0);
+    // Create the main sizer
+    this->SetSizeHints(wxDefaultSize, wxDefaultSize);
+    wxGridSizer* m_Sizer_Main;
+    m_Sizer_Main = new wxGridSizer(0, 1, 0, 0);
 
-	// Create the data view list
-	m_DataViewListCtrl_Main = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
-	m_Sizer_Main->Add(m_DataViewListCtrl_Main, 0, wxALL|wxEXPAND, 5);
-	this->m_DataViewListCtrl_Main->AppendIconTextColumn(wxString(), wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	items.push_back((wxVariant)wxDataViewIconText(wxString("Image Browser"), Icon_Texture));
-	this->m_DataViewListCtrl_Main->AppendItem(items);
-	items.pop_back();
-	items.push_back((wxVariant)wxDataViewIconText(wxString("Material Browser"), Icon_Material));
-	this->m_DataViewListCtrl_Main->AppendItem(items);
+    // Create the data view list and populate it
+    m_DataViewListCtrl_Main = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
+    m_Sizer_Main->Add(m_DataViewListCtrl_Main, 0, wxALL|wxEXPAND, 5);
+    this->m_DataViewListCtrl_Main->AppendIconTextColumn(wxString(), wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    for (Tools t : g_tools)
+    {
+        wxVector<wxVariant> items;
+        items.push_back((wxVariant)wxDataViewIconText(t.name, t.icon));
+        this->m_DataViewListCtrl_Main->AppendItem(items);
+        items.pop_back();
+    }
 
-	// Finalize the layout
-	this->SetSizer(m_Sizer_Main);
-	this->Layout();
-	this->Centre(wxBOTH);
+    // Finalize the layout
+    this->SetSizer(m_Sizer_Main);
+    this->Layout();
+    this->Centre(wxBOTH);
 
-	// Connect Events
-	m_DataViewListCtrl_Main->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated), NULL, this);
+    // Connect Events
+    m_DataViewListCtrl_Main->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated), NULL, this);
 }
 
 
@@ -48,13 +80,17 @@ Frame_Main::~Frame_Main()
 
 
 /*==============================
-	Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated
-	Called when a selected item is double clicked
-	@param The generated event
+    Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated
+    Called when a selected item is double clicked
+    @param The generated event
 ==============================*/
 
 void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event)
 {
-	// Prevent unused parameter warning
-	(void)event;
+    int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
+    wxMessageDialog d(NULL, g_tools[row].name);
+    d.ShowModal();
+
+    // Prevent unused parameter warning
+    (void)event;
 }
