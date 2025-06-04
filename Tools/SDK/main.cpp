@@ -1,6 +1,7 @@
 #include "app.h"
 #include "main.h"
 #include "resource.h"
+#include "Tools/Image/frame_image.h"
 
 
 /*********************************
@@ -10,8 +11,15 @@
 typedef struct {
     wxString name;
     wxIcon icon;
-    void* function;
+    void (*function)(wxWindow*);
 } Tools;
+
+
+/*********************************
+       Function Prototypes
+*********************************/
+
+void StartTool_Image(wxWindow* parent);
 
 
 /*********************************
@@ -28,7 +36,7 @@ static std::vector<Tools> g_tools;
 
 static void Initialize_Tools()
 {
-    g_tools.push_back({wxString("Image Browser"), Icon_Texture, NULL});
+    g_tools.push_back({wxString("Image Browser"), Icon_Texture, StartTool_Image});
     g_tools.push_back({wxString("Material Browser"), Icon_Material, NULL});
 }
 
@@ -88,9 +96,21 @@ Frame_Main::~Frame_Main()
 void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event)
 {
     int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
-    wxMessageDialog d(NULL, g_tools[row].name);
-    d.ShowModal();
+    if (g_tools[row].function != NULL)
+        g_tools[row].function(this);
 
     // Prevent unused parameter warning
     (void)event;
+}
+
+
+/*==============================
+    StartTool_Image
+    TODO
+==============================*/
+
+void StartTool_Image(wxWindow* parent)
+{
+    Frame_ImageBrowser* w = new Frame_ImageBrowser(parent);
+    w->Show();
 }

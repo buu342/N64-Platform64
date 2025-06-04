@@ -7,6 +7,12 @@
     <ClCompile Include="main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\panel_search.cpp">
+      <Filter>Source\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools\Image\frame_image.cpp">
+      <Filter>Source\Tools\Image</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -27,6 +33,12 @@
     <ClInclude Include="resource.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="Tools\panel_search.h">
+      <Filter>Source\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\Image\frame_image.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">
@@ -40,6 +52,15 @@
     </Filter>
     <Filter Include="Source">
       <UniqueIdentifier>{0ac4a092-de69-4b7b-8241-e4626ebc59d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Tools">
+      <UniqueIdentifier>{0a0be1ef-18d8-4b0a-a2bd-ad25e697937a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Tools\Image">
+      <UniqueIdentifier>{e39a93f1-0c60-4fcf-aa70-7cade503d61e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Tools\Material">
+      <UniqueIdentifier>{f4bac0a1-a25d-49c7-9a54-414a99ff6f30}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
