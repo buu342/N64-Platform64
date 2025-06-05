@@ -18,6 +18,12 @@ wxIcon   Icon_Main = wxNullIcon;
 wxIcon   Icon_Texture = wxNullIcon;
 wxIcon   Icon_Material = wxNullIcon;
 wxCursor Cursor_Blank = wxNullCursor;
+wxIcon   Icon_Back = wxNullIcon;
+wxIcon   Icon_NewAsset = wxNullIcon;
+wxIcon   Icon_NewFolder = wxNullIcon;
+wxIcon   Icon_Search = wxNullIcon;
+wxIcon   Icon_ViewGrid = wxNullIcon;
+wxIcon   Icon_ViewList = wxNullIcon;
 
 
 /*==============================
@@ -63,6 +69,18 @@ bool App::OnInit()
     Icon_Texture.CopyFromBitmap(temp);
     temp = wxBITMAP_PNG_FROM_DATA(Icon_Material);
     Icon_Material.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_Back);
+    Icon_Back.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_NewAsset);
+    Icon_NewAsset.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_NewFolder);
+    Icon_NewFolder.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_Search);
+    Icon_Search.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid);
+    Icon_ViewGrid.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_ViewList);
+    Icon_ViewList.CopyFromBitmap(temp);
 
     // Initialize blank cursor
     wxBitmap img = wxBitmap(1, 1, 1);

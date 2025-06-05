@@ -1,7 +1,9 @@
 #include "frame_image.h"
+#include "../../resource.h"
 
 Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
+	this->SetIcon(Icon_Texture);
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
 	wxBoxSizer* m_Sizer_Main;

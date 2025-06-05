@@ -12,8 +12,20 @@
     #include "Resources/Icons/Icon_Main.h"
     #include "Resources/Icons/Icon_Texture.h"
     #include "Resources/Icons/Icon_Material.h"
+    #include "Resources/Icons/Icon_Back.h"
+    #include "Resources/Icons/Icon_NewAsset.h"
+    #include "Resources/Icons/Icon_NewFolder.h"
+    #include "Resources/Icons/Icon_Search.h"
+    #include "Resources/Icons/Icon_ViewGrid.h"
+    #include "Resources/Icons/Icon_ViewList.h"
 
     extern wxIcon Icon_Main;
     extern wxIcon Icon_Texture;
     extern wxIcon Icon_Material;
+    extern wxIcon Icon_Back;
+    extern wxIcon Icon_NewAsset;
+    extern wxIcon Icon_NewFolder;
+    extern wxIcon Icon_Search;
+    extern wxIcon Icon_ViewGrid;
+    extern wxIcon Icon_ViewList;
 #endif

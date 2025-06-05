@@ -1,3 +1,8 @@
+#pragma once
+
+typedef struct IUnknown IUnknown;
+
+#include <wx/wx.h>
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/intl.h>

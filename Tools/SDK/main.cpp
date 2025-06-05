@@ -11,7 +11,7 @@
 typedef struct {
     wxString name;
     wxIcon icon;
-    void (*function)(wxWindow*);
+    void (*function)(wxWindow*, wxString);
 } Tools;
 
 
@@ -19,7 +19,7 @@ typedef struct {
        Function Prototypes
 *********************************/
 
-void StartTool_Image(wxWindow* parent);
+void StartTool_Image(wxWindow* parent, wxString title);
 
 
 /*********************************
@@ -97,7 +97,7 @@ void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewE
 {
     int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
     if (g_tools[row].function != NULL)
-        g_tools[row].function(this);
+        g_tools[row].function(this, g_tools[row].name);
 
     // Prevent unused parameter warning
     (void)event;
@@ -109,8 +109,8 @@ void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewE
     TODO
 ==============================*/
 
-void StartTool_Image(wxWindow* parent)
+void StartTool_Image(wxWindow* parent, wxString title)
 {
-    Frame_ImageBrowser* w = new Frame_ImageBrowser(parent);
+    Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
     w->Show();
 }

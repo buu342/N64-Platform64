@@ -20,11 +20,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Resources\Icons\Icon_Back.h" />
     <ClInclude Include="Resources\Icons\Icon_Main.h" />
     <ClInclude Include="app.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="Resources\Icons\Icon_Material.h" />
+    <ClInclude Include="Resources\Icons\Icon_NewAsset.h" />
+    <ClInclude Include="Resources\Icons\Icon_NewFolder.h" />
     <ClInclude Include="Resources\Icons\Icon_Texture.h" />
+    <ClInclude Include="Resources\Icons\Icon_ViewGrid.h" />
+    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
     <ClInclude Include="Tools\Image\frame_image.h" />
     <ClInclude Include="Tools\panel_search.h" />
   </ItemGroup>
