@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Include\json.hpp" />
+    <ClInclude Include="json.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Resources\Icons\Icon_Back.h" />
     <ClInclude Include="Resources\Icons\Icon_Main.h" />
@@ -27,6 +29,7 @@
     <ClInclude Include="Resources\Icons\Icon_Material.h" />
     <ClInclude Include="Resources\Icons\Icon_NewAsset.h" />
     <ClInclude Include="Resources\Icons\Icon_NewFolder.h" />
+    <ClInclude Include="Resources\Icons\Icon_Search.h" />
     <ClInclude Include="Resources\Icons\Icon_Texture.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewGrid.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
@@ -35,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp" />
+    <ClCompile Include="json.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Tools\Image\frame_image.cpp" />
     <ClCompile Include="Tools\panel_search.cpp" />

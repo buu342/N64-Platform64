@@ -13,6 +13,9 @@
     <ClCompile Include="Tools\Image\frame_image.cpp">
       <Filter>Source\Tools\Image</Filter>
     </ClCompile>
+    <ClCompile Include="json.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -54,6 +57,15 @@
     <ClInclude Include="Resources\Icons\Icon_ViewList.h">
       <Filter>Resources\Icons</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Search.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\json.hpp">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="json.h">
+      <Filter>Source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">
@@ -76,6 +88,9 @@
     </Filter>
     <Filter Include="Source\Tools\Material">
       <UniqueIdentifier>{f4bac0a1-a25d-49c7-9a54-414a99ff6f30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{8e3d3eaa-cb7f-46da-bfe6-12a940707c90}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

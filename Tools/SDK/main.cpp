@@ -1,7 +1,15 @@
+/***************************************************************
+                            main.cpp
+
+TODO
+***************************************************************/
+
 #include "app.h"
 #include "main.h"
 #include "resource.h"
+#include "json.h"
 #include "Tools/Image/frame_image.h"
+#include <wx/stdpaths.h>
 
 
 /*********************************
@@ -113,4 +121,69 @@ void StartTool_Image(wxWindow* parent, wxString title)
 {
     Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
     w->Show();
+}
+
+
+/*==============================
+    OpenProject
+    TODO
+==============================*/
+
+void Frame_Main::OpenProject()
+{
+    wxArrayString files;
+    wxFileName exefullpath = wxStandardPaths::Get().GetExecutablePath();
+    wxString exepath = exefullpath.GetPath();
+    size_t filecount = wxDir::GetAllFiles(exepath, &files, wxString("*.p64"), wxDIR_FILES);
+
+    // Check if there is a project in the executable's folder, if so, open it
+    if (filecount == 1)
+    {
+        wxMessageDialog* dialog = new wxMessageDialog(this, files[0]);
+        dialog->ShowModal();
+        this->m_ProjectPath.Open(files[0]);
+        if (json_loadproject(files[0]) == 0)
+        {
+            this->Close();
+            return;
+        }
+    }
+    // If there is multiple projects in the executable's folder, ask to open one of them
+    else if (filecount > 1)
+    {
+        int ret;
+        wxMessageDialog* dialog = new wxMessageDialog(this, "There are multiple P64 projects in this folder.\nPlease choose what action to take:", "Multiple projects found", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_WARNING);
+        dialog->SetYesNoLabels("Choose which project to load", "Exit");
+        ret = dialog->ShowModal();
+        if (ret == wxID_OK)
+        {
+
+        }
+        else
+        {
+            this->Close();
+            return;
+        }
+    }
+    // If there are no projects in the executable's folder, then ask if one should be opened or if it should be created
+    else
+    {
+        int ret;
+        wxMessageDialog* dialog = new wxMessageDialog(this, "No P64 projects were found in this folder.\nPlease choose what action to take:", "No project found", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxCANCEL | wxICON_WARNING);
+        dialog->SetYesNoCancelLabels("Create a new project", "Load an existing project", "Exit");
+        ret = dialog->ShowModal();
+        if (ret == wxID_OK)
+        {
+
+        }
+        else if (ret == wxID_NO)
+        {
+
+        }
+        else
+        {
+            this->Close();
+            return;
+        }
+    }
 }

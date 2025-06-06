@@ -91,6 +91,7 @@ bool App::OnInit()
     // Show the main window
     this->m_Frame = new Frame_Main();
     this->m_Frame->SetIcon(Icon_Main);
+    this->m_Frame->OpenProject();
     this->m_Frame->Show();
     SetTopWindow(this->m_Frame);
     return true;
