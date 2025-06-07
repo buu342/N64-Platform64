@@ -125,7 +125,7 @@ void StartTool_Image(wxWindow* parent, wxString title)
 
 
 /*==============================
-    OpenProject
+    Frame_Main::OpenProject
     TODO
 ==============================*/
 
@@ -139,46 +139,67 @@ void Frame_Main::OpenProject()
     // Check if there is a project in the executable's folder, if so, open it
     if (filecount == 1)
     {
-        wxMessageDialog* dialog = new wxMessageDialog(this, files[0]);
-        dialog->ShowModal();
-        this->m_ProjectPath.Open(files[0]);
+        // If the project failed to load, ask in a loop to open another
         if (json_loadproject(files[0]) == 0)
-        {
-            this->Close();
-            return;
-        }
+            Dialog_CreateOpenProject("Unable to open the P64 project file in this folder.\nPlease choose what action to take next:", "Error loading project", exepath);
+        else // Project opened successfully, so store the filepath
+            this->InitializeProject(files[0]);
     }
-    // If there is multiple projects in the executable's folder, ask to open one of them
-    else if (filecount > 1)
+    else if (filecount == 0) // If there are no projects in the executable's folder, then ask if one should be opened or if it should be created
+        Dialog_CreateOpenProject("No P64 projects were found in this folder.\nPlease choose what action to take:", "No project found", exepath);
+    else // If there is multiple projects in the executable's folder, ask to open one of them
+        Dialog_CreateOpenProject("There are multiple P64 projects in this folder.\nPlease choose what action to take:", "Multiple projects found", exepath);
+}
+
+
+/*==============================
+    Frame_Main::Dialog_CreateOpenProject
+    TODO
+==============================*/
+
+void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath)
+{
+    while (true)
     {
         int ret;
-        wxMessageDialog* dialog = new wxMessageDialog(this, "There are multiple P64 projects in this folder.\nPlease choose what action to take:", "Multiple projects found", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_WARNING);
-        dialog->SetYesNoLabels("Choose which project to load", "Exit");
-        ret = dialog->ShowModal();
-        if (ret == wxID_OK)
+        wxMessageDialog dialog(this, message, title, wxCENTER | wxNO_DEFAULT | wxYES_NO | wxCANCEL | wxICON_WARNING);
+        dialog.SetYesNoCancelLabels("Create a new project", "Load an existing project", "Exit");
+        ret = dialog.ShowModal();
+        if (ret == wxID_YES)
         {
-
-        }
-        else
-        {
-            this->Close();
-            return;
-        }
-    }
-    // If there are no projects in the executable's folder, then ask if one should be opened or if it should be created
-    else
-    {
-        int ret;
-        wxMessageDialog* dialog = new wxMessageDialog(this, "No P64 projects were found in this folder.\nPlease choose what action to take:", "No project found", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxCANCEL | wxICON_WARNING);
-        dialog->SetYesNoCancelLabels("Create a new project", "Load an existing project", "Exit");
-        ret = dialog->ShowModal();
-        if (ret == wxID_OK)
-        {
-
+            wxFileDialog fd(this, "Project file to create", defaultpath, "Project.p64", "*.p64", wxFD_SAVE);
+            ret = fd.ShowModal();
+            if (ret == wxID_OK)
+            {
+                if (json_createproject(fd.GetPath()))
+                {
+                    this->InitializeProject(fd.GetPath());
+                    return;
+                }
+                else
+                {
+                    wxMessageDialog err(this, "Unable to create P64 project file", "Error", wxCENTER | wxOK | wxICON_ERROR);
+                    err.ShowModal();
+                }
+            }
         }
         else if (ret == wxID_NO)
         {
-
+            wxFileDialog fd(this, "Project file to load", defaultpath, "Project.p64", "*.p64", wxFD_OPEN);
+            ret = fd.ShowModal();
+            if (ret == wxID_OK)
+            {
+                if (json_loadproject(fd.GetPath()))
+                {
+                    this->InitializeProject(fd.GetPath());
+                    return;
+                }
+                else
+                {
+                    wxMessageDialog err(this, "Unable to load P64 project file", "Error", wxCENTER | wxOK | wxICON_ERROR);
+                    err.ShowModal();
+                }
+            }
         }
         else
         {
@@ -186,4 +207,15 @@ void Frame_Main::OpenProject()
             return;
         }
     }
+}
+
+void Frame_Main::InitializeProject(wxString filepath)
+{
+    wxString assetspath;
+    this->m_ProjectPath = filepath;
+    assetspath = this->m_ProjectPath.GetPath() + wxFileName::GetPathSeparator() + ASSETS_FOLDER;
+    if (!wxDir::Exists(assetspath))
+        this->m_AssetsPath.Make(assetspath);
+    this->m_AssetsPath.Open(assetspath);
+    this->SetTitle(this->GetTitle() + " - " + this->m_ProjectPath.GetFullName());
 }

@@ -5,10 +5,19 @@ JSON handling functions. This file was created to isolate the
 bulky JSON header only library. 
 ***************************************************************/
 
+#include "app.h"
 #include "json.h"
 #include "Include/json.hpp"
 #include <fstream>
 #include <wx/msgdlg.h>
+#include <wx/textfile.h>
+
+
+/*********************************
+             Globals
+*********************************/
+
+nlohmann::json g_project;
 
 
 /*==============================
@@ -40,16 +49,41 @@ nlohmann::json json_fromfilepath(wxString filepath)
 
 
 /*==============================
+    json_createproject
+    Create a new P64 project JSON file
+    @param  The filepath of the JSON file to create
+    @return 1 if successful, 0 if not
+==============================*/
+
+int json_createproject(wxString filepath)
+{
+    try
+    {
+        g_project = {};
+        g_project["Platform64"] = {};
+        g_project["Platform64"]["Version"] = PROJECT_VERSION;
+        json_save(filepath);
+        return 1;
+    }
+    catch (nlohmann::json::exception e)
+    {
+        wxMessageBox(wxString(e.what()), wxString("Error creating JSON"), wxICON_ERROR);
+        return 0;
+    }
+}
+
+
+/*==============================
     json_loadproject
-    Load a list of categories from a JSON file
+    Load a P64 project from a JSON file
     @param  The filepath of the JSON file
     @return 1 if successful, 0 if not
 ==============================*/
 
 int json_loadproject(wxString filepath)
 {
-    nlohmann::json pagejson = json_fromfilepath(filepath);
-    return pagejson == NULL ? 0 : 1;
+    g_project = json_fromfilepath(filepath);
+    return g_project == NULL ? 0 : 1;
 }
 
 
@@ -60,5 +94,11 @@ int json_loadproject(wxString filepath)
 
 void json_save(wxString filepath)
 {
-
+    wxTextFile out_proj(filepath);
+    if (!out_proj.Exists())
+        out_proj.Create();
+    out_proj.Clear();
+    out_proj.AddLine(wxString::FromUTF8(g_project.dump(4)));
+    out_proj.Write();
+    out_proj.Close();
 }

@@ -5,6 +5,9 @@ typedef struct IUnknown IUnknown;
 #include <wx/wx.h>
 #include "main.h"
 
+#define PROJECT_VERSION  (1.0f);
+#define ASSETS_FOLDER    "Assets"
+
 
 /*********************************
              Classes

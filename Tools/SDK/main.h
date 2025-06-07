@@ -24,7 +24,8 @@ class Frame_Main : public wxFrame
 {
     private:
         wxDataViewListCtrl* m_DataViewListCtrl_Main;
-        wxDir m_ProjectPath;
+        wxFileName m_ProjectPath;
+        wxDir m_AssetsPath;
         void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
 
     protected:
@@ -33,4 +34,6 @@ class Frame_Main : public wxFrame
         Frame_Main();
         ~Frame_Main();
         void OpenProject();
+        void Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath);
+        void InitializeProject(wxString filepath);
 };

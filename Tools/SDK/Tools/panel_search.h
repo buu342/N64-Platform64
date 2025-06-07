@@ -25,7 +25,6 @@ typedef struct IUnknown IUnknown;
 class Panel_Search : public wxPanel
 {
 	private:
-		wxFlexGridSizer* m_Sizer_Inputs;
 
 	protected:
 		wxBitmapButton* m_Button_Back;

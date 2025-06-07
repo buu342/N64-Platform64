@@ -17,6 +17,7 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     m_Sizer_Search->SetFlexibleDirection(wxBOTH);
     m_Sizer_Search->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
+    wxFlexGridSizer* m_Sizer_Inputs;
     m_Sizer_Inputs = new wxFlexGridSizer(0, 1, 0, 0);
     m_Sizer_Inputs->AddGrowableCol(0);
     m_Sizer_Inputs->SetFlexibleDirection(wxBOTH);
