@@ -24,6 +24,7 @@ wxIcon   Icon_NewFolder = wxNullIcon;
 wxIcon   Icon_Search = wxNullIcon;
 wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
+wxIcon   Icon_Folder = wxNullIcon;
 
 
 /*==============================
@@ -81,6 +82,8 @@ bool App::OnInit()
     Icon_ViewGrid.CopyFromBitmap(temp);
     temp = wxBITMAP_PNG_FROM_DATA(Icon_ViewList);
     Icon_ViewList.CopyFromBitmap(temp);
+    temp = wxBITMAP_PNG_FROM_DATA(Icon_Folder);
+    Icon_Folder.CopyFromBitmap(temp);
 
     // Initialize blank cursor
     wxBitmap img = wxBitmap(1, 1, 1);

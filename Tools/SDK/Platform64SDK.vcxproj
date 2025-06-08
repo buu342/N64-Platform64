@@ -23,6 +23,7 @@
     <ClInclude Include="json.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Resources\Icons\Icon_Back.h" />
+    <ClInclude Include="Resources\Icons\Icon_Folder.h" />
     <ClInclude Include="Resources\Icons\Icon_Main.h" />
     <ClInclude Include="app.h" />
     <ClInclude Include="main.h" />

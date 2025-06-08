@@ -18,6 +18,7 @@
     #include "Resources/Icons/Icon_Search.h"
     #include "Resources/Icons/Icon_ViewGrid.h"
     #include "Resources/Icons/Icon_ViewList.h"
+    #include "Resources/Icons/Icon_Folder.h"
 
     extern wxIcon Icon_Main;
     extern wxIcon Icon_Texture;
@@ -28,4 +29,5 @@
     extern wxIcon Icon_Search;
     extern wxIcon Icon_ViewGrid;
     extern wxIcon Icon_ViewList;
+    extern wxIcon Icon_Folder;
 #endif

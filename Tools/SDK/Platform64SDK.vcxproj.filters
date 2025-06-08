@@ -66,6 +66,9 @@
     <ClInclude Include="json.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Folder.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">

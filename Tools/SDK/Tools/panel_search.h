@@ -21,31 +21,38 @@ typedef struct IUnknown IUnknown;
 #include <wx/textctrl.h>
 #include <wx/dataview.h>
 #include <wx/panel.h>
+#include <wx/dir.h>
 
 class Panel_Search : public wxPanel
 {
-	private:
+    private:
+        wxDir m_MainFolder;
+        wxDir m_CurrFolder;
+        wxString m_AssetType;
 
-	protected:
-		wxBitmapButton* m_Button_Back;
-		wxBitmapButton* m_Button_NewAsset;
-		wxBitmapButton* m_Button_NewFolder;
-		wxBitmapToggleButton* m_ToggleButton_Search;
-		wxBitmapButton* m_Button_ViewMode;
-		wxTextCtrl* m_TextCtrl_Search;
-		wxDataViewCtrl* m_DataViewCtrl_ObjectList;
-		wxDataViewListCtrl* m_DataViewListCtrl_ObjectList;
+    protected:
+        wxBitmapButton* m_Button_Back;
+        wxBitmapButton* m_Button_NewAsset;
+        wxBitmapButton* m_Button_NewFolder;
+        wxBitmapToggleButton* m_ToggleButton_Search;
+        wxBitmapButton* m_Button_ViewMode;
+        wxTextCtrl* m_TextCtrl_Search;
+        wxDataViewListCtrl* m_DataViewListCtrl_ObjectList;
+        wxDataViewColumn* m_DataViewListColumn_Assets;
+        wxDataViewListCtrl* m_DataViewListCtrl_ObjectGrid;
 
-		void m_Button_Back_OnButtonClick(wxCommandEvent& event);
-		void m_Button_NewAsset_OnButtonClick(wxCommandEvent& event);
-		void m_Button_NewFolder_OnButtonClick(wxCommandEvent& event);
-		void m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event);
-		void m_Button_ViewMode_OnButtonClick(wxCommandEvent& event);
-		void m_TextCtrl_Search_OnText(wxCommandEvent& event);
+        void m_Button_Back_OnButtonClick(wxCommandEvent& event);
+        void m_Button_NewAsset_OnButtonClick(wxCommandEvent& event);
+        void m_Button_NewFolder_OnButtonClick(wxCommandEvent& event);
+        void m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event);
+        void m_Button_ViewMode_OnButtonClick(wxCommandEvent& event);
+        void m_TextCtrl_Search_OnText(wxCommandEvent& event);
 
 
-	public:
-		Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
-		~Panel_Search();
-
+    public:
+        Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
+        ~Panel_Search();
+        void Search_SetFolder(wxString path);
+        void Search_SetAssetType(wxString type);
+        void LoadAssetsInDir(wxDir path);
 };

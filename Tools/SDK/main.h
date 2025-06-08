@@ -36,4 +36,5 @@ class Frame_Main : public wxFrame
         void OpenProject();
         void Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath);
         void InitializeProject(wxString filepath);
+        wxString GetAssetsPath();
 };

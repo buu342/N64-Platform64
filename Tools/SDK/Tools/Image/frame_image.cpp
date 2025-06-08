@@ -6,6 +6,10 @@ TODO
 
 #include "frame_image.h"
 #include "../../resource.h"
+#include "../../main.h"
+
+#define CONTENT_FOLDER     wxString("Images")
+#define CONTENT_EXTENSION  wxString("*.p64_img")
 
 Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
@@ -19,6 +23,9 @@ Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const w
     m_Splitter_Vertical->Connect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
 
     m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+    this->m_Panel_Search->Search_SetAssetType(CONTENT_EXTENSION);
+    this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER);
+
     m_Panel_Edit = new wxPanel( m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     wxBoxSizer* m_Sizer_Edit;
     m_Sizer_Edit = new wxBoxSizer( wxVERTICAL );
@@ -31,13 +38,11 @@ Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const w
     m_Splitter_Horizontal->SplitHorizontally( m_Panel_Preview, m_Panel_Config, 0 );
     m_Sizer_Edit->Add( m_Splitter_Horizontal, 1, wxEXPAND, 5 );
 
-
     m_Panel_Edit->SetSizer( m_Sizer_Edit );
     m_Panel_Edit->Layout();
     m_Sizer_Edit->Fit( m_Panel_Edit );
     m_Splitter_Vertical->SplitVertically( m_Panel_Search, m_Panel_Edit, 0 );
     m_Sizer_Main->Add( m_Splitter_Vertical, 1, wxEXPAND, 5 );
-
 
     this->SetSizer( m_Sizer_Main );
     this->Layout();

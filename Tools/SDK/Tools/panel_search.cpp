@@ -6,6 +6,7 @@ TODO
 
 #include "panel_search.h"
 #include "../resource.h"
+#include "../json.h"
 
 Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name) : wxPanel(parent, id, pos, size, style, name)
 {
@@ -55,13 +56,13 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
 
     m_Sizer_Search->Add(m_Sizer_Inputs, 1, wxEXPAND, 5);
 
-    m_DataViewCtrl_ObjectList = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
-    m_Sizer_Search->Add(m_DataViewCtrl_ObjectList, 0, wxALL | wxEXPAND, 5);
-
     m_DataViewListCtrl_ObjectList = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES| wxDV_NO_HEADER);
-    m_DataViewListCtrl_ObjectList->Hide();
+    m_DataViewListColumn_Assets = m_DataViewListCtrl_ObjectList->AppendIconTextColumn(_("Assets"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
+    m_Sizer_Search->Add(m_DataViewListCtrl_ObjectList, 0, wxALL | wxEXPAND, 5); 
 
-    m_Sizer_Search->Add(m_DataViewListCtrl_ObjectList, 0, wxALL | wxEXPAND, 5);
+    m_DataViewListCtrl_ObjectGrid = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES| wxDV_NO_HEADER);
+    m_DataViewListCtrl_ObjectGrid->Hide();
+    m_Sizer_Search->Add(m_DataViewListCtrl_ObjectGrid, 0, wxALL | wxEXPAND, 5);
 
 
     this->SetSizer(m_Sizer_Search);
@@ -108,16 +109,16 @@ void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
 
 void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
 {
-    if (this->m_DataViewCtrl_ObjectList->IsShown())
+    if (this->m_DataViewListCtrl_ObjectList->IsShown())
     {
-        this->m_DataViewCtrl_ObjectList->Hide();
-        this->m_DataViewListCtrl_ObjectList->Show();
+        this->m_DataViewListCtrl_ObjectList->Hide();
+        this->m_DataViewListCtrl_ObjectGrid->Show();
         this->m_Button_ViewMode->SetBitmap(Icon_ViewList);
     }
     else
     {
-        this->m_DataViewCtrl_ObjectList->Show();
-        this->m_DataViewListCtrl_ObjectList->Hide();
+        this->m_DataViewListCtrl_ObjectList->Show();
+        this->m_DataViewListCtrl_ObjectGrid->Hide();
         this->m_Button_ViewMode->SetBitmap(Icon_ViewGrid);
     }
     this->Layout();
@@ -127,4 +128,62 @@ void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
 void Panel_Search::m_TextCtrl_Search_OnText(wxCommandEvent& event)
 {
 
+}
+
+void Panel_Search::Search_SetFolder(wxString path)
+{
+    if (!wxDir::Exists(path))
+        this->m_MainFolder.Make(path);
+    this->m_MainFolder.Open(path);
+    this->m_CurrFolder.Open(path);
+    this->LoadAssetsInDir(path);
+}
+
+void Panel_Search::Search_SetAssetType(wxString type)
+{
+    this->m_AssetType = type;
+}
+
+void Panel_Search::LoadAssetsInDir(wxDir path)
+{
+    bool cont;
+    wxArrayString list;
+    wxString filename;
+
+    // List folders
+    cont = path.GetFirst(&filename, wxEmptyString, wxDIR_DIRS);
+    while (cont)
+    {
+        list.Add(filename);
+        cont = path.GetNext(&filename);
+    }
+    list.Sort();
+    for (wxString folder : list)
+    {
+        wxVector<wxVariant> items;
+        items.push_back((wxVariant)wxDataViewIconText(folder, Icon_Folder));
+        this->m_DataViewListCtrl_ObjectList->AppendItem(items);
+        items.pop_back();
+    }
+
+
+    // List assets
+    list.Empty();
+    cont = path.GetFirst(&filename, this->m_AssetType, wxDIR_FILES);
+    while (cont)
+    {
+        list.Add(filename);
+        cont = path.GetNext(&filename);
+    }
+    list.Sort();
+    for (wxString folder : list)
+    {
+        wxVector<wxVariant> items;
+        items.push_back((wxVariant)wxDataViewIconText(folder, Icon_Texture));
+        this->m_DataViewListCtrl_ObjectList->AppendItem(items);
+        items.pop_back();
+    }
+
+    // Done
+    this->m_DataViewListCtrl_ObjectList->Refresh();
 }

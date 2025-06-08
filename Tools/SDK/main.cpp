@@ -209,6 +209,12 @@ void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxSt
     }
 }
 
+
+/*==============================
+    Frame_Main::InitializeProject
+    TODO
+==============================*/
+
 void Frame_Main::InitializeProject(wxString filepath)
 {
     wxString assetspath;
@@ -218,4 +224,15 @@ void Frame_Main::InitializeProject(wxString filepath)
         this->m_AssetsPath.Make(assetspath);
     this->m_AssetsPath.Open(assetspath);
     this->SetTitle(this->GetTitle() + " - " + this->m_ProjectPath.GetFullName());
+}
+
+
+/*==============================
+    Frame_Main::GetAssetsPath
+    TODO
+==============================*/
+
+wxString Frame_Main::GetAssetsPath()
+{
+    return this->m_AssetsPath.GetNameWithSep();
 }
