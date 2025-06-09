@@ -11,6 +11,11 @@ TODO
 #define CONTENT_FOLDER     wxString("Images")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
 
+static wxIcon IconGenerator(bool large)
+{
+    return Icon_Texture;
+}
+
 Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
     this->SetIcon(Icon_Texture);
@@ -24,7 +29,8 @@ Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const w
 
     m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     this->m_Panel_Search->Search_SetAssetType(CONTENT_EXTENSION);
-    this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER);
+    this->m_Panel_Search->Search_IconGenerator(IconGenerator);
+    this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
 
     m_Panel_Edit = new wxPanel( m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     wxBoxSizer* m_Sizer_Edit;

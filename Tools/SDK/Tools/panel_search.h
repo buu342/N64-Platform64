@@ -26,9 +26,10 @@ typedef struct IUnknown IUnknown;
 class Panel_Search : public wxPanel
 {
     private:
-        wxDir m_MainFolder;
-        wxDir m_CurrFolder;
+        wxFileName m_MainFolder;
+        wxFileName m_CurrFolder;
         wxString m_AssetType;
+        wxIcon (*m_IconGenFunc)(bool);
 
     protected:
         wxBitmapButton* m_Button_Back;
@@ -47,12 +48,16 @@ class Panel_Search : public wxPanel
         void m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event);
         void m_Button_ViewMode_OnButtonClick(wxCommandEvent& event);
         void m_TextCtrl_Search_OnText(wxCommandEvent& event);
+        void m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event);
+        void m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event);
+
 
 
     public:
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
         ~Panel_Search();
-        void Search_SetFolder(wxString path);
+        void Search_SetFolder(wxFileName path);
         void Search_SetAssetType(wxString type);
-        void LoadAssetsInDir(wxDir path);
+        void Search_IconGenerator(wxIcon (*function)(bool));
+        void LoadAssetsInDir(wxFileName path);
 };

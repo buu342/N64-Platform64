@@ -25,7 +25,7 @@ class Frame_Main : public wxFrame
     private:
         wxDataViewListCtrl* m_DataViewListCtrl_Main;
         wxFileName m_ProjectPath;
-        wxDir m_AssetsPath;
+        wxFileName m_AssetsPath;
         void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
 
     protected:

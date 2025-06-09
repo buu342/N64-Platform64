@@ -104,7 +104,7 @@ Frame_Main::~Frame_Main()
 void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event)
 {
     int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
-    if (g_tools[row].function != NULL)
+    if (row >= 0 && row < (int)g_tools.size() && g_tools[row].function != NULL)
         g_tools[row].function(this, g_tools[row].name);
 
     // Prevent unused parameter warning
@@ -217,12 +217,12 @@ void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxSt
 
 void Frame_Main::InitializeProject(wxString filepath)
 {
-    wxString assetspath;
-    this->m_ProjectPath = filepath;
-    assetspath = this->m_ProjectPath.GetPath() + wxFileName::GetPathSeparator() + ASSETS_FOLDER;
-    if (!wxDir::Exists(assetspath))
-        this->m_AssetsPath.Make(assetspath);
-    this->m_AssetsPath.Open(assetspath);
+    wxFileName assetspath;
+    this->m_ProjectPath.Assign(filepath);
+    assetspath.AssignDir(this->m_ProjectPath.GetPathWithSep() + ASSETS_FOLDER + wxFileName::GetPathSeparator());
+    if (!wxDir::Exists(assetspath.GetPathWithSep()))
+        wxDir::Make(assetspath.GetPathWithSep());
+    this->m_AssetsPath.Assign(assetspath);
     this->SetTitle(this->GetTitle() + " - " + this->m_ProjectPath.GetFullName());
 }
 
@@ -234,5 +234,5 @@ void Frame_Main::InitializeProject(wxString filepath)
 
 wxString Frame_Main::GetAssetsPath()
 {
-    return this->m_AssetsPath.GetNameWithSep();
+    return this->m_AssetsPath.GetPathWithSep();
 }

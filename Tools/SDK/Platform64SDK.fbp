@@ -284,7 +284,7 @@
                     <property name="minimize_button">0</property>
                     <property name="minimum_size"></property>
                     <property name="moveable">1</property>
-                    <property name="name">m_Button_NewItem</property>
+                    <property name="name">m_Button_NewAsset</property>
                     <property name="pane_border">1</property>
                     <property name="pane_position"></property>
                     <property name="pane_size"></property>
@@ -307,7 +307,7 @@
                     <property name="window_extra_style"></property>
                     <property name="window_name"></property>
                     <property name="window_style"></property>
-                    <event name="OnButtonClick">m_Button_NewItem_OnButtonClick</event>
+                    <event name="OnButtonClick">m_Button_NewAsset_OnButtonClick</event>
                   </object>
                 </object>
                 <object class="sizeritem" expanded="false">
@@ -639,6 +639,8 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style"></property>
+            <event name="OnDataViewListCtrlItemActivated">m_DataViewListCtrl_ObjectList_OnItemActivated</event>
+            <event name="OnDataViewListCtrlItemEditingDone">m_DataViewListCtrl_ObjectList_ItemEditingDone</event>
             <object class="dataViewListColumn" expanded="true">
               <property name="align">wxALIGN_LEFT</property>
               <property name="ellipsize"></property>
@@ -646,6 +648,17 @@
               <property name="label">Assets</property>
               <property name="mode">wxDATAVIEW_CELL_EDITABLE</property>
               <property name="name">m_DataViewListColumn_Assets</property>
+              <property name="permission">protected</property>
+              <property name="type">IconText</property>
+              <property name="width">-1</property>
+            </object>
+            <object class="dataViewListColumn" expanded="true">
+              <property name="align">wxALIGN_LEFT</property>
+              <property name="ellipsize"></property>
+              <property name="flags">wxDATAVIEW_COL_HIDDEN</property>
+              <property name="label">Assets</property>
+              <property name="mode">wxDATAVIEW_CELL_INERT</property>
+              <property name="name">m_DataViewListColumn_IsFolder</property>
               <property name="permission">protected</property>
               <property name="type">IconText</property>
               <property name="width">-1</property>
