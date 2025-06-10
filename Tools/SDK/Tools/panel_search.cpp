@@ -90,6 +90,9 @@ void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 {
     this->m_CurrFolder.RemoveLastDir();
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+
+    // Prevent unused parameter warning
+    (void)event;
 }
 
 void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
@@ -99,7 +102,7 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
 
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 {
-
+    
 }
 
 void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
@@ -109,6 +112,8 @@ void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
     else
         this->m_TextCtrl_Search->Show();
     this->Layout();
+
+    // Prevent unused parameter warning
     (void)event;
 }
 
@@ -127,6 +132,8 @@ void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
         this->m_Button_ViewMode->SetBitmap(Icon_ViewGrid);
     }
     this->Layout();
+
+    // Prevent unused parameter warning
     (void)event;
 }
 
@@ -154,12 +161,17 @@ void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool))
     this->m_IconGenFunc = function;
 }
 
-void Panel_Search::LoadAssetsInDir(wxFileName path)
+bool Panel_Search::LoadAssetsInDir(wxFileName path)
 {
     bool cont;
     wxArrayString list;
     wxString filename;
     wxDir dir;
+
+    // Try to oepn the directory
+    dir.Open(path.GetPathWithSep());
+    if (!dir.IsOpened())
+        return false;
 
     // Disable the back button if we're in the root
     this->m_Button_Back->Enable(this->m_MainFolder.GetPathWithSep().Cmp(path.GetPathWithSep()));
@@ -171,7 +183,6 @@ void Panel_Search::LoadAssetsInDir(wxFileName path)
         this->m_DataViewListCtrl_ObjectGrid->DeleteAllItems();
 
     // List folders
-    dir.Open(path.GetPathWithSep());
     cont = dir.GetFirst(&filename, wxEmptyString, wxDIR_DIRS);
     while (cont)
     {
@@ -212,6 +223,7 @@ void Panel_Search::LoadAssetsInDir(wxFileName path)
 
     // Done
     this->m_DataViewListCtrl_ObjectList->Refresh();
+    return true;
 }
 
 void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event)
@@ -219,7 +231,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent
     wxVariant variant;
     wxDataViewIconText icontext;
     bool isfolder;
-    int row = this->m_DataViewListCtrl_ObjectList->GetSelectedRow();
+    int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(event.GetItem());
 
     // Get the IconText data
     this->m_DataViewListCtrl_ObjectList->GetValue(variant, row, 0);
@@ -230,12 +242,44 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent
     isfolder = variant.GetBool();
     if (isfolder)
     {
-        this->m_CurrFolder.Assign(this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator());
-        this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+        wxFileName newpath = this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator();
+        if (this->LoadAssetsInDir(newpath))
+            this->m_CurrFolder.Assign(newpath);
     }
 }
 
 void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event)
 {
+    if (!event.IsEditCancelled())
+    {
+        wxVariant variant;
+        wxDataViewIconText oldicontext, newicontext;
+        wxString oldname, newname;
+        bool isfolder;
 
+        // Get the old data
+        int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(event.GetItem());
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, row, 0);
+        oldicontext << variant;
+
+        // Check if we're modifying a folder
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, row, 1);
+        isfolder = variant.GetBool();
+
+        // Get the new data
+        variant = event.GetValue();
+        newicontext << variant;
+        
+        // Perform the rename
+        oldname = this->m_CurrFolder.GetPathWithSep() + oldicontext.GetText();
+        newname = this->m_CurrFolder.GetPathWithSep() + newicontext.GetText();
+        if (!isfolder)
+        {
+            wxString extwithoutasterisk = this->m_AssetType.SubString(1, this->m_AssetType.Length() - 1);
+            oldname += extwithoutasterisk;
+            newname += extwithoutasterisk;
+        }
+        if (wxRenameFile(oldname, newname) == false)
+            event.Veto();
+    }
 }
