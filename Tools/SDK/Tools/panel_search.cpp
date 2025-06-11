@@ -102,7 +102,25 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
 
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 {
-    
+    wxString name = "New Folder";
+    if (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + name))
+    {
+        wxString testname;
+        int i = 2;
+        do
+        {
+            testname = wxString::Format("%s (%d)", name, i);
+            wxMessageBox(testname);
+            i++;
+        } 
+        while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
+        name = testname;
+    }
+    wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
+    this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+
+    // Prevent unused parameter warning
+    (void)event;
 }
 
 void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
