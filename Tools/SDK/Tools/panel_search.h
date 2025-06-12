@@ -59,5 +59,5 @@ class Panel_Search : public wxPanel
         void Search_SetFolder(wxFileName path);
         void Search_SetAssetType(wxString type);
         void Search_IconGenerator(wxIcon (*function)(bool));
-        bool LoadAssetsInDir(wxFileName path);
+        bool LoadAssetsInDir(wxFileName path, wxString filter=wxEmptyString);
 };

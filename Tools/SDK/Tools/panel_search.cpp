@@ -42,8 +42,8 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     m_ToggleButton_Search = new wxBitmapToggleButton(this, wxID_ANY, Icon_Search, wxDefaultPosition, wxSize(28, 28), 0);
     m_Sizer_Buttons->Add(m_ToggleButton_Search, 0, wxALL, 5);
 
-    m_Button_ViewMode = new wxBitmapButton(this, wxID_ANY, Icon_ViewGrid, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    m_Sizer_Buttons->Add(m_Button_ViewMode, 0, wxALL, 5);
+    //m_Button_ViewMode = new wxBitmapButton(this, wxID_ANY, Icon_ViewGrid, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
+    //m_Sizer_Buttons->Add(m_Button_ViewMode, 0, wxALL, 5);
 
 
     m_Sizer_Inputs->Add(m_Sizer_Buttons, 1, wxEXPAND, 5);
@@ -74,7 +74,7 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     this->m_Button_NewAsset->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_NewAsset_OnButtonClick), NULL, this);
     this->m_Button_NewFolder->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_NewFolder_OnButtonClick), NULL, this);
     this->m_ToggleButton_Search->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_ToggleButton_Search_OnToggleButton), NULL, this);
-    this->m_Button_ViewMode->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_ViewMode_OnButtonClick), NULL, this);
+    //this->m_Button_ViewMode->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_ViewMode_OnButtonClick), NULL, this);
     this->m_TextCtrl_Search->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Panel_Search::m_TextCtrl_Search_OnText), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone), NULL, this);
@@ -90,6 +90,9 @@ void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 {
     this->m_CurrFolder.RemoveLastDir();
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+
+    // Clear the search bar
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
 
     // Prevent unused parameter warning
     (void)event;
@@ -126,9 +129,17 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
 {
     if (this->m_TextCtrl_Search->IsShown())
+    {
         this->m_TextCtrl_Search->Hide();
+        if (this->m_TextCtrl_Search->GetValue().Length() > 0)
+            this->LoadAssetsInDir(this->m_CurrFolder);
+    }
     else
+    {
         this->m_TextCtrl_Search->Show();
+        if (this->m_TextCtrl_Search->GetValue().Length() > 0)
+            this->LoadAssetsInDir(this->m_CurrFolder, this->m_TextCtrl_Search->GetValue());
+    }
     this->Layout();
 
     // Prevent unused parameter warning
@@ -157,7 +168,7 @@ void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
 
 void Panel_Search::m_TextCtrl_Search_OnText(wxCommandEvent& event)
 {
-
+    this->LoadAssetsInDir(this->m_CurrFolder, event.GetString());
 }
 
 void Panel_Search::Search_SetFolder(wxFileName path)
@@ -179,7 +190,7 @@ void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool))
     this->m_IconGenFunc = function;
 }
 
-bool Panel_Search::LoadAssetsInDir(wxFileName path)
+bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
 {
     bool cont;
     wxArrayString list;
@@ -204,7 +215,8 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path)
     cont = dir.GetFirst(&filename, wxEmptyString, wxDIR_DIRS);
     while (cont)
     {
-        list.Add(filename);
+        if (filter == wxEmptyString || filename.Lower().Contains(filter))
+            list.Add(filename);
         cont = dir.GetNext(&filename);
     }
     list.Sort();
@@ -222,8 +234,11 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path)
     cont = dir.GetFirst(&filename, this->m_AssetType, wxDIR_FILES);
     while (cont)
     {
-        wxFileName f(filename);
-        list.Add(f.GetName());
+        if (filter == wxEmptyString || filename.Lower().Contains(filter))
+        {
+            wxFileName f(filename);
+            list.Add(f.GetName());
+        }
         cont = dir.GetNext(&filename);
     }
     list.Sort();
@@ -264,6 +279,9 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent
         if (this->LoadAssetsInDir(newpath))
             this->m_CurrFolder.Assign(newpath);
     }
+
+    // Clear the search bar
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
 }
 
 void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event)
