@@ -28,8 +28,11 @@ class Panel_Search : public wxPanel
     private:
         wxFileName m_MainFolder;
         wxFileName m_CurrFolder;
+        wxString m_AssetExt;
         wxString m_AssetType;
         wxIcon (*m_IconGenFunc)(bool);
+        void (*m_NewAssetFunc)(wxFileName);
+        void (*m_LoadAssetFunc)(wxFileName);
 
     protected:
         wxBitmapButton* m_Button_Back;
@@ -51,13 +54,14 @@ class Panel_Search : public wxPanel
         void m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event);
         void m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event);
 
-
-
     public:
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
         ~Panel_Search();
         void Search_SetFolder(wxFileName path);
-        void Search_SetAssetType(wxString type);
+        void Search_SetAssetType(wxString name, wxString type);
         void Search_IconGenerator(wxIcon (*function)(bool));
+        void Search_NewAssetGenerator(void (*function)(wxFileName));
+        void Search_LoadAssetFunc(void (*function)(wxFileName));
         bool LoadAssetsInDir(wxFileName path, wxString filter=wxEmptyString);
+        void SelectItem(wxString name, bool isfolder);
 };

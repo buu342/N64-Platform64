@@ -27,23 +27,28 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     wxBoxSizer* m_Sizer_Buttons;
     m_Sizer_Buttons = new wxBoxSizer(wxHORIZONTAL);
 
-    m_Button_Back = new wxBitmapButton(this, wxID_ANY, Icon_Back, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    m_Sizer_Buttons->Add(m_Button_Back, 0, wxALL, 5);
+    this->m_Button_Back = new wxBitmapButton(this, wxID_ANY, Icon_Back, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
+    this->m_Button_Back->SetToolTip(_("Go back a Folder"));
+    m_Sizer_Buttons->Add(this->m_Button_Back, 0, wxALL, 5);
 
-    m_Button_NewAsset = new wxBitmapButton(this, wxID_ANY, Icon_NewAsset, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    m_Sizer_Buttons->Add(m_Button_NewAsset, 0, wxALL, 5);
+    this->m_Button_NewAsset = new wxBitmapButton(this, wxID_ANY, Icon_NewAsset, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
+    this->m_Button_NewAsset->SetToolTip(_("Create a new asset"));
+    m_Sizer_Buttons->Add(this->m_Button_NewAsset, 0, wxALL, 5);
 
-    m_Button_NewFolder = new wxBitmapButton(this, wxID_ANY, Icon_NewFolder, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    m_Sizer_Buttons->Add(m_Button_NewFolder, 0, wxALL, 5);
+    this->m_Button_NewFolder = new wxBitmapButton(this, wxID_ANY, Icon_NewFolder, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
+    this->m_Button_NewFolder->SetToolTip(_("Create a new folder"));
+    m_Sizer_Buttons->Add(this->m_Button_NewFolder, 0, wxALL, 5);
 
 
     m_Sizer_Buttons->Add(0, 0, 1, wxEXPAND, 5);
 
-    m_ToggleButton_Search = new wxBitmapToggleButton(this, wxID_ANY, Icon_Search, wxDefaultPosition, wxSize(28, 28), 0);
-    m_Sizer_Buttons->Add(m_ToggleButton_Search, 0, wxALL, 5);
+    this->m_ToggleButton_Search = new wxBitmapToggleButton(this, wxID_ANY, Icon_Search, wxDefaultPosition, wxSize(28, 28), 0);
+    this->m_ToggleButton_Search->SetToolTip(_("Toggle the search bar"));
+    m_Sizer_Buttons->Add(this->m_ToggleButton_Search, 0, wxALL, 5);
 
-    //m_Button_ViewMode = new wxBitmapButton(this, wxID_ANY, Icon_ViewGrid, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    //m_Sizer_Buttons->Add(m_Button_ViewMode, 0, wxALL, 5);
+    //this->m_Button_ViewMode = new wxBitmapButton(this, wxID_ANY, Icon_ViewGrid, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
+    //this->m_Button_ViewMode->SetToolTip(_("Change the view mode"));
+    //m_Sizer_Buttons->Add(this->m_Button_ViewMode, 0, wxALL, 5);
 
 
     m_Sizer_Inputs->Add(m_Sizer_Buttons, 1, wxEXPAND, 5);
@@ -100,12 +105,29 @@ void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 
 void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
 {
-
+    wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+    wxString name = wxString("New ") + this->m_AssetType;
+    if (wxFileName(this->m_CurrFolder.GetPathWithSep() + name + extwithoutasterisk).Exists())
+    {
+        wxString testname;
+        int i = 2;
+        do
+        {
+            testname = wxString::Format("%s (%d)%s", name, i, extwithoutasterisk);
+            wxMessageBox(testname);
+            i++;
+        } 
+        while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname + extwithoutasterisk).Exists());
+        name = testname;
+    }
+    this->m_NewAssetFunc(this->m_CurrFolder.GetPathWithSep() + name + extwithoutasterisk);
+    this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+    this->SelectItem(name, false);
 }
 
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 {
-    wxString name = "New Folder";
+    wxString name = "New folder";
     if (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + name))
     {
         wxString testname;
@@ -121,6 +143,7 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
     }
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+    this->SelectItem(name, true);
 
     // Prevent unused parameter warning
     (void)event;
@@ -180,14 +203,25 @@ void Panel_Search::Search_SetFolder(wxFileName path)
     this->LoadAssetsInDir(path);
 }
 
-void Panel_Search::Search_SetAssetType(wxString type)
+void Panel_Search::Search_SetAssetType(wxString type, wxString ext)
 {
     this->m_AssetType = type;
+    this->m_AssetExt = ext;
 }
 
 void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool))
 {
     this->m_IconGenFunc = function;
+}
+
+void Panel_Search::Search_NewAssetGenerator(void (*function)(wxFileName))
+{
+    this->m_NewAssetFunc = function;
+}
+
+void Panel_Search::Search_LoadAssetFunc(void (*function)(wxFileName))
+{
+    this->m_LoadAssetFunc = function;
 }
 
 bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
@@ -231,7 +265,7 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
 
     // List assets
     list.Empty();
-    cont = dir.GetFirst(&filename, this->m_AssetType, wxDIR_FILES);
+    cont = dir.GetFirst(&filename, this->m_AssetExt, wxDIR_FILES);
     while (cont)
     {
         if (filter == wxEmptyString || filename.Lower().Contains(filter))
@@ -311,11 +345,28 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
         newname = this->m_CurrFolder.GetPathWithSep() + newicontext.GetText();
         if (!isfolder)
         {
-            wxString extwithoutasterisk = this->m_AssetType.SubString(1, this->m_AssetType.Length() - 1);
+            wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
             oldname += extwithoutasterisk;
             newname += extwithoutasterisk;
         }
         if (wxRenameFile(oldname, newname) == false)
             event.Veto();
+    }
+}
+
+void Panel_Search::SelectItem(wxString name, bool isfolder)
+{
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        wxVariant variant;
+        wxDataViewIconText icontext;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+        icontext << variant;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
+        if (icontext.GetText().Cmp(name) == 0 && isfolder == variant.GetBool())
+        {
+            this->m_DataViewListCtrl_ObjectList->SelectRow(i);
+            break;
+        }
     }
 }
