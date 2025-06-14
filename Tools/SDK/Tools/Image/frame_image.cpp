@@ -35,7 +35,7 @@ Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const w
     wxBoxSizer* m_Sizer_Main;
     m_Sizer_Main = new wxBoxSizer( wxVERTICAL );
 
-    m_Splitter_Vertical = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+    m_Splitter_Vertical = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE);
     m_Splitter_Vertical->Connect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
 
     m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -49,10 +49,24 @@ Frame_ImageBrowser::Frame_ImageBrowser( wxWindow* parent, wxWindowID id, const w
     wxBoxSizer* m_Sizer_Edit;
     m_Sizer_Edit = new wxBoxSizer( wxVERTICAL );
 
-    m_Splitter_Horizontal = new wxSplitterWindow( m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+    m_Splitter_Horizontal = new wxSplitterWindow( m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE);
+    m_Splitter_Horizontal->SetSashGravity(1);
     m_Splitter_Horizontal->Connect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
 
     m_Panel_Preview = new wxPanel( m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+    m_Panel_Preview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME));
+
+    wxBoxSizer* m_Sizer_Preview;
+    m_Sizer_Preview = new wxBoxSizer(wxVERTICAL);
+
+    m_ScrolledWin_Preview = new Panel_ImgView(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE | wxHSCROLL | wxVSCROLL);
+    m_ScrolledWin_Preview->SetScrollRate(5, 5);
+    m_Sizer_Preview->Add(m_ScrolledWin_Preview, 1, wxEXPAND, 5);
+
+    m_Panel_Preview->SetSizer(m_Sizer_Preview);
+    m_Panel_Preview->Layout();
+    m_Sizer_Preview->Fit(m_Panel_Preview);
+
     m_Panel_Config = new wxPanel( m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     m_Splitter_Horizontal->SplitHorizontally( m_Panel_Preview, m_Panel_Config, 0 );
     m_Sizer_Edit->Add( m_Splitter_Horizontal, 1, wxEXPAND, 5 );

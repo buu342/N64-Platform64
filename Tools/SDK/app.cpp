@@ -25,7 +25,7 @@ wxIcon   Icon_Search = wxNullIcon;
 wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
 wxIcon   Icon_Folder = wxNullIcon;
-
+wxBitmap Tex_Missing = wxNullBitmap;
 
 /*==============================
     App (Constructor)
@@ -64,26 +64,17 @@ bool App::OnInit()
     wxInitAllImageHandlers();
 
     // Initialize icons
-    wxBitmap temp = wxBITMAP_PNG_FROM_DATA(Icon_Main);
-    Icon_Main.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_Texture);
-    Icon_Texture.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_Material);
-    Icon_Material.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_Back);
-    Icon_Back.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_NewAsset);
-    Icon_NewAsset.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_NewFolder);
-    Icon_NewFolder.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_Search);
-    Icon_Search.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid);
-    Icon_ViewGrid.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_ViewList);
-    Icon_ViewList.CopyFromBitmap(temp);
-    temp = wxBITMAP_PNG_FROM_DATA(Icon_Folder);
-    Icon_Folder.CopyFromBitmap(temp);
+    Icon_Main.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Main));
+    Icon_Texture.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Texture));
+    Icon_Material.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Material));
+    Icon_Back.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Back));
+    Icon_NewAsset.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewAsset));
+    Icon_NewFolder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewFolder));
+    Icon_Search.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Search));
+    Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
+    Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
+    Icon_Folder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder));
+    Tex_Missing = wxBITMAP_PNG_FROM_DATA(MISSING);
 
     // Initialize blank cursor
     wxBitmap img = wxBitmap(1, 1, 1);

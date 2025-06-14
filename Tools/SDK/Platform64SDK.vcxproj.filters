@@ -16,6 +16,12 @@
     <ClCompile Include="json.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\Image\asset_image.cpp">
+      <Filter>Source\Tools\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools\Image\panel_imgview.cpp">
+      <Filter>Source\Tools\Image</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -68,6 +74,15 @@
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_Folder.h">
       <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Default\MISSING.h">
+      <Filter>Resources\Default</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\Image\panel_imgview.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\Image\asset_image.h">
+      <Filter>Source\Tools\Image</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

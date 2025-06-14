@@ -114,7 +114,6 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
         do
         {
             testname = wxString::Format("%s (%d)%s", name, i, extwithoutasterisk);
-            wxMessageBox(testname);
             i++;
         } 
         while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname + extwithoutasterisk).Exists());
@@ -135,7 +134,6 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
         do
         {
             testname = wxString::Format("%s (%d)", name, i);
-            wxMessageBox(testname);
             i++;
         } 
         while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));

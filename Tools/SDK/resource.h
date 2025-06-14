@@ -19,15 +19,17 @@
     #include "Resources/Icons/Icon_ViewGrid.h"
     #include "Resources/Icons/Icon_ViewList.h"
     #include "Resources/Icons/Icon_Folder.h"
+    #include "Resources/Default/MISSING.h"
 
-    extern wxIcon Icon_Main;
-    extern wxIcon Icon_Texture;
-    extern wxIcon Icon_Material;
-    extern wxIcon Icon_Back;
-    extern wxIcon Icon_NewAsset;
-    extern wxIcon Icon_NewFolder;
-    extern wxIcon Icon_Search;
-    extern wxIcon Icon_ViewGrid;
-    extern wxIcon Icon_ViewList;
-    extern wxIcon Icon_Folder;
+    extern wxIcon   Icon_Main;
+    extern wxIcon   Icon_Texture;
+    extern wxIcon   Icon_Material;
+    extern wxIcon   Icon_Back;
+    extern wxIcon   Icon_NewAsset;
+    extern wxIcon   Icon_NewFolder;
+    extern wxIcon   Icon_Search;
+    extern wxIcon   Icon_ViewGrid;
+    extern wxIcon   Icon_ViewList;
+    extern wxIcon   Icon_Folder;
+    extern wxBitmap Tex_Missing;
 #endif
