@@ -10,14 +10,14 @@ class Panel_ImgView : public wxScrolledWindow
     private:
 
     protected:
+        wxRealPoint m_Zoom;
         wxBitmap m_Bitmap;
-        void OnMouse(wxMouseEvent& event);
+        void OnMouseWheel(wxMouseEvent& event);
         void OnPaint(wxPaintEvent& event);
+        void RefreshDrawing();
 
     public:
         Panel_ImgView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_ImgView();
-
-        void Create(wxWindow* parent, wxWindowID id = -1);
         void LoadImageFromPath(wxBitmap& image);
 };

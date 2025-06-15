@@ -7,8 +7,9 @@
 
 Panel_ImgView::Panel_ImgView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxScrolledWindowStyle) : wxScrolledWindow(parent, id, pos, size, style)
 {
+    this->m_Zoom = wxRealPoint(1.0, 1.0);
     this->Connect(wxEVT_PAINT, wxPaintEventHandler(Panel_ImgView::OnPaint), NULL, this);
-    this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_ImgView::OnMouse), NULL, this);
+    this->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(Panel_ImgView::OnMouseWheel), NULL, this);
     this->LoadImageFromPath(Tex_Missing);
 }
 
@@ -17,30 +18,51 @@ Panel_ImgView::~Panel_ImgView()
 
 }
 
-void Panel_ImgView::Create(wxWindow* parent, wxWindowID id)
-{
-    wxScrolledWindow::Create(parent, id);
-}
-
 void Panel_ImgView::LoadImageFromPath(wxBitmap& image)
 {
     this->m_Bitmap = image;
-    //SetVirtualSize(this->m_Bitmap.GetWidth(), this->m_Bitmap.GetHeight());
+    this->RefreshDrawing();
+}
+
+void Panel_ImgView::RefreshDrawing()
+{
+    this->SetVirtualSize(this->m_Bitmap.GetWidth() * this->m_Zoom.x, this->m_Bitmap.GetHeight() * this->m_Zoom.y);
+    this->Layout();
     this->Refresh();
 }
 
-void Panel_ImgView::OnMouse(wxMouseEvent& event)
+void Panel_ImgView::OnMouseWheel(wxMouseEvent& event)
 {
-
+    const float speed = 1.25;
+    if (event.GetWheelRotation() > 0)
+        this->m_Zoom = wxRealPoint(this->m_Zoom.x*speed, this->m_Zoom.y*speed);
+    else
+        this->m_Zoom = wxRealPoint(this->m_Zoom.x/speed, this->m_Zoom.y/speed);
+    this->RefreshDrawing();
 }
 
 void Panel_ImgView::OnPaint(wxPaintEvent& event)
 {
-    int w, h;
+    int x, y;
+    int screen_w, screen_h;
+    int img_w, img_h;
+
+    // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
+    dc.SetUserScale(this->m_Zoom.x, this->m_Zoom.y);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME)));
     dc.Clear();
-    dc.GetSize(&w, &h);
-    dc.DrawBitmap(this->m_Bitmap, w/2 - this->m_Bitmap.GetWidth()/2, h/2 - this->m_Bitmap.GetHeight()/2, false);
+
+    // Draw the texture
+    dc.GetSize(&screen_w, &screen_h);
+    x = (screen_w/this->m_Zoom.x)/2;
+    y = (screen_h/this->m_Zoom.y)/2;
+    img_w = this->m_Bitmap.GetWidth()*this->m_Zoom.x;
+    img_h = this->m_Bitmap.GetHeight()*this->m_Zoom.y;
+    if (img_w > screen_w)
+        x = ((img_w/this->m_Zoom.x)/2);
+    if (img_h > screen_h)
+        y = ((img_h/this->m_Zoom.y)/2);
+    dc.DrawBitmap(this->m_Bitmap, x - ((img_w/this->m_Zoom.x)/2), y - ((img_h/this->m_Zoom.y)/2), false);
 }
