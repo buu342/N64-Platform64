@@ -19,6 +19,16 @@
     #include "Resources/Icons/Icon_ViewGrid.h"
     #include "Resources/Icons/Icon_ViewList.h"
     #include "Resources/Icons/Icon_Folder.h"
+    #include "Resources/Icons/Icon_Palette.h"
+    #include "Resources/Icons/Icon_Pipette.h"
+    #include "Resources/Icons/Icon_ToggleAlpha.h"
+    #include "Resources/Icons/Icon_ToggleFilter.h"
+    #include "Resources/Icons/Icon_ToggleStatistics.h"
+    #include "Resources/Icons/Icon_ToggleTiling.h"
+    #include "Resources/Icons/Icon_USBUpload.h"
+    #include "Resources/Icons/Icon_ZoomFit.h"
+    #include "Resources/Icons/Icon_ZoomIn.h"
+    #include "Resources/Icons/Icon_ZoomOut.h"
     #include "Resources/Default/MISSING.h"
 
     extern wxIcon   Icon_Main;
@@ -31,5 +41,15 @@
     extern wxIcon   Icon_ViewGrid;
     extern wxIcon   Icon_ViewList;
     extern wxIcon   Icon_Folder;
+    extern wxIcon   Icon_Palette;
+    extern wxIcon   Icon_Pipette;
+    extern wxIcon   Icon_ToggleAlpha;
+    extern wxIcon   Icon_ToggleStatistics;
+    extern wxIcon   Icon_ToggleFilter;
+    extern wxIcon   Icon_ToggleTiling;
+    extern wxIcon   Icon_USBUpload;
+    extern wxIcon   Icon_ZoomFit;
+    extern wxIcon   Icon_ZoomIn;
+    extern wxIcon   Icon_ZoomOut;
     extern wxBitmap Tex_Missing;
 #endif

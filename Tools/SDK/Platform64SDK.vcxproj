@@ -35,6 +35,17 @@
     <ClInclude Include="Resources\Icons\Icon_Texture.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewGrid.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
+    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
+    <ClInclude Include="Resources\Icons\Icon_Palette.h" />
+    <ClInclude Include="Resources\Icons\Icon_Pipette.h" />
+    <ClInclude Include="Resources\Icons\Icon_ToggleAlpha.h" />
+    <ClInclude Include="Resources\Icons\Icon_ToggleFilter.h" />
+    <ClInclude Include="Resources\Icons\Icon_ToggleStatistics.h" />
+    <ClInclude Include="Resources\Icons\Icon_ToggleTiling.h" />
+    <ClInclude Include="Resources\Icons\Icon_USBUpload.h" />
+    <ClInclude Include="Resources\Icons\Icon_ZoomFit.h" />
+    <ClInclude Include="Resources\Icons\Icon_ZoomIn.h" />
+    <ClInclude Include="Resources\Icons\Icon_ZoomOut.h" />
     <ClInclude Include="Tools\Image\asset_image.h" />
     <ClInclude Include="Tools\Image\frame_image.h" />
     <ClInclude Include="Tools\Image\panel_imgview.h" />

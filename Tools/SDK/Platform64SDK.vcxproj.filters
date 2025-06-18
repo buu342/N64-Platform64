@@ -84,6 +84,36 @@
     <ClInclude Include="Tools\Image\asset_image.h">
       <Filter>Source\Tools\Image</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Palette.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Pipette.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleFilter.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleAlpha.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleStatistics.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleTiling.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_USBUpload.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ZoomFit.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ZoomIn.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ZoomOut.h">
+      <Filter>Source\Tools\Image</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">

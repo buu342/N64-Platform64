@@ -25,6 +25,16 @@ wxIcon   Icon_Search = wxNullIcon;
 wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
 wxIcon   Icon_Folder = wxNullIcon;
+wxIcon   Icon_Palette = wxNullIcon;
+wxIcon   Icon_Pipette = wxNullIcon;
+wxIcon   Icon_ToggleAlpha = wxNullIcon;
+wxIcon   Icon_ToggleFilter = wxNullIcon;
+wxIcon   Icon_ToggleStatistics = wxNullIcon;
+wxIcon   Icon_ToggleTiling = wxNullIcon;
+wxIcon   Icon_USBUpload = wxNullIcon;
+wxIcon   Icon_ZoomFit = wxNullIcon;
+wxIcon   Icon_ZoomIn = wxNullIcon;
+wxIcon   Icon_ZoomOut = wxNullIcon;
 wxBitmap Tex_Missing = wxNullBitmap;
 
 /*==============================
@@ -74,6 +84,18 @@ bool App::OnInit()
     Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
     Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
     Icon_Folder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder));
+    Icon_Palette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Palette));
+    Icon_Pipette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Pipette));
+    Icon_ToggleAlpha.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleAlpha));
+    Icon_ToggleFilter.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleFilter));
+    Icon_ToggleStatistics.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleStatistics));
+    Icon_ToggleTiling.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleTiling));
+    Icon_USBUpload.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_USBUpload));
+    Icon_ZoomFit.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomFit));
+    Icon_ZoomIn.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomIn));
+    Icon_ZoomOut.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomOut));
+
+    // Initialize textures
     Tex_Missing = wxBITMAP_PNG_FROM_DATA(MISSING);
 
     // Initialize blank cursor
