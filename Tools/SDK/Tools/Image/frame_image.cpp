@@ -36,6 +36,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     m_Splitter_Vertical = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE);
     m_Splitter_Vertical->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_VerticalOnIdle), NULL, this);
+    m_Splitter_Vertical->SetMinimumPaneSize(1);
 
     this->m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     this->m_Panel_Search->Search_SetAssetType(CONTENT_NAME, CONTENT_EXTENSION);
@@ -50,6 +51,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Splitter_Horizontal = new wxSplitterWindow(m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE);
     m_Splitter_Horizontal->SetSashGravity(1);
     m_Splitter_Horizontal->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_HorizontalOnIdle), NULL, this);
+    m_Splitter_Horizontal->SetMinimumPaneSize(1);
 
     m_Panel_Preview = new wxPanel(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_Panel_Preview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME));
@@ -96,8 +98,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     wxBoxSizer* m_Sizer_Config;
     m_Sizer_Config = new wxBoxSizer(wxVERTICAL);
 
-    m_notebook1 = new wxNotebook(m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-    m_Panel_ImageData = new wxPanel(m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_Notebook_Config = new wxNotebook(m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+    m_Panel_ImageData = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxFlexGridSizer* m_Sizer_ImageData;
     m_Sizer_ImageData = new wxFlexGridSizer(0, 2, 0, 0);
     m_Sizer_ImageData->AddGrowableCol(1);
@@ -190,8 +192,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Panel_ImageData->SetSizer(m_Sizer_ImageData);
     m_Panel_ImageData->Layout();
     m_Sizer_ImageData->Fit(m_Panel_ImageData);
-    m_notebook1->AddPage(m_Panel_ImageData, _("Image"), false);
-    m_Panel_ImageLoading = new wxPanel(m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_Notebook_Config->AddPage(m_Panel_ImageData, _("Image"), true);
+    m_Panel_ImageLoading = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxFlexGridSizer* m_Sizer_ImageLoading;
     m_Sizer_ImageLoading = new wxFlexGridSizer(0, 2, 0, 0);
     m_Sizer_ImageLoading->AddGrowableCol(1);
@@ -265,8 +267,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Panel_ImageLoading->SetSizer(m_Sizer_ImageLoading);
     m_Panel_ImageLoading->Layout();
     m_Sizer_ImageLoading->Fit(m_Panel_ImageLoading);
-    m_notebook1->AddPage(m_Panel_ImageLoading, _("Loading"), false);
-    m_Panel_ImageColors = new wxPanel(m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_Notebook_Config->AddPage(m_Panel_ImageLoading, _("Loading"), false);
+    m_Panel_ImageColors = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxFlexGridSizer* m_Sizer_ImageColors;
     m_Sizer_ImageColors = new wxFlexGridSizer(0, 2, 0, 0);
     m_Sizer_ImageColors->AddGrowableCol(1);
@@ -356,9 +358,9 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Panel_ImageColors->SetSizer(m_Sizer_ImageColors);
     m_Panel_ImageColors->Layout();
     m_Sizer_ImageColors->Fit(m_Panel_ImageColors);
-    m_notebook1->AddPage(m_Panel_ImageColors, _("Colors"), true);
+    m_Notebook_Config->AddPage(m_Panel_ImageColors, _("Colors"), false);
 
-    m_Sizer_Config->Add(m_notebook1, 1, wxEXPAND | wxALL, 5);
+    m_Sizer_Config->Add(m_Notebook_Config, 1, wxEXPAND | wxALL, 5);
 
 
     m_Panel_Config->SetSizer(m_Sizer_Config);
@@ -381,6 +383,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->Centre(wxBOTH);
 
     // Connect Events
+    m_Splitter_Vertical->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Vertical_DClick), NULL, this);
+    m_Splitter_Horizontal->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Horizontal_DClick), NULL, this);
     this->Connect(m_Tool_Alpha->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked));
     this->Connect(m_Tool_Tiling->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked));
     this->Connect(m_Tool_Filtering->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked));
@@ -418,6 +422,30 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 Frame_ImageBrowser::~Frame_ImageBrowser()
 {
     
+}
+
+
+
+void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
+{
+    m_Splitter_Vertical->SetSashPosition( 0 );
+    m_Splitter_Vertical->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
+}
+
+void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
+{
+    m_Splitter_Horizontal->SetSashPosition( 0 );
+    m_Splitter_Horizontal->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
+}
+
+void Frame_ImageBrowser::m_Splitter_Vertical_DClick(wxSplitterEvent& event)
+{
+    event.Veto();
+}
+
+void Frame_ImageBrowser::m_Splitter_Horizontal_DClick(wxSplitterEvent& event)
+{
+    event.Veto();
 }
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)

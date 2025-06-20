@@ -779,7 +779,7 @@
             <property name="min_pane_size">0</property>
             <property name="min_size"></property>
             <property name="minimize_button">0</property>
-            <property name="minimum_size"></property>
+            <property name="minimum_size">-1,-1</property>
             <property name="moveable">1</property>
             <property name="name">m_Splitter_Vertical</property>
             <property name="pane_border">1</property>
@@ -802,6 +802,7 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style"></property>
+            <event name="OnSplitterDClick">m_Splitter_Vertical_DClick</event>
             <object class="splitteritem" expanded="true">
               <object class="wxPanel" expanded="true">
                 <property name="BottomDockable">1</property>
@@ -837,7 +838,7 @@
                 <property name="maximum_size"></property>
                 <property name="min_size"></property>
                 <property name="minimize_button">0</property>
-                <property name="minimum_size"></property>
+                <property name="minimum_size">-1,-1</property>
                 <property name="moveable">1</property>
                 <property name="name">m_Panel_Search</property>
                 <property name="pane_border">1</property>
@@ -892,7 +893,7 @@
                 <property name="maximum_size"></property>
                 <property name="min_size"></property>
                 <property name="minimize_button">0</property>
-                <property name="minimum_size"></property>
+                <property name="minimum_size">-1,-1</property>
                 <property name="moveable">1</property>
                 <property name="name">m_Panel_Edit</property>
                 <property name="pane_border">1</property>
@@ -954,7 +955,7 @@
                       <property name="min_pane_size">0</property>
                       <property name="min_size"></property>
                       <property name="minimize_button">0</property>
-                      <property name="minimum_size"></property>
+                      <property name="minimum_size">-1,-1</property>
                       <property name="moveable">1</property>
                       <property name="name">m_Splitter_Horizontal</property>
                       <property name="pane_border">1</property>
@@ -977,6 +978,7 @@
                       <property name="window_extra_style"></property>
                       <property name="window_name"></property>
                       <property name="window_style"></property>
+                      <event name="OnSplitterDClick">m_Splitter_Horizontal_DClick</event>
                       <object class="splitteritem" expanded="true">
                         <object class="wxPanel" expanded="true">
                           <property name="BottomDockable">1</property>
@@ -1012,7 +1014,7 @@
                           <property name="maximum_size"></property>
                           <property name="min_size"></property>
                           <property name="minimize_button">0</property>
-                          <property name="minimum_size"></property>
+                          <property name="minimum_size">-1,-1</property>
                           <property name="moveable">1</property>
                           <property name="name">m_Panel_Preview</property>
                           <property name="pane_border">1</property>
@@ -1310,7 +1312,7 @@
                           <property name="maximum_size"></property>
                           <property name="min_size"></property>
                           <property name="minimize_button">0</property>
-                          <property name="minimum_size"></property>
+                          <property name="minimum_size">-1,-1</property>
                           <property name="moveable">1</property>
                           <property name="name">m_Panel_Config</property>
                           <property name="pane_border">1</property>
@@ -1374,7 +1376,7 @@
                                 <property name="minimize_button">0</property>
                                 <property name="minimum_size"></property>
                                 <property name="moveable">1</property>
-                                <property name="name">m_notebook1</property>
+                                <property name="name">m_Notebook_Config</property>
                                 <property name="pane_border">1</property>
                                 <property name="pane_position"></property>
                                 <property name="pane_size"></property>
@@ -1394,7 +1396,7 @@
                                 <object class="notebookpage" expanded="true">
                                   <property name="bitmap"></property>
                                   <property name="label">Image</property>
-                                  <property name="select">0</property>
+                                  <property name="select">1</property>
                                   <object class="wxPanel" expanded="true">
                                     <property name="BottomDockable">1</property>
                                     <property name="LeftDockable">1</property>
@@ -2286,7 +2288,7 @@
                                 <object class="notebookpage" expanded="true">
                                   <property name="bitmap"></property>
                                   <property name="label">Loading</property>
-                                  <property name="select">1</property>
+                                  <property name="select">0</property>
                                   <object class="wxPanel" expanded="true">
                                     <property name="BottomDockable">1</property>
                                     <property name="LeftDockable">1</property>

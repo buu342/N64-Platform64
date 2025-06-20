@@ -55,7 +55,7 @@ class Frame_ImageBrowser : public wxFrame
         wxToolBarToolBase* m_Tool_FlashcartUpload;
         wxScrolledWindow* m_ScrolledWin_Preview;
         wxPanel* m_Panel_Config;
-        wxNotebook* m_notebook1;
+        wxNotebook* m_Notebook_Config;
         wxPanel* m_Panel_ImageData;
         wxStaticText* m_StaticText_Image;
         wxFilePickerCtrl* m_FilePicker_Image;
@@ -93,6 +93,8 @@ class Frame_ImageBrowser : public wxFrame
         wxButton* m_Button_Palette;
 
         // Virtual event handlers, override them in your derived class
+        void m_Splitter_Vertical_DClick(wxSplitterEvent& event);
+        void m_Splitter_Horizontal_DClick(wxSplitterEvent& event);
         void m_Tool_Alpha_OnToolClicked(wxCommandEvent& event);
         void m_Tool_Tiling_OnToolClicked(wxCommandEvent& event);
         void m_Tool_Filtering_OnToolClicked(wxCommandEvent& event);
@@ -125,22 +127,12 @@ class Frame_ImageBrowser : public wxFrame
         void m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event);
         void m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& event);
         void m_Button_Palette_OnButtonClick(wxCommandEvent& event);
+        void m_Splitter_VerticalOnIdle(wxIdleEvent& event);
+        void m_Splitter_HorizontalOnIdle(wxIdleEvent& event);
 
 	public:
 		Frame_ImageBrowser( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 640,480 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		~Frame_ImageBrowser();
-
-		void m_Splitter_VerticalOnIdle( wxIdleEvent& )
-		{
-			m_Splitter_Vertical->SetSashPosition( 0 );
-			m_Splitter_Vertical->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
-		}
-
-		void m_Splitter_HorizontalOnIdle( wxIdleEvent& )
-		{
-			m_Splitter_Horizontal->SetSashPosition( 0 );
-			m_Splitter_Horizontal->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
-		}
 
 };
 
