@@ -116,10 +116,12 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
             testname = wxString::Format("%s (%d)%s", name, i, extwithoutasterisk);
             i++;
         } 
-        while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname + extwithoutasterisk).Exists());
+        while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname).Exists());
         name = testname;
     }
-    this->m_NewAssetFunc(this->m_CurrFolder.GetPathWithSep() + name + extwithoutasterisk);
+    else
+        name += extwithoutasterisk;
+    this->m_NewAssetFunc(this->m_CurrFolder.GetPathWithSep() + name);
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
     this->SelectItem(name, false);
 }
