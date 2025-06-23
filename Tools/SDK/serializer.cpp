@@ -9,13 +9,21 @@
     #define IS_BIG_ENDIAN
 #endif
 
-
-void serialize_pad(std::vector<uint8_t>* buff)
+static void serialize_pad(std::vector<uint8_t>* buff)
 {
     int len = buff->size();
     if ((len%4) != 0)
         for (int i=0; i<(4-(len%4)); i++)
             buff->push_back('\0');
+}
+
+void serialize_header(std::vector<uint8_t>* buff, const char* header, uint32_t version)
+{
+    int strb_len = strlen(header)+1;
+    for (int i=0; i<strb_len; i++)
+        buff->push_back(header[i]);
+    serialize_pad(buff);
+    serialize_u32(buff, version);
 }
 
 void serialize_u8(std::vector<uint8_t>* buff, uint8_t val)
@@ -27,6 +35,11 @@ void serialize_u32(std::vector<uint8_t>* buff, uint32_t val)
 {
     unsigned char temp[4];
     memcpy(temp, &val, 4);
+
+    // Ensure 32-bit alignment
+    serialize_pad(buff);
+    
+    // Write the int
     #if (IS_BIG_ENDIAN)
         for (int i=4; i>=0; i--)
             buff->push_back(temp[i]);
@@ -40,6 +53,11 @@ void serialize_f32(std::vector<uint8_t>* buff, float val)
 {
     unsigned char temp[4];
     memcpy(temp, &val, 4);
+
+    // Ensure 32-bit alignment
+    serialize_pad(buff);
+    
+    // Write the float
     #if (IS_BIG_ENDIAN)
         for (int i=4; i>=0; i--)
             buff->push_back(temp[i]);
