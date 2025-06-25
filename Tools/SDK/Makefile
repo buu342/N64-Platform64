@@ -1,4 +1,4 @@
-CODEFILES   = app.cpp json.cpp main.cpp \
+CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
 			  Tools/panel_search.cpp \
 			  $(wildcard Tools/**/*.cpp)
 LIBFILES    = 
