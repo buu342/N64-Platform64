@@ -90,5 +90,5 @@ class P64Asset_Image
         ~P64Asset_Image();
         wxColor* RegenerateFinal();
         std::vector<uint8_t> Serialize();
-        static P64Asset_Image Deserialize(std::vector<uint8_t> bytes);
+        static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
 };

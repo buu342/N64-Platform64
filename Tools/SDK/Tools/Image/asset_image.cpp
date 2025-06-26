@@ -60,7 +60,7 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     return data;
 }
 
-static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes)
+P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
 {
     P64Asset_Image* asset;
     wxString temp_str;
@@ -70,16 +70,23 @@ static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes)
     uint8_t* bytesptr = &bytes[0];
     uint32_t pos = 0;
 
-    pos = deserialize_header(bytesptr, pos, header, &temp_32);
-    if (!strcmp(header, P64ASSET_HEADER))
+    if (bytes.size() < 16)
     {
-        wxMessageDialog dialog(NULL, "File is not an image type", "Error deserializing", wxCENTER | wxNO_DEFAULT | wxOK | wxICON_ERROR);
+        wxMessageDialog dialog(NULL, "File is not a P64 image", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return NULL;
+    }
+
+    pos = deserialize_header(bytesptr, pos, header, &temp_32);
+    if (strcmp(header, P64ASSET_HEADER) != 0)
+    {
+        wxMessageDialog dialog(NULL, "File is not a P64 image", "Error deserializing", wxCENTER | wxOK |  wxOK_DEFAULT | wxICON_ERROR);
         dialog.ShowModal();
         return NULL;
     }
     if (temp_32 > P64ASSET_VERSION)
     {
-        wxMessageDialog dialog(NULL, "File is a more recent, unsupported version", "Error deserializing", wxCENTER | wxNO_DEFAULT | wxOK | wxICON_ERROR);
+        wxMessageDialog dialog(NULL, "File is a more recent, unsupported version", "Error deserializing", wxCENTER | wxOK |  wxOK_DEFAULT | wxICON_ERROR);
         dialog.ShowModal();
         return NULL;
     }

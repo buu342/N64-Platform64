@@ -82,6 +82,7 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     //this->m_Button_ViewMode->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_ViewMode_OnButtonClick), NULL, this);
     this->m_TextCtrl_Search->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Panel_Search::m_TextCtrl_Search_OnText), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated), NULL, this);
+    this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone), NULL, this);
 
 }
@@ -219,9 +220,14 @@ void Panel_Search::Search_NewAssetGenerator(void (*function)(wxFileName))
     this->m_NewAssetFunc = function;
 }
 
-void Panel_Search::Search_LoadAssetFunc(void (*function)(wxFileName))
+void Panel_Search::Search_LoadAssetFunc(void (*function)(wxFrame*, wxFileName))
 {
     this->m_LoadAssetFunc = function;
+}
+
+void Panel_Search::Search_SetTarget(wxFrame* target)
+{
+    this->m_Target = target;
 }
 
 bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
@@ -307,11 +313,18 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent
     // Get the boolean that says if this activated item is a folder or not
     this->m_DataViewListCtrl_ObjectList->GetValue(variant, row, 1);
     isfolder = variant.GetBool();
+
+    // Handle activation
     if (isfolder)
     {
         wxFileName newpath = this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator();
         if (this->LoadAssetsInDir(newpath))
             this->m_CurrFolder.Assign(newpath);
+    }
+    else
+    {
+        wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+        this->m_LoadAssetFunc(this->m_Target, this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + extwithoutasterisk);
     }
 
     // Clear the search bar
@@ -354,7 +367,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
     }
 }
 
-void Panel_Search::SelectItem(wxString name, bool isfolder)
+void Panel_Search::SelectItem(wxString name, bool isfolder, bool editname)
 {
     for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
     {
@@ -369,4 +382,12 @@ void Panel_Search::SelectItem(wxString name, bool isfolder)
             break;
         }
     }
+}
+
+void Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event)
+{
+    wxMenu menu;
+    menu.Append(1, "Rename");
+    menu.Append(2, "Delete");
+    PopupMenu(&menu);
 }

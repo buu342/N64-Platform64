@@ -58,7 +58,6 @@ class Frame_ImageBrowser : public wxFrame
         wxNotebook* m_Notebook_Config;
         wxPanel* m_Panel_ImageData;
         wxStaticText* m_StaticText_Image;
-        wxFilePickerCtrl* m_FilePicker_Image;
         wxStaticText* m_StaticText_Resize;
         wxRadioButton* m_RadioBtn_ResizeNone;
         wxRadioButton* m_RadioBtn_ResizeTwo;
@@ -131,6 +130,8 @@ class Frame_ImageBrowser : public wxFrame
         void m_Splitter_HorizontalOnIdle(wxIdleEvent& event);
 
 	public:
+        wxFilePickerCtrl* m_FilePicker_Image;
+        
 		Frame_ImageBrowser( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 640,480 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		~Frame_ImageBrowser();
 

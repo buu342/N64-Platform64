@@ -5,12 +5,17 @@ TODO
 ***************************************************************/
 
 #include "frame_image.h"
+#include "asset_image.h"
 #include "../../resource.h"
 #include "../../main.h"
+
+#define VERSION_P64TEX 1
 
 #define CONTENT_FOLDER     wxString("Images")
 #define CONTENT_NAME       wxString("Image")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
+
+P64Asset_Image* g_loadedasset;
 
 static wxIcon IconGenerator(bool large)
 {
@@ -19,16 +24,40 @@ static wxIcon IconGenerator(bool large)
 
 static void AssetGenerator(wxFileName path)
 {
-    return;
+    wxFile file;
+    P64Asset_Image asset;
+    std::vector<uint8_t> data = asset.Serialize();
+    file.Create(path.GetFullPath());
+    file.Open(path.GetFullPath(), wxFile::write);
+    file.Write(data.data(), data.size());
+    file.Close();
 }
 
-static void AssetLoad(wxFileName path)
+static void AssetLoad(wxFrame* frame, wxFileName path)
 {
-    return;
+    wxFile file;
+    std::vector<uint8_t> data;
+    P64Asset_Image* oldasset = g_loadedasset;
+
+    data.resize(path.GetSize().ToULong());
+    file.Open(path.GetFullPath(), wxFile::read);
+    file.Read(&data[0], data.capacity());
+    file.Close();
+
+    g_loadedasset = P64Asset_Image::Deserialize(data);
+    if (g_loadedasset != NULL && oldasset != NULL)
+    {
+        delete oldasset;
+        return;
+    }
+
+    //((Frame_ImageBrowser*)frame)->m_FilePicker_Image->SetPath("AAA");
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
+    g_loadedasset = NULL;
+
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
     wxBoxSizer* m_Sizer_Main;
@@ -38,12 +67,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Splitter_Vertical->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_VerticalOnIdle), NULL, this);
     m_Splitter_Vertical->SetMinimumPaneSize(1);
 
-    this->m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+    this->m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     this->m_Panel_Search->Search_SetAssetType(CONTENT_NAME, CONTENT_EXTENSION);
     this->m_Panel_Search->Search_IconGenerator(IconGenerator);
     this->m_Panel_Search->Search_NewAssetGenerator(AssetGenerator);
     this->m_Panel_Search->Search_LoadAssetFunc(AssetLoad);
     this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
+    this->m_Panel_Search->Search_SetTarget(this);
     m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxBoxSizer* m_Sizer_Edit;
     m_Sizer_Edit = new wxBoxSizer(wxVERTICAL);
@@ -328,7 +358,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     m_Sizer_AlphaColor->Add(m_ColourPicker_AlphaColor, 0, wxALL|wxEXPAND, 5);
 
-    m_BitmapButton_Pipette = new wxBitmapButton(m_Panel_ImageColors, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0);
+    m_BitmapButton_Pipette = new wxBitmapButton(m_Panel_ImageColors, wxID_ANY, Icon_Pipette, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0);
     m_BitmapButton_Pipette->Enable(false);
     m_BitmapButton_Pipette->SetToolTip(_("Pick the color by clicking on the image"));
 
