@@ -13,13 +13,6 @@ bulky JSON header only library.
 #include <wx/textfile.h>
 
 
-/*********************************
-             Globals
-*********************************/
-
-nlohmann::json g_project;
-
-
 /*==============================
     json_fromfilepath
     Gets a JSON object from a filepath
@@ -27,7 +20,7 @@ nlohmann::json g_project;
     @return The JSON object or NULL
 ==============================*/
 
-nlohmann::json json_fromfilepath(wxString filepath)
+static nlohmann::json json_fromfilepath(wxString filepath)
 {
     try
     {
@@ -52,38 +45,37 @@ nlohmann::json json_fromfilepath(wxString filepath)
     json_createproject
     Create a new P64 project JSON file
     @param  The filepath of the JSON file to create
-    @return 1 if successful, 0 if not
+    @return The JSON file, or NULL
 ==============================*/
 
-int json_createproject(wxString filepath)
+JSONFile json_createproject(wxString filepath)
 {
+    nlohmann::json* j = new nlohmann::json();
     try
     {
-        g_project = {};
-        g_project["Platform64"] = {};
-        g_project["Platform64"]["Version"] = PROJECT_VERSION;
-        json_save(filepath);
-        return 1;
+        (*j) = {};
+        (*j)["Platform64"] = {};
+        (*j)["Platform64"]["Version"] = PROJECT_VERSION;
+        json_save(j, filepath);
+        return j;
     }
     catch (nlohmann::json::exception e)
     {
         wxMessageBox(wxString(e.what()), wxString("Error creating JSON"), wxICON_ERROR);
-        return 0;
+        return NULL;
     }
 }
 
 
 /*==============================
-    json_loadproject
-    Load a P64 project from a JSON file
-    @param  The filepath of the JSON file
-    @return 1 if successful, 0 if not
+    json_load
+    TODO
 ==============================*/
 
-int json_loadproject(wxString filepath)
+JSONFile json_load(wxString filepath)
 {
-    g_project = json_fromfilepath(filepath);
-    return g_project == NULL ? 0 : 1;
+    nlohmann::json* j = new nlohmann::json(json_fromfilepath(filepath));
+    return j;
 }
 
 
@@ -92,13 +84,13 @@ int json_loadproject(wxString filepath)
     TODO
 ==============================*/
 
-void json_save(wxString filepath)
+void json_save(JSONFile file, wxString filepath)
 {
     wxTextFile out_proj(filepath);
     if (!out_proj.Exists())
         out_proj.Create();
     out_proj.Clear();
-    out_proj.AddLine(wxString::FromUTF8(g_project.dump(4)));
+    out_proj.AddLine(wxString::FromUTF8(((nlohmann::json*)file)->dump(4)));
     out_proj.Write();
     out_proj.Close();
 }

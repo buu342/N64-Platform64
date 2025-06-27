@@ -140,7 +140,7 @@ void Frame_Main::OpenProject()
     if (filecount == 1)
     {
         // If the project failed to load, ask in a loop to open another
-        if (json_loadproject(files[0]) == 0)
+        if (json_load(files[0]) == 0)
             Dialog_CreateOpenProject("Unable to open the P64 project file in this folder.\nPlease choose what action to take next:", "Error loading project", exepath);
         else // Project opened successfully, so store the filepath
             this->InitializeProject(files[0]);
@@ -189,7 +189,7 @@ void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxSt
             ret = fd.ShowModal();
             if (ret == wxID_OK)
             {
-                if (json_loadproject(fd.GetPath()))
+                if (json_load(fd.GetPath()))
                 {
                     this->InitializeProject(fd.GetPath());
                     return;

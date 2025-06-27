@@ -80,7 +80,7 @@ void serialize_wxstring(std::vector<uint8_t>* buff, wxString str)
 
 uint32_t deserialize_header(uint8_t* buff, uint32_t pos, char* header, uint32_t* version)
 {
-    int len = strlen((char*)buff)+1; // TODO: NULL check might not work for UTF-8
+    int len = strlen((char*)buff)+1;
     memcpy(header, buff+pos, len);
     pos += len;
     pos = deserialize_u32(buff, pos, version);

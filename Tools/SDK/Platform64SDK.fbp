@@ -99,7 +99,7 @@
         </object>
       </object>
     </object>
-    <object class="Panel" expanded="false">
+    <object class="Panel" expanded="true">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -123,7 +123,7 @@
       <property name="window_extra_style"></property>
       <property name="window_name"></property>
       <property name="window_style">wxTAB_TRAVERSAL</property>
-      <object class="wxFlexGridSizer" expanded="false">
+      <object class="wxFlexGridSizer" expanded="true">
         <property name="cols">1</property>
         <property name="flexible_direction">wxBOTH</property>
         <property name="growablecols">0</property>
@@ -613,11 +613,11 @@
             </object>
           </object>
         </object>
-        <object class="sizeritem" expanded="false">
+        <object class="sizeritem" expanded="true">
           <property name="border">5</property>
           <property name="flag">wxALL|wxEXPAND</property>
           <property name="proportion">0</property>
-          <object class="wxDataViewListCtrl" expanded="false">
+          <object class="wxDataViewListCtrl" expanded="true">
             <property name="bg"></property>
             <property name="context_help"></property>
             <property name="context_menu">1</property>
@@ -640,6 +640,7 @@
             <property name="window_name"></property>
             <property name="window_style"></property>
             <event name="OnDataViewListCtrlItemActivated">m_DataViewListCtrl_ObjectList_OnItemActivated</event>
+            <event name="OnDataViewListCtrlItemContextMenu">m_DataViewListCtrl_ObjectList_ContextMenu</event>
             <event name="OnDataViewListCtrlItemEditingDone">m_DataViewListCtrl_ObjectList_ItemEditingDone</event>
             <object class="dataViewListColumn" expanded="false">
               <property name="align">wxALIGN_LEFT</property>
