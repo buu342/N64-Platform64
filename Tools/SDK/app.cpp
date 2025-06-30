@@ -24,6 +24,7 @@ wxIcon   Icon_NewFolder = wxNullIcon;
 wxIcon   Icon_Search = wxNullIcon;
 wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
+wxIcon   Icon_Save = wxNullIcon;
 wxIcon   Icon_Folder = wxNullIcon;
 wxIcon   Icon_Palette = wxNullIcon;
 wxIcon   Icon_Pipette = wxNullIcon;
@@ -83,6 +84,7 @@ bool App::OnInit()
     Icon_Search.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Search));
     Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
     Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
+    Icon_Save.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Save));
     Icon_Folder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder));
     Icon_Palette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Palette));
     Icon_Pipette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Pipette));

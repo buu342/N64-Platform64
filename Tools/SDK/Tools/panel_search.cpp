@@ -376,7 +376,7 @@ void Panel_Search::SelectItem(wxString name, bool isfolder, bool editname)
         this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
         icontext << variant;
         this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
-        if (icontext.GetText().Cmp(name) == 0 && isfolder == variant.GetBool())
+        if (icontext.GetText().Cmp(name) == 0)
         {
             this->m_DataViewListCtrl_ObjectList->SelectRow(i);
             break;

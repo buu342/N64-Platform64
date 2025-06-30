@@ -19,6 +19,7 @@
     #include "Resources/Icons/Icon_ViewGrid.h"
     #include "Resources/Icons/Icon_ViewList.h"
     #include "Resources/Icons/Icon_Folder.h"
+    #include "Resources/Icons/Icon_Save.h"
     #include "Resources/Icons/Icon_Palette.h"
     #include "Resources/Icons/Icon_Pipette.h"
     #include "Resources/Icons/Icon_ToggleAlpha.h"
@@ -40,6 +41,7 @@
     extern wxIcon   Icon_Search;
     extern wxIcon   Icon_ViewGrid;
     extern wxIcon   Icon_ViewList;
+    extern wxIcon   Icon_Save;
     extern wxIcon   Icon_Folder;
     extern wxIcon   Icon_Palette;
     extern wxIcon   Icon_Pipette;

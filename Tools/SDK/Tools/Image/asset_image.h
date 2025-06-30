@@ -79,10 +79,10 @@ class P64Asset_Image
         P64Img_Tiling            m_TilingY;
         wxPoint                  m_MaskStart;
         bool                     m_UseMipmaps;
+        wxFileName               m_AlphaPath;
         P64Img_QuantizationMode  m_Quantization;
         P64Img_AlphaMode         m_AlphaMode;
         wxColor                  m_AlphaColor;
-        wxFileName               m_AlphaPath;
         wxBitmap                 m_BitmapAlpha;
         wxColor*                 m_FinalTexels;
 

@@ -15,7 +15,9 @@ TODO
 #define CONTENT_NAME       wxString("Image")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
 
+wxString g_title;
 P64Asset_Image* g_loadedasset;
+bool g_assetmodified;
 
 static wxIcon IconGenerator(bool large)
 {
@@ -39,24 +41,82 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     std::vector<uint8_t> data;
     P64Asset_Image* oldasset = g_loadedasset;
 
+    // Open the file and get its bytes
     data.resize(path.GetSize().ToULong());
     file.Open(path.GetFullPath(), wxFile::read);
     file.Read(&data[0], data.capacity());
     file.Close();
 
+    // Create the asset object by deserializing the bytes
     g_loadedasset = P64Asset_Image::Deserialize(data);
-    if (g_loadedasset != NULL && oldasset != NULL)
-    {
-        delete oldasset;
+    if (g_loadedasset == NULL)
         return;
-    }
+    if (oldasset != NULL)
+        delete oldasset;
 
-    //((Frame_ImageBrowser*)frame)->m_FilePicker_Image->SetPath("AAA");
+    // Activate the window
+    ((Frame_ImageBrowser*)frame)->m_ToolBar_Preview->Enable(true);
+    ((Frame_ImageBrowser*)frame)->m_Notebook_Config->Enable(true);
+    ((Frame_ImageBrowser*)frame)->SetTitle(g_title + " - " + path.GetName());
+
+    // Set panel item values based on asset data
+    ((Frame_ImageBrowser*)frame)->m_FilePicker_Image->SetPath(g_loadedasset->m_SourcePath.GetFullPath());
+    switch (g_loadedasset->m_ResizeMode)
+    {
+        case RESIZETYPE_NONE: 
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeNone->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            break;
+        case RESIZETYPE_POWER2: 
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeTwo->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            break;
+        case RESIZETYPE_CUSTOM: 
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeCustom->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", g_loadedasset->m_CustomSize.x));
+            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", g_loadedasset->m_CustomSize.y));
+            break;
+    }
+    ((Frame_ImageBrowser*)frame)->m_Choice_Align->SetSelection(g_loadedasset->m_Alignment);
+    ((Frame_ImageBrowser*)frame)->m_Choice_ResizeFill->SetSelection(g_loadedasset->m_ResizeFill);
+    ((Frame_ImageBrowser*)frame)->m_Choice_TilingX->SetSelection(g_loadedasset->m_TilingX);
+    ((Frame_ImageBrowser*)frame)->m_Choice_TilingY->SetSelection(g_loadedasset->m_TilingY);
+    ((Frame_ImageBrowser*)frame)->m_TextCtrl_MaskPosW->SetValue(wxString::Format("%d", g_loadedasset->m_MaskStart.x));
+    ((Frame_ImageBrowser*)frame)->m_TextCtrl_MaskPosH->SetValue(wxString::Format("%d", g_loadedasset->m_MaskStart.y));
+    ((Frame_ImageBrowser*)frame)->m_Checkbox_Mipmaps->SetValue(g_loadedasset->m_UseMipmaps);
+    ((Frame_ImageBrowser*)frame)->m_Choice_Quantization->SetSelection(g_loadedasset->m_Quantization);
+    switch (g_loadedasset->m_AlphaMode)
+    {
+        case ALPHA_NONE: 
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaNone->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            break;
+        case ALPHA_MASK:
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaMask->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            break;
+        case ALPHA_CUSTOM:
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaColor->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(g_loadedasset->m_AlphaColor);
+            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            break;
+        case ALPHA_EXTERNALMASK:
+            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaColor->SetValue(true);
+            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath(g_loadedasset->m_AlphaPath.GetFullPath());
+            break;
+    }
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
     g_loadedasset = NULL;
+    g_assetmodified = false;
+    g_title = title;
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
@@ -83,35 +143,27 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Splitter_Horizontal->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_HorizontalOnIdle), NULL, this);
     m_Splitter_Horizontal->SetMinimumPaneSize(1);
 
-    m_Panel_Preview = new wxPanel(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_Panel_Preview = new Panel_ImgView(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_Panel_Preview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME));
 
     wxBoxSizer* m_Sizer_Preview;
     m_Sizer_Preview = new wxBoxSizer(wxVERTICAL);
 
     m_ToolBar_Preview = new wxToolBar(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL);
+    m_ToolBar_Preview->Enable(false);
+    m_Tool_Save = m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_Save, wxNullBitmap, wxITEM_NORMAL, _("Save changes"), wxEmptyString, NULL);
+    m_ToolBar_Preview->AddSeparator();
     m_Tool_Alpha = m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_ToggleAlpha, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of alpha"), wxEmptyString, NULL);
-    
     m_Tool_Tiling = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleTiling, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of image tiling"), wxEmptyString, NULL);
-
     m_Tool_Filtering = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleFilter, wxNullBitmap, wxITEM_NORMAL, _("Toggle simulation of the N64's 3-point bilinear filtering"), wxEmptyString, NULL);
-
     m_Tool_PalettePreview = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_Palette, wxNullBitmap, wxITEM_NORMAL, _("Swap the palette for preview"), wxEmptyString, NULL);
-
     m_Tool_Statistics = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleStatistics, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of image statistics"), wxEmptyString, NULL);
-
     m_ToolBar_Preview->AddSeparator();
-
     m_Tool_ZoomIn = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomIn, wxNullBitmap, wxITEM_NORMAL, _("Zoom in"), wxEmptyString, NULL);
-
     m_Tool_ZoomOut = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomOut, wxNullBitmap, wxITEM_NORMAL, _("Zoom out"), wxEmptyString, NULL);
-
     m_Tool_ZoomNone = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomFit, wxNullBitmap, wxITEM_NORMAL, _("No zoom"), wxEmptyString, NULL);
-
     m_ToolBar_Preview->AddSeparator();
-
     m_Tool_FlashcartUpload = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload texture to flashcart"), wxEmptyString, NULL);
-
     m_ToolBar_Preview->Realize();
 
     m_Sizer_Preview->Add(m_ToolBar_Preview, 0, wxEXPAND, 5);
@@ -129,6 +181,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Sizer_Config = new wxBoxSizer(wxVERTICAL);
 
     m_Notebook_Config = new wxNotebook(m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+    m_Notebook_Config->Enable(false);
     m_Panel_ImageData = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxFlexGridSizer* m_Sizer_ImageData;
     m_Sizer_ImageData = new wxFlexGridSizer(0, 2, 0, 0);
@@ -140,7 +193,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_StaticText_Image->Wrap(-1);
     m_Sizer_ImageData->Add(m_StaticText_Image, 0, wxALL, 5);
 
-    m_FilePicker_Image = new wxFilePickerCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE);
+    m_FilePicker_Image = new wxFilePickerCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     m_FilePicker_Image->SetToolTip(_("The path for the texture image to load"));
 
     m_Sizer_ImageData->Add(m_FilePicker_Image, 0, wxALL|wxEXPAND, 5);
@@ -177,13 +230,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     wxGridSizer* m_Sizer_ResizeCustom;
     m_Sizer_ResizeCustom = new wxGridSizer(0, 2, 0, 0);
 
-    m_TextCtrl_ResizeW = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), 0);
+    m_TextCtrl_ResizeW = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
     m_TextCtrl_ResizeW->Enable(false);
     m_TextCtrl_ResizeW->SetToolTip(_("Size of image width (in pixels)"));
 
     m_Sizer_ResizeCustom->Add(m_TextCtrl_ResizeW, 0, wxALL, 5);
 
-    m_TextCtrl_ResizeH = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), 0);
+    m_TextCtrl_ResizeH = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
     m_TextCtrl_ResizeH->Enable(false);
     m_TextCtrl_ResizeH->SetToolTip(_("Size of image height (in pixels)"));
 
@@ -275,12 +328,12 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     wxGridSizer* m_Sizer_MaskPos;
     m_Sizer_MaskPos = new wxGridSizer(0, 2, 0, 0);
 
-    m_TextCtrl_MaskPosW = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), 0);
+    m_TextCtrl_MaskPosW = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
     m_TextCtrl_MaskPosW->SetToolTip(_("X coordinate start of the image mask"));
 
     m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosW, 0, wxALL, 5);
 
-    m_TextCtrl_MaskPosH = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), 0);
+    m_TextCtrl_MaskPosH = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
     m_TextCtrl_MaskPosH->SetToolTip(_("Y coordinate start of the image mask"));
 
     m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosH, 0, wxALL, 5);
@@ -372,7 +425,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     m_Sizer_ImageColors->Add(m_RadioBtn_AlphaExternal, 0, wxALL, 5);
 
-    m_FilePicker_Alpha = new wxFilePickerCtrl(m_Panel_ImageColors, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE);
+    m_FilePicker_Alpha = new wxFilePickerCtrl(m_Panel_ImageColors, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     m_FilePicker_Alpha->Enable(false);
     m_FilePicker_Alpha->SetToolTip(_("Filepath for the external alpha mask"));
 
@@ -415,6 +468,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     // Connect Events
     m_Splitter_Vertical->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Vertical_DClick), NULL, this);
     m_Splitter_Horizontal->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Horizontal_DClick), NULL, this);
+    this->Connect(m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Save_OnToolClicked));
     this->Connect(m_Tool_Alpha->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked));
     this->Connect(m_Tool_Tiling->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked));
     this->Connect(m_Tool_Filtering->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked));
@@ -476,6 +530,11 @@ void Frame_ImageBrowser::m_Splitter_Vertical_DClick(wxSplitterEvent& event)
 void Frame_ImageBrowser::m_Splitter_Horizontal_DClick(wxSplitterEvent& event)
 {
     event.Veto();
+}
+
+void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
+{
+
 }
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)

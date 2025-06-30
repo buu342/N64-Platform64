@@ -75,6 +75,9 @@
     <ClInclude Include="Resources\Icons\Icon_Folder.h">
       <Filter>Resources\Icons</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Save.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
     <ClInclude Include="Resources\Default\MISSING.h">
       <Filter>Resources\Default</Filter>
     </ClInclude>
