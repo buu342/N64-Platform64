@@ -5,7 +5,6 @@ TODO
 ***************************************************************/
 
 #include "frame_image.h"
-#include "asset_image.h"
 #include "../../resource.h"
 #include "../../main.h"
 
@@ -15,22 +14,24 @@ TODO
 #define CONTENT_NAME       wxString("Image")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
 
-wxString g_title;
-P64Asset_Image* g_loadedasset;
-bool g_assetmodified;
-
 static wxIcon IconGenerator(bool large)
 {
     return Icon_Texture;
 }
 
-static void AssetGenerator(wxFileName path)
+static void AssetGenerator(wxFrame* frame, wxFileName path)
 {
     wxFile file;
     P64Asset_Image asset;
     std::vector<uint8_t> data = asset.Serialize();
     file.Create(path.GetFullPath());
     file.Open(path.GetFullPath(), wxFile::write);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
     file.Write(data.data(), data.size());
     file.Close();
 }
@@ -38,85 +39,103 @@ static void AssetGenerator(wxFileName path)
 static void AssetLoad(wxFrame* frame, wxFileName path)
 {
     wxFile file;
+    Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
     std::vector<uint8_t> data;
-    P64Asset_Image* oldasset = g_loadedasset;
+    P64Asset_Image* oldasset = realframe->m_LoadedAsset;
+    P64Asset_Image* curasset;
+
+    if (realframe->m_AssetModified)
+    {
+        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_ERROR);
+        if (dialog.ShowModal() == wxNO)
+            return;
+    }
 
     // Open the file and get its bytes
+    realframe->m_AssetFilePath = path;
     data.resize(path.GetSize().ToULong());
     file.Open(path.GetFullPath(), wxFile::read);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(realframe, "Unable to open file for reading", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
     file.Read(&data[0], data.capacity());
     file.Close();
 
     // Create the asset object by deserializing the bytes
-    g_loadedasset = P64Asset_Image::Deserialize(data);
-    if (g_loadedasset == NULL)
+    curasset = P64Asset_Image::Deserialize(data);
+    if (curasset == NULL)
         return;
     if (oldasset != NULL)
         delete oldasset;
+    realframe->m_LoadedAsset = curasset;
 
     // Activate the window
-    ((Frame_ImageBrowser*)frame)->m_ToolBar_Preview->Enable(true);
-    ((Frame_ImageBrowser*)frame)->m_Notebook_Config->Enable(true);
-    ((Frame_ImageBrowser*)frame)->SetTitle(g_title + " - " + path.GetName());
+    realframe->m_ToolBar_Preview->Enable(true);
+    realframe->m_Notebook_Config->Enable(true);
+    realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
 
     // Set panel item values based on asset data
-    ((Frame_ImageBrowser*)frame)->m_FilePicker_Image->SetPath(g_loadedasset->m_SourcePath.GetFullPath());
-    switch (g_loadedasset->m_ResizeMode)
+    realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
+    switch (curasset->m_ResizeMode)
     {
         case RESIZETYPE_NONE: 
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeNone->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            realframe->m_RadioBtn_ResizeNone->SetValue(true);
+            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
             break;
         case RESIZETYPE_POWER2: 
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeTwo->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            realframe->m_RadioBtn_ResizeTwo->SetValue(true);
+            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
             break;
         case RESIZETYPE_CUSTOM: 
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_ResizeCustom->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", g_loadedasset->m_CustomSize.x));
-            ((Frame_ImageBrowser*)frame)->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", g_loadedasset->m_CustomSize.y));
+            realframe->m_RadioBtn_ResizeCustom->SetValue(true);
+            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_CustomSize.x));
+            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_CustomSize.y));
             break;
     }
-    ((Frame_ImageBrowser*)frame)->m_Choice_Align->SetSelection(g_loadedasset->m_Alignment);
-    ((Frame_ImageBrowser*)frame)->m_Choice_ResizeFill->SetSelection(g_loadedasset->m_ResizeFill);
-    ((Frame_ImageBrowser*)frame)->m_Choice_TilingX->SetSelection(g_loadedasset->m_TilingX);
-    ((Frame_ImageBrowser*)frame)->m_Choice_TilingY->SetSelection(g_loadedasset->m_TilingY);
-    ((Frame_ImageBrowser*)frame)->m_TextCtrl_MaskPosW->SetValue(wxString::Format("%d", g_loadedasset->m_MaskStart.x));
-    ((Frame_ImageBrowser*)frame)->m_TextCtrl_MaskPosH->SetValue(wxString::Format("%d", g_loadedasset->m_MaskStart.y));
-    ((Frame_ImageBrowser*)frame)->m_Checkbox_Mipmaps->SetValue(g_loadedasset->m_UseMipmaps);
-    ((Frame_ImageBrowser*)frame)->m_Choice_Quantization->SetSelection(g_loadedasset->m_Quantization);
-    switch (g_loadedasset->m_AlphaMode)
+    realframe->m_Choice_Align->SetSelection(curasset->m_Alignment);
+    realframe->m_Choice_ResizeFill->SetSelection(curasset->m_ResizeFill);
+    realframe->m_Choice_TilingX->SetSelection(curasset->m_TilingX);
+    realframe->m_Choice_TilingY->SetSelection(curasset->m_TilingY);
+    realframe->m_TextCtrl_MaskPosW->SetValue(wxString::Format("%d", curasset->m_MaskStart.x));
+    realframe->m_TextCtrl_MaskPosH->SetValue(wxString::Format("%d", curasset->m_MaskStart.y));
+    realframe->m_Checkbox_Mipmaps->SetValue(curasset->m_UseMipmaps);
+    realframe->m_Choice_Quantization->SetSelection(curasset->m_Quantization);
+    switch (curasset->m_AlphaMode)
     {
         case ALPHA_NONE: 
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaNone->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            realframe->m_RadioBtn_AlphaNone->SetValue(true);
+            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            realframe->m_FilePicker_Alpha->SetPath("");
             break;
         case ALPHA_MASK:
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaMask->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            realframe->m_RadioBtn_AlphaMask->SetValue(true);
+            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            realframe->m_FilePicker_Alpha->SetPath("");
             break;
         case ALPHA_CUSTOM:
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaColor->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(g_loadedasset->m_AlphaColor);
-            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath("");
+            realframe->m_RadioBtn_AlphaColor->SetValue(true);
+            realframe->m_ColourPicker_AlphaColor->SetColour(curasset->m_AlphaColor);
+            realframe->m_FilePicker_Alpha->SetPath("");
             break;
         case ALPHA_EXTERNALMASK:
-            ((Frame_ImageBrowser*)frame)->m_RadioBtn_AlphaColor->SetValue(true);
-            ((Frame_ImageBrowser*)frame)->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            ((Frame_ImageBrowser*)frame)->m_FilePicker_Alpha->SetPath(g_loadedasset->m_AlphaPath.GetFullPath());
+            realframe->m_RadioBtn_AlphaColor->SetValue(true);
+            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            realframe->m_FilePicker_Alpha->SetPath(curasset->m_AlphaPath.GetFullPath());
             break;
     }
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
-    g_loadedasset = NULL;
-    g_assetmodified = false;
-    g_title = title;
+    this->m_Title = title;
+    this->m_LoadedAsset = NULL;
+    this->m_AssetModified = false;
+    this->m_AssetFilePath = wxFileName("");
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
@@ -508,7 +527,11 @@ Frame_ImageBrowser::~Frame_ImageBrowser()
     
 }
 
-
+void Frame_ImageBrowser::MarkAssetModified()
+{
+    this->m_AssetModified = true;
+    this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
+}
 
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
 {
@@ -534,7 +557,21 @@ void Frame_ImageBrowser::m_Splitter_Horizontal_DClick(wxSplitterEvent& event)
 
 void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 {
-
+    wxFile file;
+    std::vector<uint8_t> data;
+    if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
+        file.Create(this->m_AssetFilePath.GetFullPath());
+    file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(this, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
+    data = this->m_LoadedAsset->Serialize();
+    file.Write(data.data(), data.size());
+    file.Close();
+    this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
 }
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
@@ -579,12 +616,16 @@ void Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event)
 {
-
+    wxMessageDialog dialog(this, "This feature is not yet available", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
+    dialog.ShowModal();
 }
 
 void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& event)
 {
-
+    if (this->m_LoadedAsset == NULL)
+        return;
+    this->m_LoadedAsset->m_SourcePath = event.GetPath();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& event)

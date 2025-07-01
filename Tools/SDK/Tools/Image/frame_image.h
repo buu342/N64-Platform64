@@ -32,6 +32,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/frame.h>
 #include "../panel_search.h"
 #include "panel_imgview.h"
+#include "asset_image.h"
 
 class Frame_ImageBrowser : public wxFrame
 {
@@ -70,7 +71,6 @@ class Frame_ImageBrowser : public wxFrame
         wxBitmapButton* m_BitmapButton_Pipette;
         wxButton* m_Button_Palette;
 
-        // Virtual event handlers, override them in your derived class
         void m_Splitter_Vertical_DClick(wxSplitterEvent& event);
         void m_Splitter_Horizontal_DClick(wxSplitterEvent& event);
         void m_Tool_Save_OnToolClicked(wxCommandEvent& event);
@@ -109,9 +109,17 @@ class Frame_ImageBrowser : public wxFrame
         void m_Splitter_VerticalOnIdle(wxIdleEvent& event);
         void m_Splitter_HorizontalOnIdle(wxIdleEvent& event);
 
+        void MarkAssetModified();
+
 	public:
+        wxString m_Title;
+        wxFileName m_AssetFilePath;
+        P64Asset_Image* m_LoadedAsset;
+        bool m_AssetModified;
+
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;
+
         wxFilePickerCtrl* m_FilePicker_Image;
         wxRadioButton* m_RadioBtn_ResizeNone;
         wxRadioButton* m_RadioBtn_ResizeTwo;

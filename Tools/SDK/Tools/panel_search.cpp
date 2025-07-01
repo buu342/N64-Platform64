@@ -122,7 +122,7 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
     }
     else
         name += extwithoutasterisk;
-    this->m_NewAssetFunc(this->m_CurrFolder.GetPathWithSep() + name);
+    this->m_NewAssetFunc(this->m_Target, this->m_CurrFolder.GetPathWithSep() + name);
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
     this->SelectItem(name, false);
 }
@@ -215,7 +215,7 @@ void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool))
     this->m_IconGenFunc = function;
 }
 
-void Panel_Search::Search_NewAssetGenerator(void (*function)(wxFileName))
+void Panel_Search::Search_NewAssetGenerator(void (*function)(wxFrame*, wxFileName))
 {
     this->m_NewAssetFunc = function;
 }
