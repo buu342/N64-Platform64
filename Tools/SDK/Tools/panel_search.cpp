@@ -391,3 +391,8 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& ev
     menu.Append(2, "Delete");
     PopupMenu(&menu);
 }
+
+wxFileName Panel_Search::GetMainFolder()
+{
+    return this->m_MainFolder;
+}

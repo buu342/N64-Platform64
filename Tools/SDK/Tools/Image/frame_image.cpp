@@ -46,7 +46,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
 
     if (realframe->m_AssetModified)
     {
-        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_ERROR);
+        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
         if (dialog.ShowModal() == wxNO)
             return;
     }
@@ -79,22 +79,30 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
 
     // Set panel item values based on asset data
     realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
+    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
+        curasset->m_Bitmap.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
     switch (curasset->m_ResizeMode)
     {
         case RESIZETYPE_NONE: 
             realframe->m_RadioBtn_ResizeNone->SetValue(true);
             realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
             realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            realframe->m_TextCtrl_ResizeW->Enable(false);
+            realframe->m_TextCtrl_ResizeH->Enable(false);
             break;
         case RESIZETYPE_POWER2: 
             realframe->m_RadioBtn_ResizeTwo->SetValue(true);
             realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
             realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            realframe->m_TextCtrl_ResizeW->Enable(false);
+            realframe->m_TextCtrl_ResizeH->Enable(false);
             break;
         case RESIZETYPE_CUSTOM: 
             realframe->m_RadioBtn_ResizeCustom->SetValue(true);
             realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_CustomSize.x));
             realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_CustomSize.y));
+            realframe->m_TextCtrl_ResizeW->Enable(true);
+            realframe->m_TextCtrl_ResizeH->Enable(true);
             break;
     }
     realframe->m_Choice_Align->SetSelection(curasset->m_Alignment);
@@ -107,25 +115,33 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_Choice_Quantization->SetSelection(curasset->m_Quantization);
     switch (curasset->m_AlphaMode)
     {
-        case ALPHA_NONE: 
+        case ALPHA_NONE:
             realframe->m_RadioBtn_AlphaNone->SetValue(true);
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath("");
+            realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_MASK:
             realframe->m_RadioBtn_AlphaMask->SetValue(true);
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath("");
+            realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_CUSTOM:
             realframe->m_RadioBtn_AlphaColor->SetValue(true);
             realframe->m_ColourPicker_AlphaColor->SetColour(curasset->m_AlphaColor);
             realframe->m_FilePicker_Alpha->SetPath("");
+            realframe->m_ColourPicker_AlphaColor->Enable(true);
+            realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_EXTERNALMASK:
             realframe->m_RadioBtn_AlphaColor->SetValue(true);
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath(curasset->m_AlphaPath.GetFullPath());
+            realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_FilePicker_Alpha->Enable(true);
             break;
     }
 }
@@ -212,8 +228,9 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_StaticText_Image->Wrap(-1);
     m_Sizer_ImageData->Add(m_StaticText_Image, 0, wxALL, 5);
 
-    m_FilePicker_Image = new wxFilePickerCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
+    m_FilePicker_Image = new wxFilePickerCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files|*.bmp;*.gif;*.jpg;*.png"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     m_FilePicker_Image->SetToolTip(_("The path for the texture image to load"));
+    //m_FilePicker_Image->SetDirectory(this->m_Panel_Search->GetMainFolder());
 
     m_Sizer_ImageData->Add(m_FilePicker_Image, 0, wxALL|wxEXPAND, 5);
 
@@ -616,7 +633,7 @@ void Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event)
 {
-    wxMessageDialog dialog(this, "This feature is not yet available", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
+    wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
     dialog.ShowModal();
 }
 
@@ -624,23 +641,61 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
 {
     if (this->m_LoadedAsset == NULL)
         return;
-    this->m_LoadedAsset->m_SourcePath = event.GetPath();
+
+    // Check a valid image loaded
+    if (wxFileExists(event.GetPath()) && this->m_LoadedAsset->m_Bitmap.LoadFile(event.GetPath()))
+    {
+        wxFileName relative;
+
+        // If not relative to our main folder, make a copy of the image and make it relative
+        if (event.GetPath().Find(this->m_Panel_Search->GetMainFolder().GetFullPath()) == wxNOT_FOUND)
+        {
+            wxString fileext = wxFileName(event.GetPath()).GetExt();
+            wxString assetpath = this->m_AssetFilePath.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+            wxString assetname = this->m_AssetFilePath.GetName();
+            wxString copyfullpath =  assetpath + assetname + "." + fileext;
+            wxCopyFile(event.GetPath(), copyfullpath, true);
+            relative = wxFileName(copyfullpath);
+            relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
+            this->m_LoadedAsset->m_SourcePath = relative;
+            this->m_FilePicker_Image->SetPath(relative.GetFullPath());
+        }
+        else
+        {
+            relative = wxFileName(event.GetPath());
+            relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
+            this->m_FilePicker_Image->SetPath(relative.GetFullPath());
+            this->m_LoadedAsset->m_SourcePath = relative;
+        }
+    }
+    else
+        this->m_LoadedAsset->m_SourcePath = event.GetPath();
     this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_NONE;
+    this->m_TextCtrl_ResizeW->Enable(false);
+    this->m_TextCtrl_ResizeH->Enable(false);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_POWER2;
+    this->m_TextCtrl_ResizeW->Enable(false);
+    this->m_TextCtrl_ResizeH->Enable(false);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_CUSTOM;
+    this->m_TextCtrl_ResizeW->Enable(true);
+    this->m_TextCtrl_ResizeH->Enable(true);
+    // TODO: Get image w and h from file
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)

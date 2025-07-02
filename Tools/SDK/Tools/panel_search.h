@@ -26,7 +26,6 @@ typedef struct IUnknown IUnknown;
 class Panel_Search : public wxPanel
 {
     private:
-        wxFileName m_MainFolder;
         wxFileName m_CurrFolder;
         wxString m_AssetExt;
         wxString m_AssetType;
@@ -36,6 +35,7 @@ class Panel_Search : public wxPanel
         void (*m_LoadAssetFunc)(wxFrame*, wxFileName);
 
     protected:
+        wxFileName m_MainFolder;
         wxBitmapButton* m_Button_Back;
         wxBitmapButton* m_Button_NewAsset;
         wxBitmapButton* m_Button_NewFolder;
@@ -67,4 +67,6 @@ class Panel_Search : public wxPanel
         void Search_SetTarget(wxFrame* target);
         bool LoadAssetsInDir(wxFileName path, wxString filter=wxEmptyString);
         void SelectItem(wxString name, bool isfolder, bool editname=false);
+
+        wxFileName GetMainFolder();
 };

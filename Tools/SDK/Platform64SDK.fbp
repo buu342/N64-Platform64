@@ -1599,7 +1599,7 @@
                                           <property name="validator_type">wxDefaultValidator</property>
                                           <property name="validator_variable"></property>
                                           <property name="value"></property>
-                                          <property name="wildcard">*.*</property>
+                                          <property name="wildcard">&quot;Image files|*.bmp;*.gif;*,jpg;*.png&quot;</property>
                                           <property name="window_extra_style"></property>
                                           <property name="window_name"></property>
                                           <property name="window_style"></property>
@@ -3763,7 +3763,7 @@
                                         <property name="border">5</property>
                                         <property name="flag">wxALL</property>
                                         <property name="proportion">0</property>
-                                        <object class="wxButton" expanded="false">
+                                        <object class="wxButton" expanded="true">
                                           <property name="BottomDockable">1</property>
                                           <property name="LeftDockable">1</property>
                                           <property name="RightDockable">1</property>
