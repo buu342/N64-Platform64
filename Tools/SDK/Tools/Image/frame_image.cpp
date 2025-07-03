@@ -47,7 +47,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     if (realframe->m_AssetModified)
     {
         wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
-        if (dialog.ShowModal() == wxNO)
+        if (dialog.ShowModal() == wxID_NO)
             return;
     }
 
@@ -85,17 +85,37 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     {
         case RESIZETYPE_NONE: 
             realframe->m_RadioBtn_ResizeNone->SetValue(true);
-            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            if (curasset->m_Bitmap.IsOk())
+            {
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetHeight()));
+            }
+            else
+            {
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            }
             realframe->m_TextCtrl_ResizeW->Enable(false);
             realframe->m_TextCtrl_ResizeH->Enable(false);
+            realframe->m_Choice_Align->Enable(false);
+            realframe->m_Choice_ResizeFill->Enable(false);
             break;
         case RESIZETYPE_POWER2: 
             realframe->m_RadioBtn_ResizeTwo->SetValue(true);
-            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            if (curasset->m_Bitmap.IsOk())
+            {
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetHeight()));
+            }
+            else
+            {
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+            }
             realframe->m_TextCtrl_ResizeW->Enable(false);
             realframe->m_TextCtrl_ResizeH->Enable(false);
+            realframe->m_Choice_Align->Enable(true);
+            realframe->m_Choice_ResizeFill->Enable(true);
             break;
         case RESIZETYPE_CUSTOM: 
             realframe->m_RadioBtn_ResizeCustom->SetValue(true);
@@ -103,6 +123,8 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_CustomSize.y));
             realframe->m_TextCtrl_ResizeW->Enable(true);
             realframe->m_TextCtrl_ResizeH->Enable(true);
+            realframe->m_Choice_Align->Enable(true);
+            realframe->m_Choice_ResizeFill->Enable(true);
             break;
     }
     realframe->m_Choice_Align->SetSelection(curasset->m_Alignment);
@@ -667,6 +689,8 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
             this->m_FilePicker_Image->SetPath(relative.GetFullPath());
             this->m_LoadedAsset->m_SourcePath = relative;
         }
+        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetWidth()));
+        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetHeight()));
     }
     else
         this->m_LoadedAsset->m_SourcePath = event.GetPath();
@@ -678,6 +702,8 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& eve
     this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_NONE;
     this->m_TextCtrl_ResizeW->Enable(false);
     this->m_TextCtrl_ResizeH->Enable(false);
+    this->m_Choice_Align->Enable(false);
+    this->m_Choice_ResizeFill->Enable(false);
     this->MarkAssetModified();
 }
 
@@ -686,6 +712,8 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& even
     this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_POWER2;
     this->m_TextCtrl_ResizeW->Enable(false);
     this->m_TextCtrl_ResizeH->Enable(false);
+    this->m_Choice_Align->Enable(true);
+    this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
 }
 
@@ -694,7 +722,8 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
     this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_CUSTOM;
     this->m_TextCtrl_ResizeW->Enable(true);
     this->m_TextCtrl_ResizeH->Enable(true);
-    // TODO: Get image w and h from file
+    this->m_Choice_Align->Enable(true);
+    this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
 }
 
