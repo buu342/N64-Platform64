@@ -142,6 +142,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath("");
             realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_BitmapButton_Pipette->Enable(false);
             realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_MASK:
@@ -149,6 +150,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath("");
             realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_BitmapButton_Pipette->Enable(false);
             realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_CUSTOM:
@@ -156,6 +158,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_ColourPicker_AlphaColor->SetColour(curasset->m_AlphaColor);
             realframe->m_FilePicker_Alpha->SetPath("");
             realframe->m_ColourPicker_AlphaColor->Enable(true);
+            realframe->m_BitmapButton_Pipette->Enable(true);
             realframe->m_FilePicker_Alpha->Enable(false);
             break;
         case ALPHA_EXTERNALMASK:
@@ -163,6 +166,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
             realframe->m_FilePicker_Alpha->SetPath(curasset->m_AlphaPath.GetFullPath());
             realframe->m_ColourPicker_AlphaColor->Enable(false);
+            realframe->m_BitmapButton_Pipette->Enable(false);
             realframe->m_FilePicker_Alpha->Enable(true);
             break;
     }
@@ -288,13 +292,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     wxGridSizer* m_Sizer_ResizeCustom;
     m_Sizer_ResizeCustom = new wxGridSizer(0, 2, 0, 0);
 
-    m_TextCtrl_ResizeW = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
+    m_TextCtrl_ResizeW = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_ResizeW->Enable(false);
     m_TextCtrl_ResizeW->SetToolTip(_("Size of image width (in pixels)"));
 
     m_Sizer_ResizeCustom->Add(m_TextCtrl_ResizeW, 0, wxALL, 5);
 
-    m_TextCtrl_ResizeH = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
+    m_TextCtrl_ResizeH = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_ResizeH->Enable(false);
     m_TextCtrl_ResizeH->SetToolTip(_("Size of image height (in pixels)"));
 
@@ -386,12 +390,12 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     wxGridSizer* m_Sizer_MaskPos;
     m_Sizer_MaskPos = new wxGridSizer(0, 2, 0, 0);
 
-    m_TextCtrl_MaskPosW = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
+    m_TextCtrl_MaskPosW = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_MaskPosW->SetToolTip(_("X coordinate start of the image mask"));
 
     m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosW, 0, wxALL, 5);
 
-    m_TextCtrl_MaskPosH = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND);
+    m_TextCtrl_MaskPosH = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_MaskPosH->SetToolTip(_("Y coordinate start of the image mask"));
 
     m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosH, 0, wxALL, 5);
@@ -729,72 +733,96 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
 {
-
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.x);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
 {
-
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.y);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_Align_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_Alignment = (P64Img_Alignment)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_ResizeFill = (P64Img_Fill)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_Format_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_ImageFormat = (P64Img_Format)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_TilingX = (P64Img_Tiling)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_TilingY_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_TilingY = (P64Img_Tiling)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
 {
-
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.x);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event)
 {
-
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.y);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
 {
-
+    // TODO: Check if we can generate Mipmaps to begin with (requires texture occupy <= 2048 bytes)
+    this->m_LoadedAsset->m_UseMipmaps = event.IsChecked();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_Choice_Quantization_OnChoice(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_Quantization = (P64Img_QuantizationMode)event.GetSelection();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_ColourPicker_AlphaColor->Enable(false);
+    this->m_BitmapButton_Pipette->Enable(false);
+    this->m_FilePicker_Alpha->Enable(false);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_ColourPicker_AlphaColor->Enable(false);
+    this->m_BitmapButton_Pipette->Enable(false);
+    this->m_FilePicker_Alpha->Enable(false);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_ColourPicker_AlphaColor->Enable(true);
+    this->m_BitmapButton_Pipette->Enable(true);
+    this->m_FilePicker_Alpha->Enable(false);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPickerEvent& event)
@@ -809,7 +837,11 @@ void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& ev
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event)
 {
-
+    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_ColourPicker_AlphaColor->Enable(false);
+    this->m_BitmapButton_Pipette->Enable(false);
+    this->m_FilePicker_Alpha->Enable(true);
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& event)
@@ -819,5 +851,6 @@ void Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& 
 
 void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 {
-
+    wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
+    dialog.ShowModal();
 }

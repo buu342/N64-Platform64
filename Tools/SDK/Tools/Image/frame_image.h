@@ -68,7 +68,6 @@ class Frame_ImageBrowser : public wxFrame
         wxPanel* m_Panel_ImageColors;
         wxStaticText* m_StaticText_Quantization;
         wxStaticText* m_StaticText_AlphaChoice;
-        wxBitmapButton* m_BitmapButton_Pipette;
         wxButton* m_Button_Palette;
 
         void m_Splitter_Vertical_DClick(wxSplitterEvent& event);
@@ -139,6 +138,7 @@ class Frame_ImageBrowser : public wxFrame
         wxRadioButton* m_RadioBtn_AlphaMask;
         wxRadioButton* m_RadioBtn_AlphaColor;
         wxColourPickerCtrl* m_ColourPicker_AlphaColor;
+        wxBitmapButton* m_BitmapButton_Pipette;
         wxRadioButton* m_RadioBtn_AlphaExternal;
         wxFilePickerCtrl* m_FilePicker_Alpha;
 
