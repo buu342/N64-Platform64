@@ -1964,7 +1964,7 @@
                                               <property name="toolbar_pane">0</property>
                                               <property name="tooltip">Size of image width (in pixels)</property>
                                               <property name="validator_data_type"></property>
-                                              <property name="validator_style">wxFILTER_NONE</property>
+                                              <property name="validator_style">wxFILTER_NUMERIC</property>
                                               <property name="validator_type">wxDefaultValidator</property>
                                               <property name="validator_variable"></property>
                                               <property name="value"></property>
@@ -2030,7 +2030,7 @@
                                               <property name="toolbar_pane">0</property>
                                               <property name="tooltip">Size of image height (in pixels)</property>
                                               <property name="validator_data_type"></property>
-                                              <property name="validator_style">wxFILTER_NONE</property>
+                                              <property name="validator_style">wxFILTER_NUMERIC</property>
                                               <property name="validator_type">wxDefaultValidator</property>
                                               <property name="validator_variable"></property>
                                               <property name="value"></property>
@@ -2835,7 +2835,7 @@
                                               <property name="toolbar_pane">0</property>
                                               <property name="tooltip">X coordinate start of the image mask</property>
                                               <property name="validator_data_type"></property>
-                                              <property name="validator_style">wxFILTER_NONE</property>
+                                              <property name="validator_style">wxFILTER_NUMERIC</property>
                                               <property name="validator_type">wxDefaultValidator</property>
                                               <property name="validator_variable"></property>
                                               <property name="value">0</property>
@@ -2901,7 +2901,7 @@
                                               <property name="toolbar_pane">0</property>
                                               <property name="tooltip">Y coordinate start of the image mask</property>
                                               <property name="validator_data_type"></property>
-                                              <property name="validator_style">wxFILTER_NONE</property>
+                                              <property name="validator_style">wxFILTER_NUMERIC</property>
                                               <property name="validator_type">wxDefaultValidator</property>
                                               <property name="validator_variable"></property>
                                               <property name="value">0</property>
@@ -3763,7 +3763,7 @@
                                         <property name="border">5</property>
                                         <property name="flag">wxALL</property>
                                         <property name="proportion">0</property>
-                                        <object class="wxButton" expanded="true">
+                                        <object class="wxButton" expanded="false">
                                           <property name="BottomDockable">1</property>
                                           <property name="LeftDockable">1</property>
                                           <property name="RightDockable">1</property>

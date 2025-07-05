@@ -43,7 +43,6 @@ class Frame_ImageBrowser : public wxFrame
         Panel_Search* m_Panel_Search;
         wxPanel* m_Panel_Edit;
         wxSplitterWindow* m_Splitter_Horizontal;
-        Panel_ImgView* m_Panel_Preview;
         wxToolBarToolBase* m_Tool_Save;
         wxToolBarToolBase* m_Tool_Alpha;
         wxToolBarToolBase* m_Tool_Tiling;
@@ -118,6 +117,7 @@ class Frame_ImageBrowser : public wxFrame
 
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;
+        Panel_ImgView* m_Panel_Preview;
 
         wxFilePickerCtrl* m_FilePicker_Image;
         wxRadioButton* m_RadioBtn_ResizeNone;

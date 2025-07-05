@@ -75,7 +75,6 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     // Activate the window
     realframe->m_ToolBar_Preview->Enable(true);
     realframe->m_Notebook_Config->Enable(true);
-    realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
 
     // Set panel item values based on asset data
     realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
@@ -170,6 +169,11 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_FilePicker_Alpha->Enable(true);
             break;
     }
+
+    // Finalize
+    realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
+    realframe->m_AssetModified = false;
+    realframe->m_Panel_Preview->SetAsset(curasset);
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
@@ -574,18 +578,21 @@ void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
+    this->m_Panel_Preview->ReloadAsset();
 }
 
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
 {
     m_Splitter_Vertical->SetSashPosition( 0 );
     m_Splitter_Vertical->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
 {
     m_Splitter_Horizontal->SetSashPosition( 0 );
     m_Splitter_Horizontal->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_Splitter_Vertical_DClick(wxSplitterEvent& event)
@@ -615,6 +622,7 @@ void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
     file.Write(data.data(), data.size());
     file.Close();
     this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
+    this->m_AssetModified = false;
 }
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
@@ -665,17 +673,27 @@ void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& ev
 
 void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& event)
 {
+    bool foundbitmap = false;
+    bool externalfile = false;
     if (this->m_LoadedAsset == NULL)
         return;
 
-    // Check a valid image loaded
-    if (wxFileExists(event.GetPath()) && this->m_LoadedAsset->m_Bitmap.LoadFile(event.GetPath()))
+    // Try to load the image either from an absolute path or from a relative path
+    if (wxFileExists(event.GetPath()))
     {
-        wxFileName relative;
+        foundbitmap = this->m_LoadedAsset->m_Bitmap.LoadFile(event.GetPath());
+        externalfile = true;
+    }
+    else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
+        foundbitmap = this->m_LoadedAsset->m_Bitmap.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
 
+    // Check a valid image loaded
+    if (foundbitmap)
+    {
         // If not relative to our main folder, make a copy of the image and make it relative
-        if (event.GetPath().Find(this->m_Panel_Search->GetMainFolder().GetFullPath()) == wxNOT_FOUND)
+        if (externalfile)
         {
+            wxFileName relative;
             wxString fileext = wxFileName(event.GetPath()).GetExt();
             wxString assetpath = this->m_AssetFilePath.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
             wxString assetname = this->m_AssetFilePath.GetName();
@@ -688,16 +706,17 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
         }
         else
         {
-            relative = wxFileName(event.GetPath());
-            relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
-            this->m_FilePicker_Image->SetPath(relative.GetFullPath());
-            this->m_LoadedAsset->m_SourcePath = relative;
+            this->m_FilePicker_Image->SetPath(event.GetPath());
+            this->m_LoadedAsset->m_SourcePath = event.GetPath();
         }
         this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetWidth()));
         this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetHeight()));
     }
     else
+    {
         this->m_LoadedAsset->m_SourcePath = event.GetPath();
+        this->m_LoadedAsset->m_Bitmap = wxBitmap();
+    }
     this->MarkAssetModified();
 }
 
@@ -709,6 +728,7 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& eve
     this->m_Choice_Align->Enable(false);
     this->m_Choice_ResizeFill->Enable(false);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& event)
@@ -719,6 +739,7 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& even
     this->m_Choice_Align->Enable(true);
     this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& event)
@@ -729,6 +750,7 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
     this->m_Choice_Align->Enable(true);
     this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
@@ -800,34 +822,38 @@ void Frame_ImageBrowser::m_Choice_Quantization_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event)
 {
-    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_LoadedAsset->m_AlphaMode = ALPHA_NONE;
     this->m_ColourPicker_AlphaColor->Enable(false);
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event)
 {
-    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_LoadedAsset->m_AlphaMode = ALPHA_MASK;
     this->m_ColourPicker_AlphaColor->Enable(false);
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event)
 {
-    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_LoadedAsset->m_AlphaMode = ALPHA_CUSTOM;
     this->m_ColourPicker_AlphaColor->Enable(true);
     this->m_BitmapButton_Pipette->Enable(true);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPickerEvent& event)
 {
-
+    this->m_LoadedAsset->m_AlphaColor = event.GetColour();
+    this->MarkAssetModified();
 }
 
 void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& event)
@@ -837,11 +863,12 @@ void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& ev
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event)
 {
-    this->m_LoadedAsset->m_AlphaMode = (P64Img_AlphaMode)event.GetSelection();
+    this->m_LoadedAsset->m_AlphaMode = ALPHA_EXTERNALMASK;
     this->m_ColourPicker_AlphaColor->Enable(false);
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(true);
     this->MarkAssetModified();
+    (void)event;
 }
 
 void Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& event)
@@ -853,4 +880,5 @@ void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 {
     wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
     dialog.ShowModal();
+    (void)event;
 }
