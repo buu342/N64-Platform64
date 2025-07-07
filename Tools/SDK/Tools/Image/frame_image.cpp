@@ -173,7 +173,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     // Finalize
     realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
     realframe->m_AssetModified = false;
-    realframe->m_Panel_Preview->SetAsset(curasset);
+    realframe->m_ScrolledWin_Preview->SetAsset(curasset);
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
@@ -208,7 +208,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Splitter_Horizontal->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_HorizontalOnIdle), NULL, this);
     m_Splitter_Horizontal->SetMinimumPaneSize(1);
 
-    m_Panel_Preview = new Panel_ImgView(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_Panel_Preview = new wxPanel(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_Panel_Preview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME));
 
     wxBoxSizer* m_Sizer_Preview;
@@ -233,7 +233,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     m_Sizer_Preview->Add(m_ToolBar_Preview, 0, wxEXPAND, 5);
 
-    m_ScrolledWin_Preview = new wxScrolledWindow(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxVSCROLL);
+    m_ScrolledWin_Preview = new Panel_ImgView(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxVSCROLL);
     m_ScrolledWin_Preview->SetScrollRate(5, 5);
     m_Sizer_Preview->Add(m_ScrolledWin_Preview, 1, wxEXPAND, 5);
 
@@ -579,7 +579,7 @@ void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
-    this->m_Panel_Preview->ReloadAsset();
+    this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
@@ -611,9 +611,9 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event)
     if (event.ControlDown())
     {
         if (event.GetWheelRotation() > 0)
-            this->m_Panel_Preview->ZoomIn();
+            this->m_ScrolledWin_Preview->ZoomIn();
         else
-            this->m_Panel_Preview->ZoomOut();
+            this->m_ScrolledWin_Preview->ZoomOut();
     }
 }
 
@@ -664,19 +664,19 @@ void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Tool_ZoomIn_OnToolClicked(wxCommandEvent& event)
 {
-    this->m_Panel_Preview->ZoomIn();
+    this->m_ScrolledWin_Preview->ZoomIn();
     (void)event;
 }
 
 void Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event)
 {
-    this->m_Panel_Preview->ZoomOut();
+    this->m_ScrolledWin_Preview->ZoomOut();
     (void)event;
 }
 
 void Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
 {
-    this->m_Panel_Preview->ZoomReset();
+    this->m_ScrolledWin_Preview->ZoomReset();
     (void)event;
 }
 

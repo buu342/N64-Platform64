@@ -1033,7 +1033,7 @@
                           <property name="window_extra_style"></property>
                           <property name="window_name"></property>
                           <property name="window_style">wxTAB_TRAVERSAL</property>
-                          <object class="wxBoxSizer" expanded="true">
+                          <object class="wxBoxSizer" expanded="false">
                             <property name="minimum_size"></property>
                             <property name="name">m_Sizer_Preview</property>
                             <property name="orient">wxVERTICAL</property>
@@ -1288,6 +1288,7 @@
                                 <property name="window_extra_style"></property>
                                 <property name="window_name"></property>
                                 <property name="window_style">wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxVSCROLL</property>
+                                <event name="OnMouseWheel">m_ScrolledWin_Preview_OnMouseWheel</event>
                               </object>
                             </object>
                           </object>

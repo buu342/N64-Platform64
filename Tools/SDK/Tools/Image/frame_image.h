@@ -53,7 +53,7 @@ class Frame_ImageBrowser : public wxFrame
         wxToolBarToolBase* m_Tool_ZoomOut;
         wxToolBarToolBase* m_Tool_ZoomNone;
         wxToolBarToolBase* m_Tool_FlashcartUpload;
-        wxScrolledWindow* m_ScrolledWin_Preview;
+        wxPanel* m_Panel_Preview;
         wxPanel* m_Panel_Config;
         wxPanel* m_Panel_ImageData;
         wxStaticText* m_StaticText_Image;
@@ -118,7 +118,7 @@ class Frame_ImageBrowser : public wxFrame
 
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;
-        Panel_ImgView* m_Panel_Preview;
+        Panel_ImgView* m_ScrolledWin_Preview;
 
         wxFilePickerCtrl* m_FilePicker_Image;
         wxRadioButton* m_RadioBtn_ResizeNone;
