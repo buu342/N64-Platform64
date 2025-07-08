@@ -911,7 +911,8 @@
                 <property name="tooltip"></property>
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
-                <property name="window_style">wxTAB_TRAVERSAL</property>
+                <property name="window_style">wxTAB_TRAVERSAL|wxWANTS_CHARS</property>
+                <event name="OnCharHook">m_Panel_Edit_OnChar</event>
                 <object class="wxBoxSizer" expanded="true">
                   <property name="minimum_size"></property>
                   <property name="name">m_Sizer_Edit</property>

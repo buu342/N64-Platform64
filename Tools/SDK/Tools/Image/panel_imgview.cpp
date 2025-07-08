@@ -90,4 +90,5 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             y = ((img_h/this->m_Zoom.y)/2);
         dc.DrawBitmap(this->m_Bitmap, x - ((img_w/this->m_Zoom.x)/2), y - ((img_h/this->m_Zoom.y)/2), false);
     }
+    event.Skip();
 }

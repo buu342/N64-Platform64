@@ -199,7 +199,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Search->Search_LoadAssetFunc(AssetLoad);
     this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
     this->m_Panel_Search->Search_SetTarget(this);
-    m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+
+    m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxWANTS_CHARS);
     wxBoxSizer* m_Sizer_Edit;
     m_Sizer_Edit = new wxBoxSizer(wxVERTICAL);
 
@@ -534,6 +535,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     // Connect Events
     this->m_Splitter_Vertical->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Vertical_DClick), NULL, this);
     this->m_Splitter_Horizontal->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Horizontal_DClick), NULL, this);
+    this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_ImageBrowser::m_Panel_Edit_OnChar), NULL, this);
     this->Connect(m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Save_OnToolClicked));
     this->Connect(m_Tool_Alpha->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked));
     this->Connect(m_Tool_Tiling->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked));
@@ -582,18 +584,53 @@ void Frame_ImageBrowser::MarkAssetModified()
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
+void Frame_ImageBrowser::SaveChanges()
+{
+    wxFile file;
+    std::vector<uint8_t> data;
+    if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
+        file.Create(this->m_AssetFilePath.GetFullPath());
+    file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(this, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
+    data = this->m_LoadedAsset->Serialize();
+    file.Write(data.data(), data.size());
+    file.Close();
+    this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
+    this->m_AssetModified = false;
+}
+
+void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
+{
+    if (wxGetKeyState(WXK_CONTROL))
+    {
+        wxChar uc = event.GetKeyCode();
+        switch (event.GetKeyCode())
+        {
+            case 'S':
+                this->SaveChanges();
+                break;
+        }
+    }
+    event.Skip();
+}
+
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
 {
     m_Splitter_Vertical->SetSashPosition( 0 );
     m_Splitter_Vertical->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
 {
     m_Splitter_Horizontal->SetSashPosition( 0 );
     m_Splitter_Horizontal->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Splitter_Vertical_DClick(wxSplitterEvent& event)
@@ -615,75 +652,63 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event)
         else
             this->m_ScrolledWin_Preview->ZoomOut();
     }
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 {
-    wxFile file;
-    std::vector<uint8_t> data;
-    if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
-        file.Create(this->m_AssetFilePath.GetFullPath());
-    file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
-    if (!file.IsOpened())
-    {
-        wxMessageDialog dialog(this, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return;
-    }
-    data = this->m_LoadedAsset->Serialize();
-    file.Write(data.data(), data.size());
-    file.Close();
-    this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
-    this->m_AssetModified = false;
+    this->SaveChanges();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_ZoomIn_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ZoomIn();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ZoomOut();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ZoomReset();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event)
 {
     wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
     dialog.ShowModal();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& event)
@@ -691,7 +716,10 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
     bool foundbitmap = false;
     bool externalfile = false;
     if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
         return;
+    }
 
     // Try to load the image either from an absolute path or from a relative path
     if (wxFileExists(event.GetPath()))
@@ -733,6 +761,7 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
         this->m_LoadedAsset->m_Bitmap = wxBitmap();
     }
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& event)
@@ -743,7 +772,7 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& eve
     this->m_Choice_Align->Enable(false);
     this->m_Choice_ResizeFill->Enable(false);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& event)
@@ -754,7 +783,7 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& even
     this->m_Choice_Align->Enable(true);
     this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& event)
@@ -765,61 +794,70 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
     this->m_Choice_Align->Enable(true);
     this->m_Choice_ResizeFill->Enable(true);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.x);
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.y);
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_Align_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_Alignment = (P64Img_Alignment)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_ResizeFill = (P64Img_Fill)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_Format_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_ImageFormat = (P64Img_Format)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_TilingX = (P64Img_Tiling)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_TilingY_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_TilingY = (P64Img_Tiling)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.x);
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.y);
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
@@ -827,12 +865,14 @@ void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
     // TODO: Check if we can generate Mipmaps to begin with (requires texture occupy <= 2048 bytes)
     this->m_LoadedAsset->m_UseMipmaps = event.IsChecked();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Choice_Quantization_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_Quantization = (P64Img_QuantizationMode)event.GetSelection();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event)
@@ -842,7 +882,7 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& even
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event)
@@ -852,7 +892,7 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& even
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event)
@@ -862,18 +902,19 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& eve
     this->m_BitmapButton_Pipette->Enable(true);
     this->m_FilePicker_Alpha->Enable(false);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPickerEvent& event)
 {
     this->m_LoadedAsset->m_AlphaColor = event.GetColour();
     this->MarkAssetModified();
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event)
@@ -883,17 +924,17 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& 
     this->m_BitmapButton_Pipette->Enable(false);
     this->m_FilePicker_Alpha->Enable(true);
     this->MarkAssetModified();
-    (void)event;
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& event)
 {
-
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 {
     wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
     dialog.ShowModal();
-    (void)event;
+    event.Skip();
 }
