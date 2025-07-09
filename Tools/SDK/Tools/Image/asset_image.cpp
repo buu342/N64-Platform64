@@ -1,6 +1,7 @@
 #include "asset_image.h"
 #include "../../serializer.h"
 #include <wx/msgdlg.h>
+#include <wx/rawbmp.h>
 
 #define P64ASSET_HEADER "P64RAWIMG"
 #define P64ASSET_VERSION 1
@@ -23,9 +24,10 @@ P64Asset_Image::P64Asset_Image()
     this->m_AlphaColor = wxColor(0, 0, 0);
     this->m_AlphaPath = "";
 
-    this->m_Bitmap = wxBitmap();
-    this->m_BitmapAlpha = wxBitmap();
-    this->m_FinalTexels = NULL;
+    this->m_Image = wxImage();
+    this->m_ImageAlpha = wxImage();
+    this->m_ImageFinal = wxImage();
+    this->m_BitmapFinal = wxBitmap();
 }
 
 P64Asset_Image::~P64Asset_Image()
@@ -117,7 +119,11 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     return asset;
 }
 
-wxColor* P64Asset_Image::RegenerateFinal()
+void P64Asset_Image::RegenerateFinal()
 {
-    return NULL;
+    if (!this->m_Image.IsOk())
+        return;
+    unsigned char* data = this->m_Image.GetData();
+    this->m_ImageFinal = wxImage(this->m_Image.GetWidth(), this->m_Image.GetHeight(), data, NULL, true);
+    this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
 }

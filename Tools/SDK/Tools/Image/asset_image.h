@@ -69,7 +69,7 @@ class P64Asset_Image
 
     public:
         wxFileName               m_SourcePath;
-        wxBitmap                 m_Bitmap;
+        wxImage                  m_Image;
         P64Img_Resize            m_ResizeMode;
         wxPoint                  m_CustomSize;
         P64Img_Alignment         m_Alignment;
@@ -83,12 +83,13 @@ class P64Asset_Image
         P64Img_AlphaMode         m_AlphaMode;
         wxColor                  m_AlphaColor;
         wxFileName               m_AlphaPath;
-        wxBitmap                 m_BitmapAlpha;
-        wxColor*                 m_FinalTexels;
+        wxImage                  m_ImageAlpha;
+        wxImage                  m_ImageFinal;
+        wxBitmap                 m_BitmapFinal;
 
         P64Asset_Image();
         ~P64Asset_Image();
-        wxColor* RegenerateFinal();
+        void RegenerateFinal();
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
 };

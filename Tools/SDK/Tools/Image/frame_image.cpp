@@ -79,15 +79,15 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     // Set panel item values based on asset data
     realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
     if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
-        curasset->m_Bitmap.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
+        curasset->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
     switch (curasset->m_ResizeMode)
     {
         case RESIZETYPE_NONE: 
             realframe->m_RadioBtn_ResizeNone->SetValue(true);
-            if (curasset->m_Bitmap.IsOk())
+            if (curasset->m_Image.IsOk())
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetHeight()));
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
             }
             else
             {
@@ -101,10 +101,10 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             break;
         case RESIZETYPE_POWER2: 
             realframe->m_RadioBtn_ResizeTwo->SetValue(true);
-            if (curasset->m_Bitmap.IsOk())
+            if (curasset->m_Image.IsOk())
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Bitmap.GetHeight()));
+                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
             }
             else
             {
@@ -171,6 +171,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     }
 
     // Finalize
+    curasset->RegenerateFinal();
     realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
     realframe->m_AssetModified = false;
     realframe->m_ScrolledWin_Preview->SetAsset(curasset);
@@ -581,6 +582,7 @@ void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
+    this->m_LoadedAsset->RegenerateFinal();
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
@@ -724,11 +726,11 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
     // Try to load the image either from an absolute path or from a relative path
     if (wxFileExists(event.GetPath()))
     {
-        foundbitmap = this->m_LoadedAsset->m_Bitmap.LoadFile(event.GetPath());
+        foundbitmap = this->m_LoadedAsset->m_Image.LoadFile(event.GetPath());
         externalfile = true;
     }
     else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
-        foundbitmap = this->m_LoadedAsset->m_Bitmap.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
+        foundbitmap = this->m_LoadedAsset->m_Image.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
 
     // Check a valid image loaded
     if (foundbitmap)
@@ -752,13 +754,13 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
             this->m_FilePicker_Image->SetPath(event.GetPath());
             this->m_LoadedAsset->m_SourcePath = event.GetPath();
         }
-        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetWidth()));
-        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Bitmap.GetHeight()));
+        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Image.GetWidth()));
+        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Image.GetHeight()));
     }
     else
     {
         this->m_LoadedAsset->m_SourcePath = event.GetPath();
-        this->m_LoadedAsset->m_Bitmap = wxBitmap();
+        this->m_LoadedAsset->m_Image = wxImage();
     }
     this->MarkAssetModified();
     event.Skip();

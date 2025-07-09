@@ -46,10 +46,10 @@ void Panel_ImgView::ZoomReset()
 
 void Panel_ImgView::ReloadAsset()
 {
-    if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_Bitmap.IsOk())
+    if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_BitmapFinal.IsOk())
         this->m_Bitmap = Tex_Missing;
     else
-        this->m_Bitmap = this->m_LoadedAsset->m_Bitmap;
+        this->m_Bitmap = this->m_LoadedAsset->m_BitmapFinal;
     this->ZoomReset();
     this->RefreshDrawing();
 }
