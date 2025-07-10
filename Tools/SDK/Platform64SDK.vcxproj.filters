@@ -22,6 +22,9 @@
     <ClCompile Include="Tools\Image\panel_imgview.cpp">
       <Filter>Source\Tools\Image</Filter>
     </ClCompile>
+    <ClCompile Include="serializer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -87,35 +90,39 @@
     <ClInclude Include="Tools\Image\asset_image.h">
       <Filter>Source\Tools\Image</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
+    <ClInclude Include="Resources\Icons\Icon_ZoomOut.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_Palette.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_Pipette.h">
-      <Filter>Source\Tools\Image</Filter>
-    </ClInclude>
-    <ClInclude Include="Resources\Icons\Icon_ToggleFilter.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ToggleAlpha.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleFilter.h">
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ToggleStatistics.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ToggleTiling.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_USBUpload.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ZoomFit.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ZoomIn.h">
-      <Filter>Source\Tools\Image</Filter>
+      <Filter>Resources\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Icons\Icon_ZoomOut.h">
-      <Filter>Source\Tools\Image</Filter>
+    <ClInclude Include="serializer.h">
+      <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

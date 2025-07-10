@@ -47,6 +47,7 @@
     <ClInclude Include="Resources\Icons\Icon_ZoomFit.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomIn.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomOut.h" />
+    <ClInclude Include="serializer.h" />
     <ClInclude Include="Tools\Image\asset_image.h" />
     <ClInclude Include="Tools\Image\frame_image.h" />
     <ClInclude Include="Tools\Image\panel_imgview.h" />
@@ -56,6 +57,7 @@
     <ClCompile Include="app.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="serializer.cpp" />
     <ClCompile Include="Tools\Image\asset_image.cpp" />
     <ClCompile Include="Tools\Image\frame_image.cpp" />
     <ClCompile Include="Tools\Image\panel_imgview.cpp" />
