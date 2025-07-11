@@ -616,6 +616,12 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
             case 'S':
                 this->SaveChanges();
                 break;
+            case '+':
+                this->m_ScrolledWin_Preview->ZoomIn();
+                break;
+            case '-':
+                this->m_ScrolledWin_Preview->ZoomOut();
+                break;
         }
     }
     event.Skip();
