@@ -76,9 +76,12 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME)));
     dc.Clear();
 
-    // Draw the texture
+    // If we have a valid asset
     if (this->m_LoadedAsset != NULL && this->m_Bitmap.IsOk())
     {
+        int xstart, ystart, i;
+
+        // Calculate its size and position on the DC
         dc.GetSize(&screen_w, &screen_h);
         x = (screen_w/this->m_Zoom.x)/2;
         y = (screen_h/this->m_Zoom.y)/2;
@@ -88,6 +91,34 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             x = ((img_w/this->m_Zoom.x)/2);
         if (img_h > screen_h)
             y = ((img_h/this->m_Zoom.y)/2);
+        xstart = x - ((img_w/this->m_Zoom.x)/2);
+        ystart = y - ((img_h/this->m_Zoom.y)/2);
+
+        // Draw the transparent background
+        i = 0;
+        while (true)
+        {
+            const float w = 16.0f;
+            const float h = 16.0f;
+            const float xcheck_total = img_w/w;
+            const float ycheck_total = img_h/h;
+            const int xcheck_curr = (i%((int)xcheck_total));
+            const int ycheck_curr = (i/((int)ycheck_total));
+            int startcol = ycheck_curr%2;
+            dc.SetUserScale(1, 1);
+            dc.SetPen(*wxTRANSPARENT_PEN);
+            if ((startcol + xcheck_curr)%2 == 0)
+                dc.SetBrush(wxBrush(wxColor(192, 192, 192)));
+            else
+                dc.SetBrush(wxBrush(wxColor(255, 255, 255)));
+            dc.DrawRectangle(wxRect(xstart* this->m_Zoom.x +xcheck_curr*w, ystart*this->m_Zoom.y+ycheck_curr*h, w, h));
+            i++;
+            if (xcheck_curr+1 == (int)xcheck_total && ycheck_curr+1 == (int)ycheck_total)
+                break;
+        }
+
+        // Draw the texture
+        dc.SetUserScale(this->m_Zoom.x, this->m_Zoom.y);
         dc.DrawBitmap(this->m_Bitmap, x - ((img_w/this->m_Zoom.x)/2), y - ((img_h/this->m_Zoom.y)/2), false);
     }
     event.Skip();
