@@ -1,4 +1,5 @@
 #include "panel_imgview.h"
+#include <math.h>
 #include <wx/wx.h>
 #include <wx/dc.h>
 #include <wx/dcclient.h>
@@ -96,25 +97,32 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
 
         // Draw the transparent background
         i = 0;
+        dc.SetUserScale(1, 1);
+        dc.SetPen(*wxTRANSPARENT_PEN);
+        dc.SetBrush(wxBrush(wxColor(255, 255, 255, 255)));
+        dc.DrawRectangle(wxRect(xstart*this->m_Zoom.x, ystart*this->m_Zoom.y, img_w, img_h));
+        dc.SetBrush(wxBrush(wxColor(192, 192, 192, 255)));
         while (true)
         {
-            const float w = 16.0f;
-            const float h = 16.0f;
-            const float xcheck_total = img_w/w;
-            const float ycheck_total = img_h/h;
-            const int xcheck_curr = (i%((int)xcheck_total));
-            const int ycheck_curr = (i/((int)ycheck_total));
-            int startcol = ycheck_curr%2;
-            dc.SetUserScale(1, 1);
-            dc.SetPen(*wxTRANSPARENT_PEN);
-            if ((startcol + xcheck_curr)%2 == 0)
-                dc.SetBrush(wxBrush(wxColor(192, 192, 192)));
-            else
-                dc.SetBrush(wxBrush(wxColor(255, 255, 255)));
-            dc.DrawRectangle(wxRect(xstart* this->m_Zoom.x +xcheck_curr*w, ystart*this->m_Zoom.y+ycheck_curr*h, w, h));
-            i++;
-            if (xcheck_curr+1 == (int)xcheck_total && ycheck_curr+1 == (int)ycheck_total)
-                break;
+            const float GRIDSIZE = 16; 
+            const int xcheck_total = ceilf(img_w/GRIDSIZE);
+            const int ycheck_total = ceilf(img_h/GRIDSIZE);
+            const float xcheck_total_frac = xcheck_total - (img_w/GRIDSIZE);
+            const float ycheck_total_frac = ycheck_total - (img_h/GRIDSIZE);
+            const int xcheck_curr = (i%(xcheck_total));
+            const int ycheck_curr = (i/(ycheck_total));
+            float w = (xcheck_curr+1 < xcheck_total) ? GRIDSIZE : GRIDSIZE*(1-xcheck_total_frac);
+            float h = (ycheck_curr+1 < ycheck_total) ? GRIDSIZE : GRIDSIZE*(1-ycheck_total_frac);
+            dc.DrawRectangle(wxRect(xstart*this->m_Zoom.x + xcheck_curr*GRIDSIZE, ystart*this->m_Zoom.y + ycheck_curr*GRIDSIZE, w, h));
+            i += 2;
+            if (xcheck_curr+2 >= xcheck_total)
+            {
+                if (ycheck_curr+1 >= ycheck_total)
+                    break;
+                i = (ycheck_curr+1)*xcheck_total;
+                if (ycheck_curr%2 == 0)
+                    i++;
+            }
         }
 
         // Draw the texture
