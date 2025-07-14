@@ -182,6 +182,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Title = title;
     this->m_LoadedAsset = NULL;
     this->m_AssetModified = false;
+    this->m_UsingPipette = false;
     this->m_AssetFilePath = wxFileName("");
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
@@ -922,6 +923,7 @@ void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPicke
 
 void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& event)
 {
+    wxWindow::SetCursor(Cursor_Pipette);
     event.Skip();
 }
 

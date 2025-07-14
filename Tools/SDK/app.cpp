@@ -18,6 +18,7 @@ wxIcon   Icon_Main = wxNullIcon;
 wxIcon   Icon_Texture = wxNullIcon;
 wxIcon   Icon_Material = wxNullIcon;
 wxCursor Cursor_Blank = wxNullCursor;
+wxCursor Cursor_Pipette = wxNullCursor;
 wxIcon   Icon_Back = wxNullIcon;
 wxIcon   Icon_NewAsset = wxNullIcon;
 wxIcon   Icon_NewFolder = wxNullIcon;
@@ -68,11 +69,19 @@ App::~App()
 
 bool App::OnInit()
 {
+    wxImage tempimg;
+
     if (!wxApp::OnInit())
         return false;
 
     // Initialize image handlers
     wxInitAllImageHandlers();
+
+    // Initialize cursors
+    tempimg = wxBITMAP_PNG_FROM_DATA(Cursor_Pipette).ConvertToImage();
+    tempimg.SetOption(wxIMAGE_OPTION_CUR_HOTSPOT_X, 0);
+    tempimg.SetOption(wxIMAGE_OPTION_CUR_HOTSPOT_Y, 16);
+    Cursor_Pipette = wxCursor(tempimg);
 
     // Initialize icons
     Icon_Main.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Main));

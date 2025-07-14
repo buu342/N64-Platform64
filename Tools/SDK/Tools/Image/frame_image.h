@@ -117,6 +117,7 @@ class Frame_ImageBrowser : public wxFrame
         wxFileName m_AssetFilePath;
         P64Asset_Image* m_LoadedAsset;
         bool m_AssetModified;
+        bool m_UsingPipette;
 
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;

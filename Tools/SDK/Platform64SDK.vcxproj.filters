@@ -124,6 +124,10 @@
     <ClInclude Include="serializer.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
+    <ClInclude Include="Resources\Cursors\Cursor_Pipette.h">
+      <Filter>Resources\Cursors</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">
@@ -149,6 +153,9 @@
     </Filter>
     <Filter Include="Include">
       <UniqueIdentifier>{8e3d3eaa-cb7f-46da-bfe6-12a940707c90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\Cursors">
+      <UniqueIdentifier>{224eb09d-530d-4aa4-8c9a-f93ef565daeb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

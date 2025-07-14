@@ -22,6 +22,7 @@
     <ClInclude Include="Include\json.hpp" />
     <ClInclude Include="json.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Resources\Cursors\Cursor_Pipette.h" />
     <ClInclude Include="Resources\Default\MISSING.h" />
     <ClInclude Include="Resources\Icons\Icon_Back.h" />
     <ClInclude Include="Resources\Icons\Icon_Folder.h" />
