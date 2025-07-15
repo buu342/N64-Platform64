@@ -51,7 +51,6 @@ void Panel_ImgView::ReloadAsset()
         this->m_Bitmap = Tex_Missing;
     else
         this->m_Bitmap = this->m_LoadedAsset->m_BitmapFinal;
-    this->ZoomReset();
     this->RefreshDrawing();
 }
 

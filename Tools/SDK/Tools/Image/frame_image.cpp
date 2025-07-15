@@ -175,6 +175,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
     realframe->m_AssetModified = false;
     realframe->m_ScrolledWin_Preview->SetAsset(curasset);
+    realframe->m_ScrolledWin_Preview->ZoomReset();
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
@@ -548,6 +549,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->Connect(m_Tool_ZoomOut->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked));
     this->Connect(m_Tool_ZoomNone->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked));
     this->Connect(m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked));
+    this->m_ScrolledWin_Preview->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown), NULL, this);
     this->m_ScrolledWin_Preview->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel), NULL, this);
     this->m_FilePicker_Image->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged), NULL, this);
     this->m_RadioBtn_ResizeNone->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton), NULL, this);
@@ -609,9 +611,9 @@ void Frame_ImageBrowser::SaveChanges()
 
 void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
 {
+    wxChar uc = event.GetKeyCode();
     if (wxGetKeyState(WXK_CONTROL))
     {
-        wxChar uc = event.GetKeyCode();
         switch (event.GetKeyCode())
         {
             case 'S':
@@ -622,6 +624,17 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
                 break;
             case '-':
                 this->m_ScrolledWin_Preview->ZoomOut();
+                break;
+        }
+    }
+    else
+    {
+        switch (event.GetKeyCode())
+        {
+            case WXK_ESCAPE:
+                wxWindow::SetCursor(wxNullCursor);
+                wxSetCursor(wxNullCursor);
+                this->m_UsingPipette = false;
                 break;
         }
     }
@@ -660,6 +673,25 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event)
             this->m_ScrolledWin_Preview->ZoomIn();
         else
             this->m_ScrolledWin_Preview->ZoomOut();
+    }
+    event.Skip();
+}
+
+void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown(wxMouseEvent& event)
+{
+    if (this->m_UsingPipette)
+    {
+        wxColor c;
+        wxWindowDC dc = wxWindowDC(this->m_ScrolledWin_Preview);   
+        wxPoint p = event.GetPosition();
+        dc.GetPixel(p.x, p.y, &c);
+        this->m_ColourPicker_AlphaColor->SetColour(c);
+        this->m_LoadedAsset->m_AlphaColor = c;
+        this->MarkAssetModified();
+
+        wxWindow::SetCursor(wxNullCursor);
+        wxSetCursor(wxNullCursor);
+        this->m_UsingPipette = false;
     }
     event.Skip();
 }
@@ -769,6 +801,7 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
         this->m_LoadedAsset->m_SourcePath = event.GetPath();
         this->m_LoadedAsset->m_Image = wxImage();
     }
+    this->m_ScrolledWin_Preview->ZoomReset();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -923,7 +956,9 @@ void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPicke
 
 void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& event)
 {
-    wxWindow::SetCursor(Cursor_Pipette);
+    wxSetCursor(Cursor_Pipette); // Works on Linux
+    wxWindow::SetCursor(Cursor_Pipette); // Works on Windows
+    this->m_UsingPipette = true;
     event.Skip();
 }
 
