@@ -123,7 +123,48 @@ void P64Asset_Image::RegenerateFinal()
 {
     if (!this->m_Image.IsOk())
         return;
-    unsigned char* data = this->m_Image.GetData();
-    this->m_ImageFinal = wxImage(this->m_Image.GetWidth(), this->m_Image.GetHeight(), data, NULL, true);
+    uint32_t rawwidth = this->m_Image.GetWidth();
+    uint32_t rawheight = this->m_Image.GetHeight();
+    unsigned char* base_alpha = NULL;
+    unsigned char* base_rgb = NULL;
+
+    // Get the raw RGB data
+    base_rgb = (unsigned char*)malloc(rawwidth*rawheight*3);
+    memcpy(base_rgb, this->m_Image.GetData(), rawwidth*rawheight*3);
+
+    // Handle alpha
+    switch (this->m_AlphaMode)
+    {
+        case ALPHA_NONE: break;
+        case ALPHA_MASK:
+            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            if (this->m_Image.GetAlpha() != NULL)
+                memcpy(base_alpha, this->m_Image.GetAlpha(), rawwidth*rawheight);
+            else
+                memset(base_alpha, 255, rawwidth*rawheight);
+            break;
+        case ALPHA_CUSTOM:
+            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            for (int i=0; i<rawwidth*rawheight; i++)
+            {
+                if (base_rgb[(i*3)+0] == this->m_AlphaColor.GetRed() && base_rgb[(i*3)+1] == this->m_AlphaColor.GetGreen() && base_rgb[(i*3)+2] == this->m_AlphaColor.GetBlue())
+                    base_alpha[i] = 0;
+                else
+                    base_alpha[i] = 255;
+            }
+            break;
+        case ALPHA_EXTERNALMASK:
+            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            if (this->m_ImageAlpha.IsOk())
+            {
+                wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
+                memcpy(base_alpha, bw.GetData(), rawwidth*rawheight);
+            }
+            else
+                memset(base_alpha, 255, rawwidth*rawheight);
+            break;
+    }
+
+    this->m_ImageFinal = wxImage(rawwidth, rawheight, base_rgb, base_alpha, false);
     this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
 }

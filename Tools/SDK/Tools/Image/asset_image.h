@@ -84,6 +84,7 @@ class P64Asset_Image
         wxColor                  m_AlphaColor;
         wxFileName               m_AlphaPath;
         wxImage                  m_ImageAlpha;
+        
         wxImage                  m_ImageFinal;
         wxBitmap                 m_BitmapFinal;
 
