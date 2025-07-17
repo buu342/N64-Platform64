@@ -72,6 +72,10 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
         delete oldasset;
     realframe->m_LoadedAsset = curasset;
 
+    // Set asset content
+    curasset->RegenerateFinal();
+    realframe->m_ScrolledWin_Preview->SetAsset(curasset);
+
     // Activate the window
     realframe->m_ToolBar_Preview->Enable(true);
     realframe->m_Notebook_Config->Enable(true);
@@ -86,13 +90,13 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_RadioBtn_ResizeNone->SetValue(true);
             if (curasset->m_Image.IsOk())
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
+                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
             }
             else
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
             }
             realframe->m_TextCtrl_ResizeW->Enable(false);
             realframe->m_TextCtrl_ResizeH->Enable(false);
@@ -103,13 +107,13 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             realframe->m_RadioBtn_ResizeTwo->SetValue(true);
             if (curasset->m_Image.IsOk())
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
+                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
+                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
             }
             else
             {
-                realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", 0));
-                realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
+                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
             }
             realframe->m_TextCtrl_ResizeW->Enable(false);
             realframe->m_TextCtrl_ResizeH->Enable(false);
@@ -118,8 +122,8 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
             break;
         case RESIZETYPE_CUSTOM: 
             realframe->m_RadioBtn_ResizeCustom->SetValue(true);
-            realframe->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", curasset->m_CustomSize.x));
-            realframe->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", curasset->m_CustomSize.y));
+            realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_CustomSize.x));
+            realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_CustomSize.y));
             realframe->m_TextCtrl_ResizeW->Enable(true);
             realframe->m_TextCtrl_ResizeH->Enable(true);
             realframe->m_Choice_Align->Enable(true);
@@ -130,8 +134,8 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_Choice_ResizeFill->SetSelection(curasset->m_ResizeFill);
     realframe->m_Choice_TilingX->SetSelection(curasset->m_TilingX);
     realframe->m_Choice_TilingY->SetSelection(curasset->m_TilingY);
-    realframe->m_TextCtrl_MaskPosW->SetValue(wxString::Format("%d", curasset->m_MaskStart.x));
-    realframe->m_TextCtrl_MaskPosH->SetValue(wxString::Format("%d", curasset->m_MaskStart.y));
+    realframe->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.x));
+    realframe->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.y));
     realframe->m_Checkbox_Mipmaps->SetValue(curasset->m_UseMipmaps);
     realframe->m_Choice_Quantization->SetSelection(curasset->m_Quantization);
     switch (curasset->m_AlphaMode)
@@ -171,10 +175,8 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     }
 
     // Finalize
-    curasset->RegenerateFinal();
     realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
     realframe->m_AssetModified = false;
-    realframe->m_ScrolledWin_Preview->SetAsset(curasset);
     realframe->m_ScrolledWin_Preview->ZoomReset();
 }
 
@@ -585,7 +587,8 @@ void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
-    this->m_LoadedAsset->RegenerateFinal();
+    if (this->m_LoadedAsset != NULL)
+        this->m_LoadedAsset->RegenerateFinal();
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
@@ -682,7 +685,7 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown(wxMouseEvent& eve
     if (this->m_UsingPipette)
     {
         wxColor c;
-        wxWindowDC dc = wxWindowDC(this->m_ScrolledWin_Preview);   
+        wxWindowDC dc(this->m_ScrolledWin_Preview);   
         wxPoint p = event.GetPosition();
         dc.GetPixel(p.x, p.y, &c);
         this->m_ColourPicker_AlphaColor->SetColour(c);
