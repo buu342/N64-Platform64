@@ -73,6 +73,9 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_LoadedAsset = curasset;
 
     // Set asset content
+    realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
+    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
+        curasset->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
     curasset->RegenerateFinal();
     realframe->m_ScrolledWin_Preview->SetAsset(curasset);
 
@@ -81,9 +84,6 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_Notebook_Config->Enable(true);
 
     // Set panel item values based on asset data
-    realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
-    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
-        curasset->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
     switch (curasset->m_ResizeMode)
     {
         case RESIZETYPE_NONE: 

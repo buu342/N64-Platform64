@@ -72,6 +72,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
+
     dc.SetUserScale(this->m_Zoom.x, this->m_Zoom.y);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME)));
     dc.Clear();
@@ -104,12 +105,12 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         while (true)
         {
             const float GRIDSIZE = 16; 
-            const int xcheck_total = ceilf(img_w/GRIDSIZE);
-            const int ycheck_total = ceilf(img_h/GRIDSIZE);
+            const int xcheck_total = ceilf(((float)img_w)/GRIDSIZE);
+            const int ycheck_total = ceilf(((float)img_h)/GRIDSIZE);
             const float xcheck_total_frac = xcheck_total - (img_w/GRIDSIZE);
             const float ycheck_total_frac = ycheck_total - (img_h/GRIDSIZE);
-            const int xcheck_curr = (i%(xcheck_total));
-            const int ycheck_curr = (i/(ycheck_total));
+            const int xcheck_curr = (i%xcheck_total);
+            const int ycheck_curr = (i/xcheck_total);
             float w = (xcheck_curr+1 < xcheck_total) ? GRIDSIZE : GRIDSIZE*(1-xcheck_total_frac);
             float h = (ycheck_curr+1 < ycheck_total) ? GRIDSIZE : GRIDSIZE*(1-ycheck_total_frac);
             dc.DrawRectangle(wxRect(xstart*this->m_Zoom.x + xcheck_curr*GRIDSIZE, ystart*this->m_Zoom.y + ycheck_curr*GRIDSIZE, w, h));
