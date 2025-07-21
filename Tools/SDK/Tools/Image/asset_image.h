@@ -34,7 +34,6 @@ typedef enum {
 typedef enum {
     FMT_RGBA32 = 0,
     FMT_RGBA16,
-    //FMT_YUV16,
     FMT_IA16,
     FMT_IA8,
     FMT_IA4,
@@ -42,6 +41,7 @@ typedef enum {
     FMT_I4,
     FMT_CI8,
     FMT_CI4,
+    //FMT_YUV16,
 } P64Img_Format;
 
 typedef enum {
@@ -51,10 +51,10 @@ typedef enum {
 } P64Img_Tiling;
 
 typedef enum {
-    QUANTIZATION_NONE = 0,
-    QUANTIZATION_MEDIANCUT,
-    QUANTIZATION_MEDIANCUT_FLOYDSTEINBERG,
-} P64Img_QuantizationMode;
+    DITHERING_NONE = 0,
+    DITHERING_ORDERED,
+    DITHERING_FLOYDSTEINBERG,
+} P64Img_DitheringMode;
 
 typedef enum {
     ALPHA_NONE = 0,
@@ -66,27 +66,32 @@ typedef enum {
 class P64Asset_Image
 {
     private:
+        void ReduceTexel(uint8_t* rgb, uint8_t* a);
+        void Dither_Ordered(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h);
+        void Dither_FloydSteinberg(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h);
 
     public:
-        wxFileName               m_SourcePath;
-        wxImage                  m_Image;
-        P64Img_Resize            m_ResizeMode;
-        wxPoint                  m_CustomSize;
-        P64Img_Alignment         m_Alignment;
-        P64Img_Fill              m_ResizeFill;
-        P64Img_Format            m_ImageFormat;
-        P64Img_Tiling            m_TilingX;
-        P64Img_Tiling            m_TilingY;
-        wxPoint                  m_MaskStart;
-        bool                     m_UseMipmaps;
-        P64Img_QuantizationMode  m_Quantization;
-        P64Img_AlphaMode         m_AlphaMode;
-        wxColor                  m_AlphaColor;
-        wxFileName               m_AlphaPath;
-        wxImage                  m_ImageAlpha;
-        
-        wxImage                  m_ImageFinal;
-        wxBitmap                 m_BitmapFinal;
+        wxFileName            m_SourcePath;
+        P64Img_Resize         m_ResizeMode;
+        wxPoint               m_CustomSize;
+        P64Img_Alignment      m_Alignment;
+        P64Img_Fill           m_ResizeFill;
+        P64Img_Format         m_ImageFormat;
+        P64Img_Tiling         m_TilingX;
+        P64Img_Tiling         m_TilingY;
+        wxPoint               m_MaskStart;
+        bool                  m_UseMipmaps;
+        P64Img_DitheringMode  m_Dithering;
+        P64Img_AlphaMode      m_AlphaMode;
+        wxColor               m_AlphaColor;
+        wxFileName            m_AlphaPath;
+        wxPoint               m_FinalSize;
+        uint8_t*              m_FinalTexels;
+
+        wxImage               m_Image;
+        wxImage               m_ImageAlpha;
+        wxImage               m_ImageFinal;
+        wxBitmap              m_BitmapFinal;
 
         P64Asset_Image();
         ~P64Asset_Image();

@@ -137,7 +137,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.x));
     realframe->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.y));
     realframe->m_Checkbox_Mipmaps->SetValue(curasset->m_UseMipmaps);
-    realframe->m_Choice_Quantization->SetSelection(curasset->m_Quantization);
+    realframe->m_Choice_Dithering->SetSelection(curasset->m_Dithering);
     switch (curasset->m_AlphaMode)
     {
         case ALPHA_NONE:
@@ -430,17 +430,17 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Sizer_ImageColors->SetFlexibleDirection(wxBOTH);
     m_Sizer_ImageColors->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-    m_StaticText_Quantization = new wxStaticText(m_Panel_ImageColors, wxID_ANY, _("Quantization:"), wxDefaultPosition, wxDefaultSize, 0);
-    m_StaticText_Quantization->Wrap(-1);
-    m_Sizer_ImageColors->Add(m_StaticText_Quantization, 0, wxALL, 5);
+    m_StaticText_Dithering = new wxStaticText(m_Panel_ImageColors, wxID_ANY, _("Dithering:"), wxDefaultPosition, wxDefaultSize, 0);
+    m_StaticText_Dithering->Wrap(-1);
+    m_Sizer_ImageColors->Add(m_StaticText_Dithering, 0, wxALL, 5);
 
-    wxString m_Choice_QuantizationChoices[] = { _("None"), _("Median cut") };
-    int m_Choice_QuantizationNChoices = sizeof(m_Choice_QuantizationChoices) / sizeof(wxString);
-    m_Choice_Quantization = new wxChoice(m_Panel_ImageColors, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_QuantizationNChoices, m_Choice_QuantizationChoices, 0);
-    m_Choice_Quantization->SetSelection(1);
-    m_Choice_Quantization->SetToolTip(_("What algorithm to use to reduce the colors"));
+    wxString m_Choice_DitheringChoices[] = { _("None"), _("Ordered Dithering"), _("Floyd-Steinberg") };
+    int m_Choice_DitheringNChoices = sizeof(m_Choice_DitheringChoices) / sizeof(wxString);
+    m_Choice_Dithering = new wxChoice(m_Panel_ImageColors, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_DitheringNChoices, m_Choice_DitheringChoices, 0);
+    m_Choice_Dithering->SetSelection(1);
+    m_Choice_Dithering->SetToolTip(_("What algorithm to use to reduce the colors"));
 
-    m_Sizer_ImageColors->Add(m_Choice_Quantization, 0, wxALL|wxEXPAND, 5);
+    m_Sizer_ImageColors->Add(m_Choice_Dithering, 0, wxALL|wxEXPAND, 5);
 
     m_StaticText_AlphaChoice = new wxStaticText(m_Panel_ImageColors, wxID_ANY, _("Alpha:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_AlphaChoice->Wrap(-1);
@@ -567,7 +567,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_TextCtrl_MaskPosW->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText), NULL, this);
     this->m_TextCtrl_MaskPosH->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText), NULL, this);
     this->m_Checkbox_Mipmaps->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox), NULL, this);
-    this->m_Choice_Quantization->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_Choice_Quantization_OnChoice), NULL, this);
+    this->m_Choice_Dithering->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_Choice_Dithering_OnChoice), NULL, this);
     this->m_RadioBtn_AlphaNone->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton), NULL, this);
     this->m_RadioBtn_AlphaMask->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton), NULL, this);
     this->m_RadioBtn_AlphaColor->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton), NULL, this);
@@ -913,9 +913,9 @@ void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
     event.Skip();
 }
 
-void Frame_ImageBrowser::m_Choice_Quantization_OnChoice(wxCommandEvent& event)
+void Frame_ImageBrowser::m_Choice_Dithering_OnChoice(wxCommandEvent& event)
 {
-    this->m_LoadedAsset->m_Quantization = (P64Img_QuantizationMode)event.GetSelection();
+    this->m_LoadedAsset->m_Dithering = (P64Img_DitheringMode)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }

@@ -65,7 +65,7 @@ class Frame_ImageBrowser : public wxFrame
         wxStaticText* m_StaticText_TilingMode;
         wxStaticText* m_StaticText_MaskPos;
         wxPanel* m_Panel_ImageColors;
-        wxStaticText* m_StaticText_Quantization;
+        wxStaticText* m_StaticText_Dithering;
         wxStaticText* m_StaticText_AlphaChoice;
         wxButton* m_Button_Palette;
 
@@ -98,7 +98,7 @@ class Frame_ImageBrowser : public wxFrame
         void m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event);
         void m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event);
         void m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event);
-        void m_Choice_Quantization_OnChoice(wxCommandEvent& event);
+        void m_Choice_Dithering_OnChoice(wxCommandEvent& event);
         void m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event);
         void m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event);
         void m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event);
@@ -138,7 +138,7 @@ class Frame_ImageBrowser : public wxFrame
         wxTextCtrl* m_TextCtrl_MaskPosW;
         wxTextCtrl* m_TextCtrl_MaskPosH;
         wxCheckBox* m_Checkbox_Mipmaps;
-        wxChoice* m_Choice_Quantization;
+        wxChoice* m_Choice_Dithering;
         wxRadioButton* m_RadioBtn_AlphaNone;
         wxRadioButton* m_RadioBtn_AlphaMask;
         wxRadioButton* m_RadioBtn_AlphaColor;
