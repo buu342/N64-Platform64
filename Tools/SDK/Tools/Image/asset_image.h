@@ -66,9 +66,10 @@ typedef enum {
 class P64Asset_Image
 {
     private:
-        void ReduceTexel(uint8_t* rgb, uint8_t* a);
-        void Dither_Ordered(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h);
-        void Dither_FloydSteinberg(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h);
+        void ReduceTexel(uint8_t* rgb);
+        void ReduceAlpha(uint8_t* a);
+        void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
+        void Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
 
     public:
         wxFileName            m_SourcePath;

@@ -63,9 +63,6 @@
     <ClInclude Include="Resources\Icons\Icon_ViewGrid.h">
       <Filter>Resources\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Icons\Icon_ViewList.h">
-      <Filter>Resources\Icons</Filter>
-    </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_Search.h">
       <Filter>Resources\Icons</Filter>
     </ClInclude>

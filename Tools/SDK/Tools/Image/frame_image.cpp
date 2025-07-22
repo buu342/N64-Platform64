@@ -467,7 +467,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_AlphaColor = new wxRadioButton(m_Panel_ImageColors, wxID_ANY, _("Remove color:"), wxDefaultPosition, wxDefaultSize, 0);
-    m_RadioBtn_AlphaColor->SetToolTip(_("Treat a specific color in the image as the alpha color"));
+    m_RadioBtn_AlphaColor->SetToolTip(_("Treat a specific color in the unmodified image as the alpha color"));
 
     m_Sizer_ImageColors->Add(m_RadioBtn_AlphaColor, 0, wxALL, 5);
 

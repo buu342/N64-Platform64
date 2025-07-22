@@ -36,8 +36,6 @@
     <ClInclude Include="Resources\Icons\Icon_Texture.h" />
     <ClInclude Include="Resources\Icons\Icon_Save.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewGrid.h" />
-    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
-    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
     <ClInclude Include="Resources\Icons\Icon_Palette.h" />
     <ClInclude Include="Resources\Icons\Icon_Pipette.h" />
     <ClInclude Include="Resources\Icons\Icon_ToggleAlpha.h" />

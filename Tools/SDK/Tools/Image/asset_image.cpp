@@ -123,7 +123,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     return asset;
 }
 
-void P64Asset_Image::ReduceTexel(uint8_t* rgb, uint8_t* a)
+void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 {
     switch (this->m_ImageFormat)
     {
@@ -133,15 +133,36 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb, uint8_t* a)
             rgb[0] = rgb[0] >> 3 << 3;
             rgb[1] = rgb[1] >> 3 << 3;
             rgb[2] = rgb[2] >> 3 << 3;
-            if (a != NULL)
-                (*a) = ((*a) > 128) ? 255 : 0;
             break;
         default:
             break;
     }
 }
 
-void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h)
+void P64Asset_Image::ReduceAlpha(uint8_t* a)
+{
+    if (a != NULL)
+        return;
+    switch (this->m_ImageFormat)
+    {
+        case FMT_IA16:
+        case FMT_RGBA32:
+            break;
+        case FMT_RGBA16:
+        case FMT_CI8:
+        case FMT_CI4:
+        case FMT_IA4:
+            (*a) = ((*a) > 128) ? 255 : 0;
+            break;
+        case FMT_I8:
+        case FMT_I4:
+            (*a) = 255;
+        case FMT_IA8:
+            (*a) = (*a) >> 4 << 4;
+    }
+}
+
+void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h)
 {
     // Taken from https://stackoverflow.com/a/17438757
     const uint8_t dither_treshold_r[64] = {
@@ -182,7 +203,7 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint8_t* a, uint32_t i, uint32
     rgb[(i*3)+2] = std::min(rgb[(i*3)+2] + dither_treshold_r[tresshold_id], 255);
 }
 
-void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint8_t* a, uint32_t i, uint32_t w, uint32_t h)
+void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h)
 {
     // Make a copy of the original colors before we bit-crush it
     uint32_t original_r = rgb[(i*3)+0];
@@ -190,7 +211,7 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint8_t* a, uint32_t i,
     uint32_t original_b = rgb[(i*3)+2];
 
     // Get the reduced color value
-    this->ReduceTexel(&rgb[i*3], NULL);
+    this->ReduceTexel(&rgb[i*3]);
 
     // Grab the bit-crushed color and then calculate the error
     uint32_t transformed_r = rgb[(i*3)+0];
@@ -297,16 +318,18 @@ void P64Asset_Image::RegenerateFinal()
 
     // Generate Mipmaps
 
-    // Perform bit reduction + dithering on the RGBA values
+    // Perform bit reduction + dithering on the RGB values
     for (uint32_t i=0; i<rawwidth*rawheight; i++)
     {
         switch (this->m_Dithering)
         {
             case DITHERING_NONE: break;
-            case DITHERING_ORDERED: this->Dither_Ordered(base_rgb, base_alpha,i, rawwidth, rawheight); break;
-            case DITHERING_FLOYDSTEINBERG: this->Dither_FloydSteinberg(base_rgb, base_alpha,i, rawwidth, rawheight); break;
+            case DITHERING_ORDERED: this->Dither_Ordered(base_rgb, i, rawwidth, rawheight); break;
+            case DITHERING_FLOYDSTEINBERG: this->Dither_FloydSteinberg(base_rgb, i, rawwidth, rawheight); break;
         }
-        this->ReduceTexel(&base_rgb[(i*3)], (base_alpha != NULL) ? (&base_alpha[i]) : (NULL));
+        this->ReduceTexel(&base_rgb[(i*3)]);
+        if (base_alpha != NULL)
+            this->ReduceAlpha(&base_alpha[i]);
     }
     
     // Generate the final texels
