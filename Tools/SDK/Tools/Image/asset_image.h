@@ -99,4 +99,6 @@ class P64Asset_Image
         void RegenerateFinal();
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
+        wxPoint CalculateImageSize();
+        uint32_t CalculateTexelCount();
 };

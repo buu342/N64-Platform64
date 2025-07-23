@@ -123,6 +123,65 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     return asset;
 }
 
+static uint32_t nearestpow2(uint32_t num)
+{
+    // Taken from https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
+    num--;
+    num |= num >> 1;
+    num |= num >> 2;
+    num |= num >> 4;
+    num |= num >> 8;
+    num |= num >> 16;
+    num++;
+    return num;
+}
+
+wxPoint P64Asset_Image::CalculateImageSize()
+{
+    uint32_t w, h;
+    if (!this->m_Image.IsOk())
+        return wxPoint(0, 0);
+
+    w = this->m_Image.GetWidth();
+    h = this->m_Image.GetHeight();
+    switch (this->m_ResizeMode)
+    {
+        case RESIZETYPE_NONE:
+            break;
+        case RESIZETYPE_POWER2:
+            w = nearestpow2(w);
+            h = nearestpow2(h);
+            break;
+        case RESIZETYPE_CUSTOM:
+            w = this->m_CustomSize.x;
+            h = this->m_CustomSize.y;
+            break;
+    }
+
+    // In 4-bit modes, there must be an even number of column pixels
+    if ((this->m_ImageFormat == FMT_IA4 || this->m_ImageFormat == FMT_CI4) && (w%2 == 1))
+        w++;
+    return wxPoint(w, h);
+}
+
+uint32_t P64Asset_Image::CalculateTexelCount()
+{
+    wxPoint size = this->CalculateImageSize();
+    switch (this->m_ImageFormat)
+    {
+        case FMT_RGBA32: return size.x * size.y * 4;
+        case FMT_RGBA16: return size.x * size.y * 2;
+        case FMT_IA16:   return size.x * size.y * 2;
+        case FMT_IA8:    return size.x * size.y;
+        case FMT_IA4:    return ceilf(((float)size.x)/2) * size.y;
+        case FMT_I8:     return size.x * size.y;
+        case FMT_I4:     return ceilf(((float)size.x)/2) * size.y;
+        case FMT_CI8:    return (size.x * size.y * 2) + 2048;
+        case FMT_CI4:    return (ceilf(((float)size.x)/2) * size.y * 2) + 2048;
+    }
+    return 0; // Shouldn't happen
+}
+
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 {
     switch (this->m_ImageFormat)
