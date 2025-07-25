@@ -12,7 +12,7 @@ P64Asset_Image::P64Asset_Image()
 {
     this->m_SourcePath = "";
     this->m_ResizeMode = RESIZETYPE_NONE;
-    this->m_CustomSize = wxPoint(0, 0);
+    this->m_CustomSize = wxSize(0, 0);
     this->m_Alignment = RESIZEALIGN_CENTER;
     this->m_ResizeFill = RESIZEFILL_INVISIBLE;
     this->m_ImageFormat = FMT_RGBA16;
@@ -25,7 +25,7 @@ P64Asset_Image::P64Asset_Image()
     this->m_AlphaColor = wxColor(0, 0, 0);
     this->m_AlphaPath = "";
 
-    this->m_FinalSize = wxPoint(0, 0);
+    this->m_FinalSize = wxSize(0, 0);
     this->m_FinalTexels = NULL;
 
     this->m_Image = wxImage();
@@ -136,11 +136,11 @@ static uint32_t nearestpow2(uint32_t num)
     return num;
 }
 
-wxPoint P64Asset_Image::CalculateImageSize()
+wxSize P64Asset_Image::CalculateImageSize()
 {
     uint32_t w, h;
     if (!this->m_Image.IsOk())
-        return wxPoint(0, 0);
+        return wxSize(1, 1);
 
     w = this->m_Image.GetWidth();
     h = this->m_Image.GetHeight();
@@ -157,16 +157,20 @@ wxPoint P64Asset_Image::CalculateImageSize()
             h = this->m_CustomSize.y;
             break;
     }
+    if (w <= 0)
+        w = 1;
+    if (h <= 0)
+        h = 1;
 
     // In 4-bit modes, there must be an even number of column pixels
     if ((this->m_ImageFormat == FMT_IA4 || this->m_ImageFormat == FMT_CI4) && (w%2 == 1))
         w++;
-    return wxPoint(w, h);
+    return wxSize(w, h);
 }
 
 uint32_t P64Asset_Image::CalculateTexelCount()
 {
-    wxPoint size = this->CalculateImageSize();
+    wxSize size = this->CalculateImageSize();
     switch (this->m_ImageFormat)
     {
         case FMT_RGBA32: return size.x * size.y * 4;
@@ -180,6 +184,91 @@ uint32_t P64Asset_Image::CalculateTexelCount()
         case FMT_CI4:    return (ceilf(((float)size.x)/2) * size.y * 2) + 2048;
     }
     return 0; // Shouldn't happen
+}
+
+static wxPoint SamplePoint_Clamp(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    return wxPoint(
+        std::min(srcend.x-1, std::max(srcstart.x, samplepoint.x)), 
+        std::min(srcend.y-1, std::max(srcstart.y, samplepoint.y))
+    );
+}
+
+static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    int32_t rx = samplepoint.x - srcstart.x;
+    int32_t ry = samplepoint.y - srcstart.y;
+    int32_t w = (srcend.x - srcstart.x);
+    int32_t h = (srcend.y - srcstart.y);
+    return wxPoint(
+        srcstart.x + ((rx % w + w) % w),
+        srcstart.y + ((ry % h + h) % h)
+    );
+}
+
+void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h)
+{
+    if (*srcptr == NULL)
+        return;
+    if (this->m_ResizeMode != RESIZETYPE_NONE)
+    {
+        wxPoint anchor;
+        wxSize newsize = this->CalculateImageSize();
+        wxImage imgcopy = wxImage(w, h, *srcptr, NULL, true);
+
+        // Figure out the alignment
+        switch (this->m_Alignment)
+        {
+            case RESIZEALIGN_TOPLEFT:      anchor = wxPoint(0,                                   0); break;
+            case RESIZEALIGN_TOPMIDDLE:    anchor = wxPoint((((float)newsize.x)/2-((float)w)/2), 0); break;
+            case RESIZEALIGN_TOPRIGHT:     anchor = wxPoint(newsize.x-w,                         0); break;
+            case RESIZEALIGN_MIDDLELEFT:   anchor = wxPoint(0,                                   (((float)newsize.y)/2-((float)h)/2)); break;
+            case RESIZEALIGN_CENTER:       anchor = wxPoint((((float)newsize.x)/2-((float)w)/2), (((float)newsize.y)/2-((float)h)/2)); break;
+            case RESIZEALIGN_MIDDLERIGHT:  anchor = wxPoint(newsize.x-w,                         (((float)newsize.y)/2-((float)h)/2)); break;
+            case RESIZEALIGN_BOTTOMLEFT:   anchor = wxPoint(0,                                   (newsize.y-h)); break;
+            case RESIZEALIGN_BOTTOMMIDDLE: anchor = wxPoint((((float)newsize.x)/2-((float)w)/2), (newsize.y-h)); break;
+            case RESIZEALIGN_BOTTOMRIGHT:  anchor = wxPoint(newsize.x-w,                         (newsize.y-h)); break;
+        }
+        
+        // Resize the image
+        imgcopy.Resize(newsize, anchor, -1, -1, -1);
+        free(*srcptr);
+        *srcptr = (uint8_t*)malloc(sizeof(uint8_t)*newsize.x*newsize.y*depth);
+        if (srcptr == NULL)
+            return;
+        memcpy(*srcptr, imgcopy.GetData(), newsize.x*newsize.y*depth);
+
+        // Check if the image was made bigger so that we can fill in the new space
+        if ((uint32_t)newsize.x > w || (uint32_t)newsize.y > h)
+        {
+            for (int y=0; y<newsize.y; y++)
+            {
+                for (int x=0; x<newsize.x; x++)
+                {
+                    if (x >= anchor.x && x < anchor.x + w && y >= anchor.y && y < anchor.y + h)
+                        continue;//y = anchor.y+h;
+                    wxPoint samplepos;
+                    switch (this->m_ResizeFill)
+                    {
+                        case RESIZEFILL_INVISIBLE: 
+                            for (int d=0; d<depth; d++)
+                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = 0;
+                            break;
+                        case RESIZEFILL_EDGE: 
+                            samplepos = SamplePoint_Clamp(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
+                            for (int d=0; d<depth; d++)
+                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*newsize.x + (samplepos.x*depth + d)]; 
+                            break;
+                        case RESIZEFILL_REPEAT: 
+                            samplepos = SamplePoint_Repeat(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
+                            for (int d=0; d<depth; d++)
+                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*newsize.x + (samplepos.x*depth + d)];
+                            break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
@@ -200,7 +289,7 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 
 void P64Asset_Image::ReduceAlpha(uint8_t* a)
 {
-    if (a != NULL)
+    if (a == NULL)
         return;
     switch (this->m_ImageFormat)
     {
@@ -319,36 +408,36 @@ void P64Asset_Image::RegenerateFinal()
 {
     if (!this->m_Image.IsOk())
         return;
-    uint32_t rawwidth = this->m_Image.GetWidth();
-    uint32_t rawheight = this->m_Image.GetHeight();
-    unsigned char* base_alpha = NULL;
-    unsigned char* base_rgb = NULL;
+    wxSize rawsize = wxSize(this->m_Image.GetWidth(), this->m_Image.GetHeight());
+    wxSize newsize;
+    uint8_t* base_alpha = NULL;
+    uint8_t* base_rgb = NULL;
 
     // Get the raw RGB data from the image
-    base_rgb = (unsigned char*)malloc(rawwidth*rawheight*3);
+    base_rgb = (uint8_t*)malloc(rawsize.x*rawsize.y*3);
     if (base_rgb == NULL)
         return;
-    memcpy(base_rgb, this->m_Image.GetData(), rawwidth*rawheight*3);
+    memcpy(base_rgb, this->m_Image.GetData(), rawsize.x*rawsize.y*3);
 
     // Handle alpha
     switch (this->m_AlphaMode)
     {
         case ALPHA_NONE: break;
         case ALPHA_MASK:
-            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
             if (base_alpha != NULL)
             {
                 if (this->m_Image.GetAlpha() != NULL)
-                    memcpy(base_alpha, this->m_Image.GetAlpha(), rawwidth*rawheight);
+                    memcpy(base_alpha, this->m_Image.GetAlpha(), rawsize.x*rawsize.y);
                 else
-                    memset(base_alpha, 255, rawwidth*rawheight);
+                    memset(base_alpha, 255, rawsize.x*rawsize.y);
             }
             break;
         case ALPHA_CUSTOM:
-            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
             if (base_alpha != NULL)
             {
-                for (uint32_t i=0; i<rawwidth*rawheight; i++)
+                for (uint32_t i=0; i<(uint32_t)rawsize.x*rawsize.y; i++)
                 {
                     if (base_rgb[(i*3)+0] == this->m_AlphaColor.GetRed() && base_rgb[(i*3)+1] == this->m_AlphaColor.GetGreen() && base_rgb[(i*3)+2] == this->m_AlphaColor.GetBlue())
                         base_alpha[i] = 0;
@@ -359,32 +448,40 @@ void P64Asset_Image::RegenerateFinal()
             break;
         case ALPHA_EXTERNALMASK:
             // TODO: External mask must have the same size as the source image (before any resizing and masking)
-            base_alpha = (unsigned char*)malloc(rawwidth*rawheight);
+            base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
             if (base_alpha != NULL)
             {
                 if (this->m_ImageAlpha.IsOk())
                 {
                     wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
-                    memcpy(base_alpha, bw.GetData(), rawwidth*rawheight);
+                    memcpy(base_alpha, bw.GetData(), rawsize.x*rawsize.y);
                 }
                 else
-                    memset(base_alpha, 255, rawwidth*rawheight);
+                    memset(base_alpha, 255, rawsize.x*rawsize.y);
             }
             break;
     }
 
     // Perform scaling on the image
+    newsize = this->CalculateImageSize();
+    this->ResizeAndMask(&base_rgb, 3, rawsize.x, rawsize.y);
+    if (base_rgb == NULL)
+    {
+        free(base_alpha);
+        return;
+    }
+    //this->ResizeAndMask(&base_alpha, 1, rawsize.x, rawsize.y);
 
     // Generate Mipmaps
 
     // Perform bit reduction + dithering on the RGB values
-    for (uint32_t i=0; i<rawwidth*rawheight; i++)
+    for (uint32_t i=0; i<(uint32_t)newsize.x*newsize.y; i++)
     {
         switch (this->m_Dithering)
         {
             case DITHERING_NONE: break;
-            case DITHERING_ORDERED: this->Dither_Ordered(base_rgb, i, rawwidth, rawheight); break;
-            case DITHERING_FLOYDSTEINBERG: this->Dither_FloydSteinberg(base_rgb, i, rawwidth, rawheight); break;
+            case DITHERING_ORDERED: this->Dither_Ordered(base_rgb, i, newsize.x, newsize.y); break;
+            case DITHERING_FLOYDSTEINBERG: this->Dither_FloydSteinberg(base_rgb, i, newsize.x, newsize.y); break;
         }
         this->ReduceTexel(&base_rgb[(i*3)]);
         if (base_alpha != NULL)
@@ -394,6 +491,6 @@ void P64Asset_Image::RegenerateFinal()
     // Generate the final texels
 
     // Generate some images for wxWidgets preview
-    this->m_ImageFinal = wxImage(rawwidth, rawheight, base_rgb, base_alpha, false);
+    this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
     this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
 }

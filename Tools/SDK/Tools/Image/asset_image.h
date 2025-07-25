@@ -66,6 +66,8 @@ typedef enum {
 class P64Asset_Image
 {
     private:
+        wxSize CalculateImageSize();
+        void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
@@ -74,7 +76,7 @@ class P64Asset_Image
     public:
         wxFileName            m_SourcePath;
         P64Img_Resize         m_ResizeMode;
-        wxPoint               m_CustomSize;
+        wxSize                m_CustomSize;
         P64Img_Alignment      m_Alignment;
         P64Img_Fill           m_ResizeFill;
         P64Img_Format         m_ImageFormat;
@@ -86,7 +88,7 @@ class P64Asset_Image
         P64Img_AlphaMode      m_AlphaMode;
         wxColor               m_AlphaColor;
         wxFileName            m_AlphaPath;
-        wxPoint               m_FinalSize;
+        wxSize                m_FinalSize;
         uint8_t*              m_FinalTexels;
 
         wxImage               m_Image;
@@ -99,6 +101,5 @@ class P64Asset_Image
         void RegenerateFinal();
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
-        wxPoint CalculateImageSize();
         uint32_t CalculateTexelCount();
 };
