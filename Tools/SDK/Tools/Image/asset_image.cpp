@@ -305,8 +305,10 @@ void P64Asset_Image::ReduceAlpha(uint8_t* a)
         case FMT_I8:
         case FMT_I4:
             (*a) = 255;
+            break;
         case FMT_IA8:
             (*a) = (*a) >> 4 << 4;
+            break;
     }
 }
 
