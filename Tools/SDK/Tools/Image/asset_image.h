@@ -67,7 +67,7 @@ class P64Asset_Image
 {
     private:
         wxSize CalculateImageSize();
-        void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
+        void ResizeAndMask(uint8_t** srcptr, bool isalpha, uint32_t w, uint32_t h);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);

@@ -206,15 +206,33 @@ static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samp
     );
 }
 
-void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h)
+void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, bool isalpha, uint32_t w, uint32_t h)
 {
     if (*srcptr == NULL)
         return;
     if (this->m_ResizeMode != RESIZETYPE_NONE)
     {
+        uint8_t depth = (!isalpha) ? 3 : 1; 
         wxPoint anchor;
         wxSize newsize = this->CalculateImageSize();
-        wxImage imgcopy = wxImage(w, h, *srcptr, NULL, true);
+        wxImage imgcopy;
+
+        // Make a wxImage so that transforms can be applied easier
+        // TODO: Ditch the wxImage and just do it by hand, it's not that hard
+        if (isalpha)
+        {
+            uint8_t* alpha_rgb = (uint8_t*)malloc(w*h*3);
+            for (int i=0; i<w*h; i++)
+            {
+                alpha_rgb[i*3+0] = (*srcptr)[i];
+                alpha_rgb[i*3+1] = (*srcptr)[i];
+                alpha_rgb[i*3+2] = (*srcptr)[i];
+            }
+            imgcopy = wxImage(w, h, alpha_rgb, NULL, true);
+            free(alpha_rgb);
+        }
+        else
+            imgcopy = wxImage(w, h, *srcptr, NULL, true);
 
         // Figure out the alignment
         switch (this->m_Alignment)
@@ -236,18 +254,34 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
         *srcptr = (uint8_t*)malloc(sizeof(uint8_t)*newsize.x*newsize.y*depth);
         if (srcptr == NULL)
             return;
-        memcpy(*srcptr, imgcopy.GetData(), newsize.x*newsize.y*depth);
+        if (isalpha)
+        {
+            for (int i=0; i<w*h; i++)
+                (*srcptr)[i] = imgcopy.GetData()[i*3];
+        }
+        else
+            memcpy(*srcptr, imgcopy.GetData(), newsize.x*newsize.y*depth);
 
         // Check if the image was made bigger so that we can fill in the new space
         if ((uint32_t)newsize.x > w || (uint32_t)newsize.y > h)
         {
             for (int y=0; y<newsize.y; y++)
             {
+                if (y >= anchor.y && y < anchor.y + h)
+                {
+                    y = anchor.y+h;
+                    if (y >= newsize.y)
+                        break;
+                }
                 for (int x=0; x<newsize.x; x++)
                 {
-                    if (x >= anchor.x && x < anchor.x + w && y >= anchor.y && y < anchor.y + h)
-                        continue;//y = anchor.y+h;
                     wxPoint samplepos;
+                    if (x >= anchor.x && x < anchor.x + w)
+                    {
+                        x = anchor.x+w;
+                        if (x >= newsize.x)
+                            break;
+                    }
                     switch (this->m_ResizeFill)
                     {
                         case RESIZEFILL_INVISIBLE: 
@@ -325,6 +359,7 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
       2, 6, 1, 7, 3, 5, 0, 8,
       6, 2, 7, 1, 5, 3, 8, 0
     };
+    /* // I originally accidentally left used the red threshold only (copy paste mistake), but after fixing that I found the results to be visually worse, so these will remain commented out for the time being
     const uint8_t dither_treshold_g[64] = {
       1, 3, 2, 2, 3, 1, 2, 2,
       2, 2, 0, 4, 2, 2, 4, 0,
@@ -344,13 +379,14 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
       2, 6, 1, 7, 3, 5, 0, 8,
       7, 1, 5, 3, 8, 0, 6, 2,
       1, 7, 3, 5, 0, 8, 2, 6
-    };
+    };*/
 
     // Perform the dither
     uint8_t tresshold_id = (((i/w) & 7) << 3) + ((i%w) & 7);
     rgb[(i*3)+0] = std::min(rgb[(i*3)+0] + dither_treshold_r[tresshold_id], 255);
     rgb[(i*3)+1] = std::min(rgb[(i*3)+1] + dither_treshold_r[tresshold_id], 255);
     rgb[(i*3)+2] = std::min(rgb[(i*3)+2] + dither_treshold_r[tresshold_id], 255);
+    (void)h;
 }
 
 void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h)
@@ -456,7 +492,8 @@ void P64Asset_Image::RegenerateFinal()
                 if (this->m_ImageAlpha.IsOk())
                 {
                     wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
-                    memcpy(base_alpha, bw.GetData(), rawsize.x*rawsize.y);
+                    for (int i=0; i<rawsize.x*rawsize.y; i++)
+                        base_alpha[i] = bw.GetData()[i*3];
                 }
                 else
                     memset(base_alpha, 255, rawsize.x*rawsize.y);
@@ -464,15 +501,15 @@ void P64Asset_Image::RegenerateFinal()
             break;
     }
 
-    // Perform scaling on the image
+    // Perform scaling on the image and its alpha
     newsize = this->CalculateImageSize();
-    this->ResizeAndMask(&base_rgb, 3, rawsize.x, rawsize.y);
+    this->ResizeAndMask(&base_rgb, false, rawsize.x, rawsize.y);
     if (base_rgb == NULL)
     {
         free(base_alpha);
         return;
     }
-    //this->ResizeAndMask(&base_alpha, 1, rawsize.x, rawsize.y);
+    this->ResizeAndMask(&base_alpha, true, rawsize.x, rawsize.y);
 
     // Generate Mipmaps
 
