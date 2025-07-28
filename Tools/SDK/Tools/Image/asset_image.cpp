@@ -206,33 +206,15 @@ static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samp
     );
 }
 
-void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, bool isalpha, uint32_t w, uint32_t h)
+void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h)
 {
     if (*srcptr == NULL)
         return;
     if (this->m_ResizeMode != RESIZETYPE_NONE)
     {
-        uint8_t depth = (!isalpha) ? 3 : 1; 
         wxPoint anchor;
         wxSize newsize = this->CalculateImageSize();
-        wxImage imgcopy;
-
-        // Make a wxImage so that transforms can be applied easier
-        // TODO: Ditch the wxImage and just do it by hand, it's not that hard
-        if (isalpha)
-        {
-            uint8_t* alpha_rgb = (uint8_t*)malloc(w*h*3);
-            for (int i=0; i<w*h; i++)
-            {
-                alpha_rgb[i*3+0] = (*srcptr)[i];
-                alpha_rgb[i*3+1] = (*srcptr)[i];
-                alpha_rgb[i*3+2] = (*srcptr)[i];
-            }
-            imgcopy = wxImage(w, h, alpha_rgb, NULL, true);
-            free(alpha_rgb);
-        }
-        else
-            imgcopy = wxImage(w, h, *srcptr, NULL, true);
+        uint8_t* newimg;
 
         // Figure out the alignment
         switch (this->m_Alignment)
@@ -249,60 +231,48 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, bool isalpha, uint32_t w, u
         }
         
         // Resize the image
-        imgcopy.Resize(newsize, anchor, -1, -1, -1);
-        free(*srcptr);
-        *srcptr = (uint8_t*)malloc(sizeof(uint8_t)*newsize.x*newsize.y*depth);
-        if (srcptr == NULL)
+        newimg = (uint8_t*)malloc(newsize.x*newsize.y*depth*sizeof(uint8_t));
+        if (newimg== NULL)
             return;
-        if (isalpha)
-        {
-            for (int i=0; i<w*h; i++)
-                (*srcptr)[i] = imgcopy.GetData()[i*3];
-        }
-        else
-            memcpy(*srcptr, imgcopy.GetData(), newsize.x*newsize.y*depth);
 
-        // Check if the image was made bigger so that we can fill in the new space
-        if ((uint32_t)newsize.x > w || (uint32_t)newsize.y > h)
+        for (int y=0; y<newsize.y; y++)
         {
-            for (int y=0; y<newsize.y; y++)
+            for (int x=0; x<newsize.x; x++)
             {
-                if (y >= anchor.y && y < anchor.y + h)
+                wxPoint samplepos;
+                switch (this->m_ResizeFill)
                 {
-                    y = anchor.y+h;
-                    if (y >= newsize.y)
+                    case RESIZEFILL_INVISIBLE:
+                        samplepos = wxPoint(x - anchor.x, y - anchor.y);
+                        for (int d=0; d<depth; d++)
+                        {
+                            if (samplepos.x >= 0 && samplepos.x < w && samplepos.y >= 0 && samplepos.y < h)
+                                newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)];
+                            else
+                                newimg[y*depth*newsize.x + (x*depth + d)] = 0;
+                        }
                         break;
-                }
-                for (int x=0; x<newsize.x; x++)
-                {
-                    wxPoint samplepos;
-                    if (x >= anchor.x && x < anchor.x + w)
-                    {
-                        x = anchor.x+w;
-                        if (x >= newsize.x)
-                            break;
-                    }
-                    switch (this->m_ResizeFill)
-                    {
-                        case RESIZEFILL_INVISIBLE: 
-                            for (int d=0; d<depth; d++)
-                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = 0;
-                            break;
-                        case RESIZEFILL_EDGE: 
-                            samplepos = SamplePoint_Clamp(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
-                            for (int d=0; d<depth; d++)
-                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*newsize.x + (samplepos.x*depth + d)]; 
-                            break;
-                        case RESIZEFILL_REPEAT: 
-                            samplepos = SamplePoint_Repeat(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
-                            for (int d=0; d<depth; d++)
-                                (*srcptr)[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*newsize.x + (samplepos.x*depth + d)];
-                            break;
-                    }
+                    case RESIZEFILL_EDGE: 
+                        samplepos = SamplePoint_Clamp(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
+                        samplepos -= anchor;
+                        for (int d=0; d<depth; d++)
+                            newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)]; 
+                        break;
+                    case RESIZEFILL_REPEAT: 
+                        samplepos = SamplePoint_Repeat(anchor, anchor+wxPoint(w, h), wxPoint(x, y));
+                        samplepos -= anchor;
+                        for (int d=0; d<depth; d++)
+                            newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)];
+                        break;
                 }
             }
         }
+        
+        // Finish
+        free(*srcptr);
+        *srcptr = newimg;
     }
+
 }
 
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
@@ -446,7 +416,7 @@ void P64Asset_Image::RegenerateFinal()
 {
     if (!this->m_Image.IsOk())
         return;
-    wxSize rawsize = wxSize(this->m_Image.GetWidth(), this->m_Image.GetHeight());
+    wxSize rawsize = this->m_Image.GetSize();
     wxSize newsize;
     uint8_t* base_alpha = NULL;
     uint8_t* base_rgb = NULL;
@@ -485,31 +455,28 @@ void P64Asset_Image::RegenerateFinal()
             }
             break;
         case ALPHA_EXTERNALMASK:
-            // TODO: External mask must have the same size as the source image (before any resizing and masking)
-            base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
-            if (base_alpha != NULL)
+            if (this->m_Image.GetSize() == this->m_ImageAlpha.GetSize())
             {
-                if (this->m_ImageAlpha.IsOk())
+                base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
+                if (base_alpha != NULL)
                 {
-                    wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
-                    for (int i=0; i<rawsize.x*rawsize.y; i++)
-                        base_alpha[i] = bw.GetData()[i*3];
+                    if (this->m_ImageAlpha.IsOk())
+                    {
+                        wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
+                        for (int i=0; i<rawsize.x*rawsize.y; i++)
+                            base_alpha[i] = bw.GetData()[i*3];
+                    }
+                    else
+                        memset(base_alpha, 255, rawsize.x*rawsize.y);
                 }
-                else
-                    memset(base_alpha, 255, rawsize.x*rawsize.y);
             }
             break;
     }
 
     // Perform scaling on the image and its alpha
     newsize = this->CalculateImageSize();
-    this->ResizeAndMask(&base_rgb, false, rawsize.x, rawsize.y);
-    if (base_rgb == NULL)
-    {
-        free(base_alpha);
-        return;
-    }
-    this->ResizeAndMask(&base_alpha, true, rawsize.x, rawsize.y);
+    this->ResizeAndMask(&base_rgb, 3, rawsize.x, rawsize.y);
+    this->ResizeAndMask(&base_alpha, 1, rawsize.x, rawsize.y);
 
     // Generate Mipmaps
 
