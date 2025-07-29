@@ -206,6 +206,23 @@ static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samp
     );
 }
 
+static wxPoint SamplePoint_Mirror(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    int32_t rx = samplepoint.x - srcstart.x;
+    int32_t ry = samplepoint.y - srcstart.y;
+    int32_t w = (srcend.x - srcstart.x);
+    int32_t h = (srcend.y - srcstart.y);
+    wxPoint ret = wxPoint(
+        ((rx % w + w) % w),
+        ((ry % h + h) % h)
+    );
+    if (((int)abs(floorf((float)rx/w))) % 2 == 1)
+        ret.x = w - ret.x - 1;
+    if (((int)abs(floorf((float)ry/h))) % 2 == 1)
+        ret.y = h - ret.y - 1;
+    return srcstart + ret;
+}
+
 void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h)
 {
     if (*srcptr == NULL)
@@ -263,6 +280,12 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
                         samplepos -= anchor;
                         for (int d=0; d<depth; d++)
                             newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)];
+                        break;
+                    case RESIZEFILL_MIRROR:
+                        samplepos = SamplePoint_Mirror(anchor, anchor + wxPoint(w, h), wxPoint(x, y));
+                        samplepos -= anchor;
+                        for (int d = 0; d < depth; d++)
+                            newimg[y * depth * newsize.x + (x * depth + d)] = (*srcptr)[samplepos.y * depth * w + (samplepos.x * depth + d)];
                         break;
                 }
             }

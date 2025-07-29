@@ -334,7 +334,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_StaticText_ResizeFill->Wrap(-1);
     m_Sizer_ImageData->Add(m_StaticText_ResizeFill, 0, wxALL, 5);
 
-    wxString m_Choice_ResizeFillChoices[] = { _("Invisible color"), _("Edge colors"), _("Repeated texture") };
+    wxString m_Choice_ResizeFillChoices[] = {_("Invisible color"), _("Edge colors"), _("Repeated texture"), _("Mirrored texture")};
     int m_Choice_ResizeFillNChoices = sizeof(m_Choice_ResizeFillChoices) / sizeof(wxString);
     m_Choice_ResizeFill = new wxChoice(m_Panel_ImageData, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_ResizeFillNChoices, m_Choice_ResizeFillChoices, 0);
     m_Choice_ResizeFill->SetSelection(0);

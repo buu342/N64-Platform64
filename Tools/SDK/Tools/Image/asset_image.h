@@ -29,6 +29,7 @@ typedef enum {
     RESIZEFILL_INVISIBLE = 0,
     RESIZEFILL_EDGE,
     RESIZEFILL_REPEAT,
+    RESIZEFILL_MIRROR,
 } P64Img_Fill;
 
 typedef enum {
