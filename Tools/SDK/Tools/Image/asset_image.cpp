@@ -263,7 +263,7 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
                         samplepos = wxPoint(x - anchor.x, y - anchor.y);
                         for (int d=0; d<depth; d++)
                         {
-                            if (samplepos.x >= 0 && samplepos.x < w && samplepos.y >= 0 && samplepos.y < h)
+                            if (samplepos.x >= 0 && samplepos.x < ((int)w) && samplepos.y >= 0 && samplepos.y < ((int)h))
                                 newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)];
                             else
                                 newimg[y*depth*newsize.x + (x*depth + d)] = 0;
@@ -435,7 +435,7 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w,
     }
 }
 
-void P64Asset_Image::RegenerateFinal()
+void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter)
 {
     if (!this->m_Image.IsOk())
         return;
@@ -520,6 +520,11 @@ void P64Asset_Image::RegenerateFinal()
     // Generate the final texels
 
     // Generate some images for wxWidgets preview
+    if (bitmap_alpha)
+    {
+        free(base_alpha);
+        base_alpha = NULL;
+    }
     this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
     this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
 }

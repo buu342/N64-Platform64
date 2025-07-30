@@ -99,7 +99,7 @@ class P64Asset_Image
 
         P64Asset_Image();
         ~P64Asset_Image();
-        void RegenerateFinal();
+        void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false);
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
         uint32_t CalculateTexelCount();

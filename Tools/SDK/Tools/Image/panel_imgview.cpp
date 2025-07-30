@@ -11,14 +11,23 @@
 Panel_ImgView::Panel_ImgView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxScrolledWindowStyle) : wxScrolledWindow(parent, id, pos, size, style)
 {
     this->m_LoadedAsset = NULL;
+    this->SetDefaultSettings();
     this->m_Bitmap = wxBitmap();
     this->Connect(wxEVT_PAINT, wxPaintEventHandler(Panel_ImgView::OnPaint), NULL, this);
-    this->ZoomReset();
 }
 
 Panel_ImgView::~Panel_ImgView()
 {
 
+}
+
+void Panel_ImgView::SetDefaultSettings()
+{
+    this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
+    this->m_PreviewSettings.showalpha = true;
+    this->m_PreviewSettings.showfilter = false;
+    this->m_PreviewSettings.showtiling = false;
+    this->m_PreviewSettings.showstats = false;
 }
 
 void Panel_ImgView::SetAsset(P64Asset_Image* asset)
@@ -29,19 +38,19 @@ void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 
 void Panel_ImgView::ZoomIn()
 {
-    this->m_Zoom = wxRealPoint(this->m_Zoom.x*ZOOM_SPEED, this->m_Zoom.y*ZOOM_SPEED);
+    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, this->m_PreviewSettings.zoom.y*ZOOM_SPEED);
     this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomOut()
 {
-    this->m_Zoom = wxRealPoint(this->m_Zoom.x/ZOOM_SPEED, this->m_Zoom.y/ZOOM_SPEED);
+    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
     this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomReset()
 {
-    this->m_Zoom = wxRealPoint(1.0, 1.0);
+    this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
     this->RefreshDrawing();
 }
 
@@ -58,7 +67,7 @@ void Panel_ImgView::RefreshDrawing()
 {
     if (this->m_LoadedAsset == NULL || !this->m_Bitmap.IsOk())
         return;
-    this->SetVirtualSize(this->m_Bitmap.GetWidth()*this->m_Zoom.x, this->m_Bitmap.GetHeight()*this->m_Zoom.y);
+    this->SetVirtualSize(this->m_Bitmap.GetWidth()*this->m_PreviewSettings.zoom.x, this->m_Bitmap.GetHeight()*this->m_PreviewSettings.zoom.y);
     this->Layout();
     this->Refresh();
 }
@@ -68,12 +77,13 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
     int x, y;
     int screen_w, screen_h;
     int img_w, img_h;
-
+    wxRealPoint zoom = this->m_PreviewSettings.zoom;
+    
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
 
-    dc.SetUserScale(this->m_Zoom.x, this->m_Zoom.y);
+    dc.SetUserScale(zoom.x, zoom.y);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME)));
     dc.Clear();
 
@@ -84,23 +94,23 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
 
         // Calculate its size and position on the DC
         dc.GetSize(&screen_w, &screen_h);
-        x = (screen_w/this->m_Zoom.x)/2;
-        y = (screen_h/this->m_Zoom.y)/2;
-        img_w = this->m_Bitmap.GetWidth()*this->m_Zoom.x;
-        img_h = this->m_Bitmap.GetHeight()*this->m_Zoom.y;
+        x = (screen_w/zoom.x)/2;
+        y = (screen_h/zoom.y)/2;
+        img_w = this->m_Bitmap.GetWidth()*zoom.x;
+        img_h = this->m_Bitmap.GetHeight()*zoom.y;
         if (img_w > screen_w)
-            x = ((img_w/this->m_Zoom.x)/2);
+            x = ((img_w/zoom.x)/2);
         if (img_h > screen_h)
-            y = ((img_h/this->m_Zoom.y)/2);
-        xstart = x - ((img_w/this->m_Zoom.x)/2);
-        ystart = y - ((img_h/this->m_Zoom.y)/2);
+            y = ((img_h/zoom.y)/2);
+        xstart = x - ((img_w/zoom.x)/2);
+        ystart = y - ((img_h/zoom.y)/2);
 
         // Draw the transparent background
         i = 0;
         dc.SetUserScale(1, 1);
         dc.SetPen(*wxTRANSPARENT_PEN);
         dc.SetBrush(wxBrush(wxColor(255, 255, 255, 255)));
-        dc.DrawRectangle(wxRect(xstart*this->m_Zoom.x, ystart*this->m_Zoom.y, img_w, img_h));
+        dc.DrawRectangle(wxRect(xstart*zoom.x, ystart*zoom.y, img_w, img_h));
         dc.SetBrush(wxBrush(wxColor(192, 192, 192, 255)));
         while (true)
         {
@@ -113,7 +123,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             const int ycheck_curr = (i/xcheck_total);
             float w = (xcheck_curr+1 < xcheck_total) ? GRIDSIZE : GRIDSIZE*(1-xcheck_total_frac);
             float h = (ycheck_curr+1 < ycheck_total) ? GRIDSIZE : GRIDSIZE*(1-ycheck_total_frac);
-            dc.DrawRectangle(wxRect(xstart*this->m_Zoom.x + xcheck_curr*GRIDSIZE, ystart*this->m_Zoom.y + ycheck_curr*GRIDSIZE, w, h));
+            dc.DrawRectangle(wxRect(xstart*zoom.x + xcheck_curr*GRIDSIZE, ystart*zoom.y + ycheck_curr*GRIDSIZE, w, h));
             i += 2;
             if (xcheck_curr+2 >= xcheck_total)
             {
@@ -126,8 +136,8 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         }
 
         // Draw the texture
-        dc.SetUserScale(this->m_Zoom.x, this->m_Zoom.y);
-        dc.DrawBitmap(this->m_Bitmap, x - ((img_w/this->m_Zoom.x)/2), y - ((img_h/this->m_Zoom.y)/2), false);
+        dc.SetUserScale(zoom.x, zoom.y);
+        dc.DrawBitmap(this->m_Bitmap, x - ((img_w/zoom.x)/2), y - ((img_h/zoom.y)/2), false);
     }
     event.Skip();
 }
