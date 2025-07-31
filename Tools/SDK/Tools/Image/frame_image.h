@@ -69,6 +69,7 @@ class Frame_ImageBrowser : public wxFrame
         wxStaticText* m_StaticText_AlphaChoice;
         wxButton* m_Button_Palette;
 
+        void OnClose(wxCloseEvent& event);
         void m_Panel_Edit_OnChar(wxKeyEvent& event);
         void m_Splitter_Vertical_DClick(wxSplitterEvent& event);
         void m_Splitter_Horizontal_DClick(wxSplitterEvent& event);

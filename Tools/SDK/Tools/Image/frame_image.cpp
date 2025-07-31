@@ -538,6 +538,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->Centre(wxBOTH);
 
     // Connect Events
+    this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(Frame_ImageBrowser::OnClose));
     this->m_Splitter_Vertical->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Vertical_DClick), NULL, this);
     this->m_Splitter_Horizontal->Connect(wxEVT_COMMAND_SPLITTER_DOUBLECLICKED, wxSplitterEventHandler(Frame_ImageBrowser::m_Splitter_Horizontal_DClick), NULL, this);
     this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_ImageBrowser::m_Panel_Edit_OnChar), NULL, this);
@@ -610,6 +611,19 @@ void Frame_ImageBrowser::SaveChanges()
     file.Close();
     this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
     this->m_AssetModified = false;
+}
+
+void Frame_ImageBrowser::OnClose(wxCloseEvent& event)
+{
+    if (event.CanVeto() && m_AssetModified)
+    {
+        if (wxMessageBox("Unsaved changes will be lost. Continue?", "Warning", wxICON_QUESTION | wxYES_NO) != wxYES)
+        {
+            event.Veto();
+            return;
+        }
+    }
+    event.Skip();
 }
 
 void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
