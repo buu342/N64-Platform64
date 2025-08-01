@@ -76,7 +76,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
     if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
         curasset->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
-    curasset->RegenerateFinal(realframe->m_ScrolledWin_Preview->GetAlphaDisplay());
+    curasset->RegenerateFinal(realframe->m_ScrolledWin_Preview->GetAlphaDisplay(), realframe->m_ScrolledWin_Preview->GetFilterDisplay(), realframe->m_ScrolledWin_Preview->GetZoom());
     realframe->m_ScrolledWin_Preview->SetAsset(curasset);
 
     // Activate the window
@@ -589,7 +589,7 @@ void Frame_ImageBrowser::MarkAssetModified()
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
     if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay());
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
@@ -723,7 +723,7 @@ void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleAlphaDisplay();
     if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay());
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
@@ -735,6 +735,10 @@ void Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
+    this->m_ScrolledWin_Preview->ToggleFilterDisplay();
+    if (this->m_LoadedAsset != NULL)
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
 

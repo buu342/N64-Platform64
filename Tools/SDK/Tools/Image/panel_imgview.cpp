@@ -53,6 +53,10 @@ void Panel_ImgView::ZoomReset()
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
     this->RefreshDrawing();
 }
+wxRealPoint Panel_ImgView::GetZoom()
+{
+    return this->m_PreviewSettings.zoom;
+}
 
 void Panel_ImgView::ToggleAlphaDisplay()
 {
@@ -62,6 +66,16 @@ void Panel_ImgView::ToggleAlphaDisplay()
 bool Panel_ImgView::GetAlphaDisplay()
 {
     return this->m_PreviewSettings.showalpha;
+}
+
+void Panel_ImgView::ToggleFilterDisplay()
+{
+    this->m_PreviewSettings.showfilter = !this->m_PreviewSettings.showfilter;
+}
+
+bool Panel_ImgView::GetFilterDisplay()
+{
+    return this->m_PreviewSettings.showfilter;
 }
 
 void Panel_ImgView::ReloadAsset()
@@ -146,8 +160,14 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         }
 
         // Draw the texture
-        dc.SetUserScale(zoom.x, zoom.y);
-        dc.DrawBitmap(this->m_Bitmap, x - ((img_w/zoom.x)/2), y - ((img_h/zoom.y)/2), false);
+        if (!this->m_PreviewSettings.showfilter)
+        {
+            dc.SetUserScale(zoom.x, zoom.y);
+            dc.DrawBitmap(this->m_Bitmap, x - ((img_w/zoom.x)/2), y - ((img_h/zoom.y)/2), false);
+        }
+        else
+            dc.DrawBitmap(this->m_Bitmap, x, y, false);
+
     }
     event.Skip();
 }

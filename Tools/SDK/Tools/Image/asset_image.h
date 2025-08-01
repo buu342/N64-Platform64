@@ -69,6 +69,7 @@ class P64Asset_Image
     private:
         wxSize CalculateImageSize();
         void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
+        void Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
@@ -99,7 +100,7 @@ class P64Asset_Image
 
         P64Asset_Image();
         ~P64Asset_Image();
-        void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false);
+        void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
         uint32_t CalculateTexelCount();

@@ -30,8 +30,11 @@ class Panel_ImgView : public wxScrolledWindow
         void ZoomIn();
         void ZoomOut();
         void ZoomReset();
+        wxRealPoint GetZoom();
         void ToggleAlphaDisplay();
         bool GetAlphaDisplay();
+        void ToggleFilterDisplay();
+        bool GetFilterDisplay();
         void SetDefaultSettings();
         void SetAsset(P64Asset_Image* asset);
         void ReloadAsset();

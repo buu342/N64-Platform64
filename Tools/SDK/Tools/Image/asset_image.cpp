@@ -435,7 +435,43 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w,
     }
 }
 
-void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter)
+void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
+{
+    uint32_t w_out = ((float)w_in)*zoom.x;
+    uint32_t h_out = ((float)h_in)*zoom.y;
+    float x_ratio = (((float)w_in) - 1.0)/(((float)w_out) - 1.0);
+    float y_ratio = (((float)h_in) - 1.0)/(((float)h_out) - 1.0);
+    uint8_t* out = (uint8_t*)malloc(depth*w_out*h_out*sizeof(uint8_t));
+
+    for (float y=0; y<h_out; y++)
+    {
+        for (float x=0; x<w_out; x++)
+        {
+            float x_l = floor(x_ratio*y);
+            float y_l = floor(y_ratio*x);
+            float x_h = ceil(x_ratio*y);
+            float y_h = ceil(y_ratio*x);
+            float x_weight = (x_ratio*y) - x_l;
+            float y_weight = (y_ratio*x) - y_l;
+            for (int db=0; db<depth; db++)
+            {
+                float a = (*srcptr)[(int)y_l*w_in*depth + (int)x_l*depth + db];
+                float b = (*srcptr)[(int)y_l*w_in*depth + (int)x_h*depth + db];
+                float c = (*srcptr)[(int)y_h*w_in*depth + (int)x_l*depth + db];
+                float d = (*srcptr)[(int)y_h*w_in*depth + (int)x_h*depth + db];
+                float pixel = a*(1.0 - x_weight)*(1.0 - y_weight) +
+                              b*x_weight*(1.0 - y_weight) +
+                              c*y_weight*(1.0 - x_weight) +
+                              d*x_weight*y_weight;
+                out[(int)(y*w_out*depth + y*depth + db)] = pixel;
+            }
+        }
+    }
+    free(*srcptr);
+    (*srcptr) = out;
+}
+
+void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
 {
     if (!this->m_Image.IsOk())
         return;
@@ -524,6 +560,11 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter)
     {
         free(base_alpha);
         base_alpha = NULL;
+    }
+    if (bitmap_filter)
+    {
+        this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
+        this->Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
     }
     this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
     this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
