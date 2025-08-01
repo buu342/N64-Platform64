@@ -54,6 +54,16 @@ void Panel_ImgView::ZoomReset()
     this->RefreshDrawing();
 }
 
+void Panel_ImgView::ToggleAlphaDisplay()
+{
+    this->m_PreviewSettings.showalpha = !this->m_PreviewSettings.showalpha;
+}
+
+bool Panel_ImgView::GetAlphaDisplay()
+{
+    return this->m_PreviewSettings.showalpha;
+}
+
 void Panel_ImgView::ReloadAsset()
 {
     if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_BitmapFinal.IsOk())

@@ -520,7 +520,7 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter)
     // Generate the final texels
 
     // Generate some images for wxWidgets preview
-    if (bitmap_alpha)
+    if (!bitmap_alpha)
     {
         free(base_alpha);
         base_alpha = NULL;
