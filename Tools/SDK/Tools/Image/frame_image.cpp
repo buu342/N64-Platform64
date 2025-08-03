@@ -589,7 +589,7 @@ void Frame_ImageBrowser::MarkAssetModified()
     this->m_AssetModified = true;
     this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
     if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
@@ -723,7 +723,7 @@ void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleAlphaDisplay();
     if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
@@ -737,7 +737,7 @@ void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleFilterDisplay();
     if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }

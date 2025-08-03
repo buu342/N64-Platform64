@@ -556,15 +556,15 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     // Generate the final texels
 
     // Generate some images for wxWidgets preview
-    if (!bitmap_alpha)
-    {
-        free(base_alpha);
-        base_alpha = NULL;
-    }
     if (bitmap_filter)
     {
         this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
         this->Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
+    }
+    if (!bitmap_alpha)
+    {
+        free(base_alpha);
+        base_alpha = NULL;
     }
     this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
     this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
