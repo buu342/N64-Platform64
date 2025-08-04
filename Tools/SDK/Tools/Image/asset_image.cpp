@@ -285,7 +285,7 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
                         samplepos = SamplePoint_Mirror(anchor, anchor + wxPoint(w, h), wxPoint(x, y));
                         samplepos -= anchor;
                         for (int d = 0; d < depth; d++)
-                            newimg[y * depth * newsize.x + (x * depth + d)] = (*srcptr)[samplepos.y * depth * w + (samplepos.x * depth + d)];
+                            newimg[y*depth*newsize.x + (x*depth + d)] = (*srcptr)[samplepos.y*depth*w + (samplepos.x*depth + d)];
                         break;
                 }
             }
@@ -442,11 +442,13 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     float x_ratio = (((float)w_in) - 1.0)/(((float)w_out) - 1.0);
     float y_ratio = (((float)h_in) - 1.0)/(((float)h_out) - 1.0);
     uint8_t* out = (uint8_t*)malloc(depth*w_out*h_out*sizeof(uint8_t));
+    if (out== NULL)
+        return;
 
     for (float y=0; y<h_out; y++)
     {
         for (float x=0; x<w_out; x++)
-        {
+        {            
             float x_l = floor(x_ratio*y);
             float y_l = floor(y_ratio*x);
             float x_h = ceil(x_ratio*y);
@@ -463,7 +465,7 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
                               b*x_weight*(1.0 - y_weight) +
                               c*y_weight*(1.0 - x_weight) +
                               d*x_weight*y_weight;
-                out[(int)(y*w_out*depth + y*depth + db)] = pixel;
+                out[(int)(y*w_out*depth + x*depth + db)] = pixel;
             }
         }
     }

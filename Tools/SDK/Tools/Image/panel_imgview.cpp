@@ -38,18 +38,24 @@ void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 
 void Panel_ImgView::ZoomIn()
 {
+    if (this->m_PreviewSettings.showfilter)
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, this->m_PreviewSettings.zoom.y*ZOOM_SPEED);
     this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomOut()
 {
+    if (this->m_PreviewSettings.showfilter)
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
     this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomReset()
 {
+    if (this->m_PreviewSettings.showfilter)
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
     this->RefreshDrawing();
 }
@@ -166,7 +172,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             dc.DrawBitmap(this->m_Bitmap, x - ((img_w/zoom.x)/2), y - ((img_h/zoom.y)/2), false);
         }
         else
-            dc.DrawBitmap(this->m_Bitmap, x, y, false);
+            dc.DrawBitmap(this->m_Bitmap, screen_w/2 - (this->m_Bitmap.GetWidth()/2), screen_h/2 - (this->m_Bitmap.GetWidth()/2), false);
 
     }
     event.Skip();
