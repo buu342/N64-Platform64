@@ -38,26 +38,38 @@ void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 
 void Panel_ImgView::ZoomIn()
 {
-    if (this->m_PreviewSettings.showfilter)
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, this->m_PreviewSettings.zoom.y*ZOOM_SPEED);
-    this->RefreshDrawing();
+    if (this->m_PreviewSettings.showfilter)
+    {
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
+        this->ReloadAsset();
+    }
+    else
+        this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomOut()
 {
-    if (this->m_PreviewSettings.showfilter)
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
-    this->RefreshDrawing();
+    if (this->m_PreviewSettings.showfilter)
+    {
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
+        this->ReloadAsset();
+    }
+    else
+        this->RefreshDrawing();
 }
 
 void Panel_ImgView::ZoomReset()
 {
-    if (this->m_PreviewSettings.showfilter)
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
-    this->RefreshDrawing();
+    if (this->m_PreviewSettings.showfilter)
+    {
+        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
+        this->ReloadAsset();
+    }
+    else
+        this->RefreshDrawing();
 }
 wxRealPoint Panel_ImgView::GetZoom()
 {
@@ -95,9 +107,17 @@ void Panel_ImgView::ReloadAsset()
 
 void Panel_ImgView::RefreshDrawing()
 {
+    int w, h;
     if (this->m_LoadedAsset == NULL || !this->m_Bitmap.IsOk())
         return;
-    this->SetVirtualSize(this->m_Bitmap.GetWidth()*this->m_PreviewSettings.zoom.x, this->m_Bitmap.GetHeight()*this->m_PreviewSettings.zoom.y);
+    w = this->m_Bitmap.GetWidth();
+    h = this->m_Bitmap.GetHeight();
+    if (!this->m_PreviewSettings.showfilter)
+    {
+        w *= this->m_PreviewSettings.zoom.x;
+        h *= this->m_PreviewSettings.zoom.y;
+    }
+    this->SetVirtualSize(w, h);
     this->Layout();
     this->Refresh();
 }
@@ -126,8 +146,13 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         dc.GetSize(&screen_w, &screen_h);
         x = (screen_w/zoom.x)/2;
         y = (screen_h/zoom.y)/2;
-        img_w = this->m_Bitmap.GetWidth()*zoom.x;
-        img_h = this->m_Bitmap.GetHeight()*zoom.y;
+        img_w = this->m_Bitmap.GetWidth();
+        img_h = this->m_Bitmap.GetHeight();
+        if (!this->m_PreviewSettings.showfilter)
+        {
+            img_w *=zoom.x;
+            img_h *=zoom.y;
+        }
         if (img_w > screen_w)
             x = ((img_w/zoom.x)/2);
         if (img_h > screen_h)

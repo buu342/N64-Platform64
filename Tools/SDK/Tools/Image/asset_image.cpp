@@ -437,6 +437,8 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w,
 
 void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
 {
+    if (*srcptr == NULL)
+        return;
     uint32_t w_out = ((float)w_in)*zoom.x;
     uint32_t h_out = ((float)h_in)*zoom.y;
     float x_ratio = (((float)w_in) - 1.0)/(((float)w_out) - 1.0);
@@ -448,13 +450,13 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     for (float y=0; y<h_out; y++)
     {
         for (float x=0; x<w_out; x++)
-        {            
-            float x_l = floor(x_ratio*y);
-            float y_l = floor(y_ratio*x);
-            float x_h = ceil(x_ratio*y);
-            float y_h = ceil(y_ratio*x);
-            float x_weight = (x_ratio*y) - x_l;
-            float y_weight = (y_ratio*x) - y_l;
+        {
+            float x_l = floor(x_ratio*x);
+            float y_l = floor(y_ratio*y);
+            float x_h = ceil(x_ratio*x);
+            float y_h = ceil(y_ratio*y);
+            float x_weight = (x_ratio*x) - x_l;
+            float y_weight = (y_ratio*y) - y_l;
             for (int db=0; db<depth; db++)
             {
                 float a = (*srcptr)[(int)y_l*w_in*depth + (int)x_l*depth + db];
@@ -562,6 +564,8 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     {
         this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
         this->Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
+        newsize.x *= zoom.x;
+        newsize.y *= zoom.y;
     }
     if (!bitmap_alpha)
     {
