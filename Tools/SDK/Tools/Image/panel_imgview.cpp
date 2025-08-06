@@ -124,81 +124,89 @@ void Panel_ImgView::RefreshDrawing()
 
 void Panel_ImgView::OnPaint(wxPaintEvent& event)
 {
-    int x, y;
     int screen_w, screen_h;
-    int img_w, img_h;
     wxRealPoint zoom = this->m_PreviewSettings.zoom;
     
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
-
-    dc.SetUserScale(zoom.x, zoom.y);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME)));
     dc.Clear();
+    dc.GetSize(&screen_w, &screen_h);
 
     // If we have a valid asset
     if (this->m_LoadedAsset != NULL && this->m_Bitmap.IsOk())
     {
-        int xstart, ystart, i;
+        int i;
+        int img_x, img_y;
+        int canvas_x, canvas_y;
+        float img_w, img_h;
 
         // Calculate its size and position on the DC
-        dc.GetSize(&screen_w, &screen_h);
-        x = (screen_w/zoom.x)/2;
-        y = (screen_h/zoom.y)/2;
         img_w = this->m_Bitmap.GetWidth();
         img_h = this->m_Bitmap.GetHeight();
-        if (!this->m_PreviewSettings.showfilter)
+        if (this->m_PreviewSettings.showfilter)
         {
-            img_w *=zoom.x;
-            img_h *=zoom.y;
+            img_x = ((screen_w - img_w)/2)/zoom.x;
+            img_y = ((screen_h - img_h)/2)/zoom.y;
+            canvas_x = img_x;
+            canvas_y = img_y;
+            img_x = round(img_x*zoom.x);
+            img_y = round(img_y*zoom.y);
+        }
+        else
+        {
+            img_x = ((screen_w - img_w*zoom.x)/2)/zoom.x;
+            img_y = ((screen_h - img_h*zoom.y)/2)/zoom.y;
+            canvas_x = img_x;
+            canvas_y = img_y;
+            img_w = floor(img_w*zoom.x);
+            img_h = floor(img_h*zoom.y);
         }
         if (img_w > screen_w)
-            x = ((img_w/zoom.x)/2);
+            img_x = 0;
         if (img_h > screen_h)
-            y = ((img_h/zoom.y)/2);
-        xstart = x - ((img_w/zoom.x)/2);
-        ystart = y - ((img_h/zoom.y)/2);
+            img_y = 0;
+        canvas_x = round(canvas_x*zoom.x);
+        canvas_y = round(canvas_y*zoom.y);
 
         // Draw the transparent background
-        i = 0;
         dc.SetUserScale(1, 1);
         dc.SetPen(*wxTRANSPARENT_PEN);
-        dc.SetBrush(wxBrush(wxColor(255, 255, 255, 255)));
-        dc.DrawRectangle(wxRect(xstart*zoom.x, ystart*zoom.y, img_w, img_h));
+        dc.SetBrush(wxBrush(wxColor(255, 255, 255, 128)));
+        dc.DrawRectangle(wxRect(canvas_x, canvas_y, img_w, img_h));
         dc.SetBrush(wxBrush(wxColor(192, 192, 192, 255)));
+        i=0;
         while (true)
         {
-            const float GRIDSIZE = 16; 
+            const float GRIDSIZE = 16;
             const int xcheck_total = ceilf(((float)img_w)/GRIDSIZE);
             const int ycheck_total = ceilf(((float)img_h)/GRIDSIZE);
             const float xcheck_total_frac = xcheck_total - (img_w/GRIDSIZE);
             const float ycheck_total_frac = ycheck_total - (img_h/GRIDSIZE);
             const int xcheck_curr = (i%xcheck_total);
             const int ycheck_curr = (i/xcheck_total);
-            float w = (xcheck_curr+1 < xcheck_total) ? GRIDSIZE : GRIDSIZE*(1-xcheck_total_frac);
-            float h = (ycheck_curr+1 < ycheck_total) ? GRIDSIZE : GRIDSIZE*(1-ycheck_total_frac);
-            dc.DrawRectangle(wxRect(xstart*zoom.x + xcheck_curr*GRIDSIZE, ystart*zoom.y + ycheck_curr*GRIDSIZE, w, h));
+            float w = ((xcheck_curr + 1) < xcheck_total) ? GRIDSIZE : GRIDSIZE*(1 - xcheck_total_frac);
+            float h = ((ycheck_curr + 1) < ycheck_total) ? GRIDSIZE : GRIDSIZE*(1 - ycheck_total_frac);
+            dc.DrawRectangle(wxRect(canvas_x+xcheck_curr*GRIDSIZE, canvas_y+ycheck_curr*GRIDSIZE, w, h));
             i += 2;
-            if (xcheck_curr+2 >= xcheck_total)
+            if ((xcheck_curr + 2) >= xcheck_total)
             {
-                if (ycheck_curr+1 >= ycheck_total)
+                if ((ycheck_curr + 1) >= ycheck_total)
                     break;
-                i = (ycheck_curr+1)*xcheck_total;
-                if (ycheck_curr%2 == 0)
+                i = (ycheck_curr + 1)*xcheck_total;
+                if (ycheck_curr % 2 == 0)
                     i++;
             }
         }
 
         // Draw the texture
-        if (!this->m_PreviewSettings.showfilter)
-        {
-            dc.SetUserScale(zoom.x, zoom.y);
-            dc.DrawBitmap(this->m_Bitmap, x - ((img_w/zoom.x)/2), y - ((img_h/zoom.y)/2), false);
-        }
+        if (this->m_PreviewSettings.showfilter)
+            dc.SetUserScale(1.0, 1.0);
         else
-            dc.DrawBitmap(this->m_Bitmap, screen_w/2 - (this->m_Bitmap.GetWidth()/2), screen_h/2 - (this->m_Bitmap.GetWidth()/2), false);
-
+            dc.SetUserScale(zoom.x, zoom.y);
+        dc.DrawBitmap(this->m_Bitmap, img_x, img_y, false);
     }
+
     event.Skip();
 }

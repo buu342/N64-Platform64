@@ -439,8 +439,8 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
 {
     if (*srcptr == NULL)
         return;
-    uint32_t w_out = ((float)w_in)*zoom.x;
-    uint32_t h_out = ((float)h_in)*zoom.y;
+    uint32_t w_out = roundf(((float)w_in)*zoom.x);
+    uint32_t h_out = roundf(((float)h_in)*zoom.y);
     float x_ratio = (((float)w_in) - 1.0)/(((float)w_out) - 1.0);
     float y_ratio = (((float)h_in) - 1.0)/(((float)h_out) - 1.0);
     uint8_t* out = (uint8_t*)malloc(depth*w_out*h_out*sizeof(uint8_t));
@@ -564,8 +564,8 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     {
         this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
         this->Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
-        newsize.x *= zoom.x;
-        newsize.y *= zoom.y;
+        newsize.x = roundf(((float)newsize.x)*zoom.x);
+        newsize.y = roundf(((float)newsize.y)*zoom.y);
     }
     if (!bitmap_alpha)
     {
