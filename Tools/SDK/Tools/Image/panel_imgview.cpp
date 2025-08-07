@@ -200,7 +200,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             }
         }
 
-        // Draw the texture
+        // Draw the asset itself
         if (this->m_PreviewSettings.showfilter)
             dc.SetUserScale(1.0, 1.0);
         else

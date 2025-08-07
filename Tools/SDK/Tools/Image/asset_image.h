@@ -69,6 +69,7 @@ class P64Asset_Image
     private:
         wxSize CalculateImageSize();
         void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
+        void Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
