@@ -455,7 +455,7 @@ void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uin
     float y_ratio = (((float)h_in) - 1.0) / (((float)h_out) - 1.0);
     uint8_t* out = (uint8_t*)malloc(depth*w_out*h_out*sizeof(uint8_t));
     int mult = zoom.x;
-    if (out== NULL)
+    if (out == NULL)
         return;
 
     // Perform the blur
@@ -463,24 +463,24 @@ void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uin
     {
         for (float x=0; x<w_out; x++)
         {
-            float u = x_ratio*x;
-            float v = y_ratio*y;
-            float x_l = floor(u);
-            float y_l = floor(v);
-            float x_h = ceil(u);
-            float y_h = ceil(v);
-            float x_weight = u - x_l;
-            float y_weight = v - y_l;
+            float s = x_ratio*x;
+            float t = y_ratio*y;
+            float x_l = floor(s);
+            float y_l = floor(t);
+            float x_h = ceil(s);
+            float y_h = ceil(t);
+            float u = s - x_l;
+            float v = t - y_l;
             for (int db=0; db<depth; db++)
             {
                 float a = (*srcptr)[(int)y_l*w_in*depth + (int)x_l*depth + db];
                 float b = (*srcptr)[(int)y_l*w_in*depth + (int)x_h*depth + db];
                 float c = (*srcptr)[(int)y_h*w_in*depth + (int)x_l*depth + db];
                 float d = (*srcptr)[(int)y_h*w_in*depth + (int)x_h*depth + db];
-                float pixel = a * (1.0 - x_weight) * (1.0 - y_weight) +
-                    b * x_weight * (1.0 - y_weight) +
-                    c * y_weight * (1.0 - x_weight) +
-                    d * x_weight * y_weight;
+                float pixel = a * (1.0 - u) * (1.0 - v) +
+                    b * u * (1.0 - v) +
+                    c * v * (1.0 - u) +
+                    d * u * v;
                 out[(int)(y*w_out*depth + x*depth + db)] = pixel;
             }
         }
@@ -491,7 +491,7 @@ void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uin
 
 void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
 {
-    if (*srcptr == NULL)
+    if (*srcptr == NULL || (zoom.x == 1.0 && zoom.y == 1.0))
         return;
     uint32_t w_out = roundf(((float)w_in)*zoom.x);
     uint32_t h_out = roundf(((float)h_in)*zoom.y);
@@ -505,35 +505,32 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     {
         for (float x=0; x<w_out; x++)
         {
-            float u = x_ratio*x;
-            float v = y_ratio*y;
-            float x_l = floor(u);
-            float y_l = floor(v);
-            float x_h = ceil(u);
-            float y_h = ceil(v);
-            float x_weight = u - x_l;
-            float y_weight = v - y_l;
+            float s = x*x_ratio;
+            float t = y*y_ratio;
+            float x_l = floor(s);
+            float y_l = floor(t);
+            float x_h = ceil(s);
+            float y_h = ceil(t);
+            float u = s - x_l;
+            float v = t - y_l;
+            wxPoint a = wxPoint(0, 1);
+            wxPoint b;
+            wxPoint c = wxPoint(1, 0);
+            if (u + v > 1.0)
+                b = wxPoint(1, 1);
+            else
+                b = wxPoint(0, 0);
+
             for (int db=0; db<depth; db++)
             {
-                float b;
-                float a = (*srcptr)[(int)y_l*w_in*depth + (int)x_l*depth + db];
-                float c = (*srcptr)[(int)y_h*w_in*depth + (int)x_h*depth + db];
-                float pixel;
-                if (u - v > 0.0f)
-                {
-                    b = (*srcptr)[(int)y_h*w_in*depth + (int)x_l*depth + db];
-                    pixel = a * (1.0 - x_weight) * (1.0 - y_weight) +
-                        b * (1.0 - x_weight) * y_weight +
-                        c * x_weight * y_weight;
-                }
-                else
-                {
-                    b = (*srcptr)[(int)y_l*w_in*depth + (int)x_h*depth + db];
-                    pixel = a * (1.0 - x_weight) * (1.0 - y_weight) +
-                        b * x_weight * (1.0 - y_weight) +
-                        c * x_weight * y_weight;
-                }
-                out[(int)(y*w_out*depth + x*depth + db)] = pixel;
+                float a_px = (*srcptr)[(int)((a.y == 1 ? y_h : y_l)*w_in*depth + (a.x == 1 ? x_h : x_l)*depth + db)];
+                float b_px = (*srcptr)[(int)((b.y == 1 ? y_h : y_l)*w_in*depth + (b.x == 1 ? x_h : x_l)*depth + db)];
+                float c_px = (*srcptr)[(int)((c.y == 1 ? y_h : y_l)*w_in*depth + (c.x == 1 ? x_h : x_l)*depth + db)];
+                float norm = 1.0f/(((b.y - c.y)*(a.x - c.x)) + ((c.x - b.x)*(a.y - c.y)));
+                float wa = (((b.y - c.y)*(u - c.x)) + ((c.x - b.x)*(v - c.y)))*norm;
+                float wb = (((c.y - a.y)*(u - c.x)) + ((a.x - c.x)*(v - c.y)))*norm;
+                float wc = 1 - wa - wb;
+                out[(int)(y*w_out*depth + x*depth + db)] = a_px*wa + b_px*wb + c_px*wc;
             }
         }
     }
