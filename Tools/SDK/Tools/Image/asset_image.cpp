@@ -300,8 +300,15 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
 
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 {
+    int l;
     switch (this->m_ImageFormat)
     {
+        case FMT_IA16:
+            l = ((float)rgb[0])*0.2126 + ((float)rgb[1])*0.7152 + ((float)rgb[2])*0.0722;
+            rgb[0] = l;
+            rgb[1] = l;
+            rgb[2] = l;
+            break;
         case FMT_RGBA32:
             break;
         case FMT_RGBA16:
@@ -493,6 +500,8 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
 {
     if (*srcptr == NULL || (zoom.x == 1.0 && zoom.y == 1.0))
         return;
+
+    // Allocate resources
     uint32_t w_out = roundf(((float)w_in)*zoom.x);
     uint32_t h_out = roundf(((float)h_in)*zoom.y);
     float x_ratio = (((float)w_in) - 1.0) / (((float)w_out) - 1.0);
@@ -501,6 +510,7 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     if (out == NULL)
         return;
 
+    // Perform the blur
     for (float y=0; y<h_out; y++)
     {
         for (float x=0; x<w_out; x++)
