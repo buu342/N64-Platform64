@@ -303,18 +303,19 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
     int l;
     switch (this->m_ImageFormat)
     {
+        case FMT_RGBA32:
+            break;
+        case FMT_RGBA16:
+            rgb[0] = ((float)(rgb[0] >> 3))*(255.0f/(255>>3));
+            rgb[1] = ((float)(rgb[1] >> 3))*(255.0f/(255>>3));
+            rgb[2] = ((float)(rgb[2] >> 3))*(255.0f/(255>>3));
+            break;
+        case FMT_I8:
         case FMT_IA16:
             l = ((float)rgb[0])*0.2126 + ((float)rgb[1])*0.7152 + ((float)rgb[2])*0.0722;
             rgb[0] = l;
             rgb[1] = l;
             rgb[2] = l;
-            break;
-        case FMT_RGBA32:
-            break;
-        case FMT_RGBA16:
-            rgb[0] = rgb[0] >> 3 << 3;
-            rgb[1] = rgb[1] >> 3 << 3;
-            rgb[2] = rgb[2] >> 3 << 3;
             break;
         default:
             break;
@@ -334,14 +335,14 @@ void P64Asset_Image::ReduceAlpha(uint8_t* a)
         case FMT_CI8:
         case FMT_CI4:
         case FMT_IA4:
-            (*a) = ((*a) > 128) ? 255 : 0;
+            (*a) = ((float)((*a) >> 7))*(255.0f/(255>>7));
             break;
         case FMT_I8:
         case FMT_I4:
             (*a) = 255;
             break;
         case FMT_IA8:
-            (*a) = (*a) >> 4 << 4;
+            (*a) = ((float)((*a) >> 4))*(255.0f/(255>>4));
             break;
     }
 }
