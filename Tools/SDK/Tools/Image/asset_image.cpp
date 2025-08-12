@@ -325,6 +325,13 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
             rgb[1] = l;
             rgb[2] = l;
             break;
+        case FMT_IA4:
+            l = ((float)rgb[0])*0.2126 + ((float)rgb[1])*0.7152 + ((float)rgb[2])*0.0722;
+            l = ((float)(l >> 5))*(255.0f/(255>>5));
+            rgb[0] = l;
+            rgb[1] = l;
+            rgb[2] = l;
+            break;
         default:
             break;
     }
