@@ -295,8 +295,13 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
         free(*srcptr);
         *srcptr = newimg;
     }
-
 }
+
+static inline uint8_t bitreduce(uint8_t v, uint8_t nbits)
+{
+    int shift = 8 - nbits;
+    return ((float)(v >> shift))*(255.0f/((float)(255>>shift))); 
+} 
 
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 {
@@ -306,9 +311,9 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
         case FMT_RGBA32:
             break;
         case FMT_RGBA16:
-            rgb[0] = ((float)(rgb[0] >> 3))*(255.0f/(255>>3));
-            rgb[1] = ((float)(rgb[1] >> 3))*(255.0f/(255>>3));
-            rgb[2] = ((float)(rgb[2] >> 3))*(255.0f/(255>>3));
+            rgb[0] = bitreduce(rgb[0], 5);
+            rgb[1] = bitreduce(rgb[1], 5);
+            rgb[2] = bitreduce(rgb[2], 5);
             break;
         case FMT_I8:
         case FMT_IA16:
@@ -320,14 +325,14 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
         case FMT_I4:
         case FMT_IA8:
             l = ((float)rgb[0])*0.2126 + ((float)rgb[1])*0.7152 + ((float)rgb[2])*0.0722;
-            l = ((float)(l >> 4))*(255.0f/(255>>4));
+            l = bitreduce(l, 4);
             rgb[0] = l;
             rgb[1] = l;
             rgb[2] = l;
             break;
         case FMT_IA4:
             l = ((float)rgb[0])*0.2126 + ((float)rgb[1])*0.7152 + ((float)rgb[2])*0.0722;
-            l = ((float)(l >> 5))*(255.0f/(255>>5));
+            l = bitreduce(l, 3);
             rgb[0] = l;
             rgb[1] = l;
             rgb[2] = l;
@@ -350,14 +355,14 @@ void P64Asset_Image::ReduceAlpha(uint8_t* a)
         case FMT_CI8:
         case FMT_CI4:
         case FMT_IA4:
-            (*a) = ((float)((*a) >> 7))*(255.0f/(255>>7));
+            (*a) = bitreduce(*a, 1);
             break;
         case FMT_I8:
         case FMT_I4:
             (*a) = 255;
             break;
         case FMT_IA8:
-            (*a) = ((float)((*a) >> 4))*(255.0f/(255>>4));
+            (*a) = bitreduce(*a, 4);
             break;
     }
 }
