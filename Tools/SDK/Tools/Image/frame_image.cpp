@@ -134,6 +134,7 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_Choice_ResizeFill->SetSelection(curasset->m_ResizeFill);
     realframe->m_Choice_TilingX->SetSelection(curasset->m_TilingX);
     realframe->m_Choice_TilingY->SetSelection(curasset->m_TilingY);
+    realframe->m_Choice_Format->SetSelection(curasset->m_ImageFormat);
     realframe->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.x));
     realframe->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.y));
     realframe->m_Checkbox_Mipmaps->SetValue(curasset->m_UseMipmaps);
