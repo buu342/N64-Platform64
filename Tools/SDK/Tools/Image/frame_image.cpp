@@ -228,7 +228,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Tool_Alpha = m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_ToggleAlpha, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of alpha"), wxEmptyString, NULL);
     m_Tool_Tiling = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleTiling, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of image tiling"), wxEmptyString, NULL);
     m_Tool_Filtering = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleFilter, wxNullBitmap, wxITEM_NORMAL, _("Toggle simulation of the N64's 3-point bilinear filtering"), wxEmptyString, NULL);
-    m_Tool_PalettePreview = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_Palette, wxNullBitmap, wxITEM_NORMAL, _("Swap the palette for preview"), wxEmptyString, NULL);
+    //this->m_Tool_PalettePreview = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_Palette, wxNullBitmap, wxITEM_NORMAL, _("Swap the palette for preview"), wxEmptyString, NULL);
     m_Tool_Statistics = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleStatistics, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of image statistics"), wxEmptyString, NULL);
     m_ToolBar_Preview->AddSeparator();
     m_Tool_ZoomIn = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomIn, wxNullBitmap, wxITEM_NORMAL, _("Zoom in"), wxEmptyString, NULL);
@@ -360,7 +360,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_StaticText_Format->Wrap(-1);
     m_Sizer_ImageLoading->Add(m_StaticText_Format, 0, wxALL, 5);
 
-    wxString m_Choice_FormatChoices[] = { _("32-Bit RGBA"), _("16-Bit RGBA"), _("16-Bit IA"), _("8-Bit IA"), _("4-Bit IA"), _("8-Bit I"), _("4-Bit I"), _("8-Bit CI"), _("4-Bit CI") };
+    wxString m_Choice_FormatChoices[] = { _("32-Bit RGBA"), _("16-Bit RGBA"), _("16-Bit IA"), _("8-Bit IA"), _("4-Bit IA"), _("8-Bit I"), _("4-Bit I")/*, _("8-Bit CI"), _("4-Bit CI")*/ };
     int m_Choice_FormatNChoices = sizeof(m_Choice_FormatChoices) / sizeof(wxString);
     m_Choice_Format = new wxChoice(m_Panel_ImageLoading, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_FormatNChoices, m_Choice_FormatChoices, 0);
     m_Choice_Format->SetSelection(1);
@@ -388,30 +388,20 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_TilingY = new wxChoice(m_Panel_ImageLoading, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_TilingYNChoices, m_Choice_TilingYChoices, 0);
     m_Choice_TilingY->SetSelection(0);
     m_Choice_TilingY->SetToolTip(_("Vertical tiling mode"));
-
     m_Sizer_TilingMode->Add(m_Choice_TilingY, 0, wxALL|wxEXPAND, 5);
-
-
     m_Sizer_ImageLoading->Add(m_Sizer_TilingMode, 1, wxEXPAND, 5);
 
-    m_StaticText_MaskPos = new wxStaticText(m_Panel_ImageLoading, wxID_ANY, _("Mask start:"), wxDefaultPosition, wxDefaultSize, 0);
-    m_StaticText_MaskPos->Wrap(-1);
-    m_Sizer_ImageLoading->Add(m_StaticText_MaskPos, 0, wxALL, 5);
-
+    this->m_StaticText_MaskPos = new wxStaticText(this->m_Panel_ImageLoading, wxID_ANY, _("Mask start:"), wxDefaultPosition, wxDefaultSize, 0);
+    this->m_StaticText_MaskPos->Wrap(-1);
+    m_Sizer_ImageLoading->Add(this->m_StaticText_MaskPos, 0, wxALL, 5);
     wxGridSizer* m_Sizer_MaskPos;
     m_Sizer_MaskPos = new wxGridSizer(0, 2, 0, 0);
-
-    m_TextCtrl_MaskPosW = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
-    m_TextCtrl_MaskPosW->SetToolTip(_("X coordinate start of the image mask"));
-
-    m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosW, 0, wxALL, 5);
-
-    m_TextCtrl_MaskPosH = new wxTextCtrl(m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
-    m_TextCtrl_MaskPosH->SetToolTip(_("Y coordinate start of the image mask"));
-
-    m_Sizer_MaskPos->Add(m_TextCtrl_MaskPosH, 0, wxALL, 5);
-
-
+    this->m_TextCtrl_MaskPosW = new wxTextCtrl(this->m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
+    this->m_TextCtrl_MaskPosW->SetToolTip(_("X coordinate start of the image mask"));
+    m_Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosW, 0, wxALL, 5);
+    this->m_TextCtrl_MaskPosH = new wxTextCtrl(this->m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
+    this->m_TextCtrl_MaskPosH->SetToolTip(_("Y coordinate start of the image mask"));
+    m_Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosH, 0, wxALL, 5);
     m_Sizer_ImageLoading->Add(m_Sizer_MaskPos, 1, wxEXPAND, 5);
 
     m_Checkbox_Mipmaps = new wxCheckBox(m_Panel_ImageLoading, wxID_ANY, _("Generate mipmaps"), wxDefaultPosition, wxDefaultSize, 0);
@@ -504,12 +494,10 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     m_Sizer_ImageColors->Add(m_FilePicker_Alpha, 0, wxALL|wxEXPAND, 5);
 
-    m_Button_Palette = new wxButton(m_Panel_ImageColors, wxID_ANY, _("Configure Palette"), wxDefaultPosition, wxDefaultSize, 0);
-    m_Button_Palette->Enable(false);
-    m_Button_Palette->SetToolTip(_("Configure Color Index palette"));
-
-    m_Sizer_ImageColors->Add(m_Button_Palette, 0, wxALL, 5);
-
+    this->m_Button_Palette = new wxButton(this->m_Panel_ImageColors, wxID_ANY, _("Configure Palette"), wxDefaultPosition, wxDefaultSize, 0);
+    this->m_Button_Palette->Enable(false);
+    this->m_Button_Palette->SetToolTip(_("Configure Color Index palette"));
+    m_Sizer_ImageColors->Add(this->m_Button_Palette, 0, wxALL, 5);
 
     m_Panel_ImageColors->SetSizer(m_Sizer_ImageColors);
     m_Panel_ImageColors->Layout();
@@ -524,7 +512,6 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Sizer_Config->Fit(m_Panel_Config);
     m_Splitter_Horizontal->SplitHorizontally(m_Panel_Preview, m_Panel_Config, 0);
     m_Sizer_Edit->Add(m_Splitter_Horizontal, 1, wxEXPAND, 5);
-
 
     m_Panel_Edit->SetSizer(m_Sizer_Edit);
     m_Panel_Edit->Layout();
@@ -547,7 +534,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->Connect(m_Tool_Alpha->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked));
     this->Connect(m_Tool_Tiling->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked));
     this->Connect(m_Tool_Filtering->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked));
-    this->Connect(m_Tool_PalettePreview->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked));
+    //this->Connect(m_Tool_PalettePreview->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked));
     this->Connect(m_Tool_Statistics->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked));
     this->Connect(m_Tool_ZoomIn->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_ZoomIn_OnToolClicked));
     this->Connect(m_Tool_ZoomOut->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked));
@@ -578,6 +565,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_RadioBtn_AlphaExternal->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton), NULL, this);
     this->m_FilePicker_Alpha->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged), NULL, this);
     this->m_Button_Palette->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Button_Palette_OnButtonClick), NULL, this);
+
+    // Hide unimplemented things
+    this->m_Button_Palette->Hide();
+    this->m_StaticText_MaskPos->Hide();
+    this->m_TextCtrl_MaskPosW->Hide();
+    this->m_TextCtrl_MaskPosH->Hide();
+    //this->m_Tool_PalettePreview->Hide();
 }
 
 Frame_ImageBrowser::~Frame_ImageBrowser()
