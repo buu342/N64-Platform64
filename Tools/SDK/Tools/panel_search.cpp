@@ -225,6 +225,11 @@ void Panel_Search::Search_LoadAssetFunc(void (*function)(wxFrame*, wxFileName))
     this->m_LoadAssetFunc = function;
 }
 
+void Panel_Search::Search_RenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxFileName))
+{
+    this->m_RenameAssetFunc = function;
+}
+
 void Panel_Search::Search_SetTarget(wxFrame* target)
 {
     this->m_Target = target;
@@ -363,7 +368,11 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
             newname += extwithoutasterisk;
         }
         if (wxRenameFile(oldname, newname) == false)
+        {
             event.Veto();
+            return;
+        }
+        this->m_RenameAssetFunc(this->m_Target, oldname, newname);
     }
 }
 

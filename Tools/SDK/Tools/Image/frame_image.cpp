@@ -181,6 +181,13 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_ScrolledWin_Preview->ZoomReset();
 }
 
+static void AssetRename(wxFrame* frame, wxFileName oldname, wxFileName newname)
+{
+    Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
+    if (realframe->m_AssetFilePath == oldname)
+        realframe->m_AssetFilePath = newname;
+}
+
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
     this->m_Title = title;
@@ -203,6 +210,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Search->Search_IconGenerator(IconGenerator);
     this->m_Panel_Search->Search_NewAssetGenerator(AssetGenerator);
     this->m_Panel_Search->Search_LoadAssetFunc(AssetLoad);
+    this->m_Panel_Search->Search_RenameAssetFunc(AssetRename);
     this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
     this->m_Panel_Search->Search_SetTarget(this);
 

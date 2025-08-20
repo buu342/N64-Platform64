@@ -33,6 +33,7 @@ class Panel_Search : public wxPanel
         wxIcon (*m_IconGenFunc)(bool);
         void (*m_NewAssetFunc)(wxFrame*, wxFileName);
         void (*m_LoadAssetFunc)(wxFrame*, wxFileName);
+        void (*m_RenameAssetFunc)(wxFrame*, wxFileName, wxFileName);
 
     protected:
         wxFileName m_MainFolder;
@@ -64,6 +65,7 @@ class Panel_Search : public wxPanel
         void Search_IconGenerator(wxIcon (*function)(bool));
         void Search_NewAssetGenerator(void (*function)(wxFrame*, wxFileName));
         void Search_LoadAssetFunc(void (*function)(wxFrame*, wxFileName));
+        void Search_RenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxFileName));
         void Search_SetTarget(wxFrame* target);
         bool LoadAssetsInDir(wxFileName path, wxString filter=wxEmptyString);
         void SelectItem(wxString name, bool isfolder, bool editname=false);
