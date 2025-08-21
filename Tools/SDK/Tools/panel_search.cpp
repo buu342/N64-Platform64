@@ -340,13 +340,14 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
 {
     if (!event.IsEditCancelled())
     {
+        int row, newrow;
         wxVariant variant;
         wxDataViewIconText oldicontext, newicontext;
         wxString oldname, newname;
         bool isfolder;
 
         // Get the old data
-        int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(event.GetItem());
+        row = this->m_DataViewListCtrl_ObjectList->ItemToRow(event.GetItem());
         this->m_DataViewListCtrl_ObjectList->GetValue(variant, row, 0);
         oldicontext << variant;
 
@@ -373,6 +374,23 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
             return;
         }
         this->m_RenameAssetFunc(this->m_Target, oldname, newname);
+
+        // Reload the list and select the renamed item
+        // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
+        event.Veto();
+        this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+        for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+        {
+            wxDataViewItem item;
+            item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
+            this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+            oldicontext << variant;
+            if (oldicontext.GetText() == newicontext.GetText())
+            {
+                this->m_DataViewListCtrl_ObjectList->Select(item);
+                break;
+            }
+        }
     }
 }
 
