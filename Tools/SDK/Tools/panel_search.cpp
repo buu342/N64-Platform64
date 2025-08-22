@@ -124,7 +124,23 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
         name += extwithoutasterisk;
     this->m_NewAssetFunc(this->m_Target, this->m_CurrFolder.GetPathWithSep() + name);
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
-    this->SelectItem(name, false);
+
+    // Activate the editing of the item's textbox
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        wxVariant variant;
+        wxDataViewIconText icontext;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+        icontext << variant;
+        if ((icontext.GetText() + extwithoutasterisk) == name)
+        {
+            this->m_DataViewListCtrl_ObjectList->EditItem(this->m_DataViewListCtrl_ObjectList->RowToItem(i), this->m_DataViewListCtrl_ObjectList->GetColumn(0));
+            break;
+        }
+    }
+
+    // Prevent unused parameter warning
+    (void)event;
 }
 
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
@@ -145,6 +161,20 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
     this->SelectItem(name, true);
+
+    // Activate the editing of the item's textbox
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        wxVariant variant;
+        wxDataViewIconText icontext;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+        icontext << variant;
+        if (icontext.GetText() == name)
+        {
+            this->m_DataViewListCtrl_ObjectList->EditItem(this->m_DataViewListCtrl_ObjectList->RowToItem(i), this->m_DataViewListCtrl_ObjectList->GetColumn(0));
+            break;
+        }
+    }
 
     // Prevent unused parameter warning
     (void)event;
@@ -381,8 +411,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
         this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
         for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
         {
-            wxDataViewItem item;
-            item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
+            wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
             this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
             oldicontext << variant;
             if (oldicontext.GetText() == newicontext.GetText())
