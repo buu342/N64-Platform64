@@ -398,7 +398,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
             oldname += extwithoutasterisk;
             newname += extwithoutasterisk;
         }
-        if (wxRenameFile(oldname, newname) == false)
+        if (((isfolder && wxDirExists(newname)) || (!isfolder && wxFileExists(newname))) || !wxRenameFile(oldname, newname, false))
         {
             event.Veto();
             return;
