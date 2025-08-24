@@ -185,7 +185,13 @@ static void AssetRename(wxFrame* frame, wxFileName oldname, wxFileName newname)
 {
     Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
     if (realframe->m_AssetFilePath == oldname)
+    {
         realframe->m_AssetFilePath = newname;
+        if (realframe->m_AssetModified)
+            realframe->SetTitle(realframe->m_AssetFilePath.GetName() + "* - " + realframe->m_Title);
+        else
+            realframe->SetTitle(realframe->m_AssetFilePath.GetName() + " - " + realframe->m_Title);
+    }
 }
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
