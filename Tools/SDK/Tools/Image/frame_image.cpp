@@ -605,9 +605,15 @@ void Frame_ImageBrowser::MarkAssetModified()
 void Frame_ImageBrowser::SaveChanges()
 {
     wxFile file;
+    bool refresh = false;
     std::vector<uint8_t> data;
     if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
+    {
+        if (!wxDirExists(this->m_AssetFilePath.GetPath()))
+            wxFileName::Mkdir(this->m_AssetFilePath.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
         file.Create(this->m_AssetFilePath.GetFullPath());
+        refresh = true;
+    }
     file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
     if (!file.IsOpened())
     {
@@ -620,6 +626,10 @@ void Frame_ImageBrowser::SaveChanges()
     file.Close();
     this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
     this->m_AssetModified = false;
+
+    // If the file got removed, then refresh the list
+    if (refresh)
+        this->m_Panel_Search->RefreshList();
 }
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)

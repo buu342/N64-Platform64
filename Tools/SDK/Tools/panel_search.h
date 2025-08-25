@@ -68,6 +68,7 @@ class Panel_Search : public wxPanel
         void Search_RenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxFileName));
         void Search_SetTarget(wxFrame* target);
         bool LoadAssetsInDir(wxFileName path, wxString filter=wxEmptyString);
+        void RefreshList();
         void SelectItem(wxString name, bool isfolder, bool editname=false);
 
         wxFileName GetMainFolder();

@@ -28,7 +28,7 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     m_Sizer_Buttons = new wxBoxSizer(wxHORIZONTAL);
 
     this->m_Button_Back = new wxBitmapButton(this, wxID_ANY, Icon_Back, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
-    this->m_Button_Back->SetToolTip(_("Go back a Folder"));
+    this->m_Button_Back->SetToolTip(_("Go back a folder"));
     m_Sizer_Buttons->Add(this->m_Button_Back, 0, wxALL, 5);
 
     this->m_Button_NewAsset = new wxBitmapButton(this, wxID_ANY, Icon_NewAsset, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
@@ -123,7 +123,7 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
     else
         name += extwithoutasterisk;
     this->m_NewAssetFunc(this->m_Target, this->m_CurrFolder.GetPathWithSep() + name);
-    this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+    this->RefreshList();
 
     // Activate the editing of the item's textbox
     for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
@@ -159,7 +159,7 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
         name = testname;
     }
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
-    this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+    this->RefreshList();
     this->SelectItem(name, true);
 
     // Activate the editing of the item's textbox
@@ -334,6 +334,11 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
     return true;
 }
 
+void Panel_Search::RefreshList()
+{
+    this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+}
+
 void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event)
 {
     wxVariant variant;
@@ -370,7 +375,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
 {
     if (!event.IsEditCancelled())
     {
-        int row, newrow;
+        int row;
         wxVariant variant;
         wxDataViewIconText oldicontext, newicontext;
         wxString oldname, newname;
@@ -408,7 +413,7 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent
         // Reload the list and select the renamed item
         // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
         event.Veto();
-        this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
+        this->RefreshList();
         for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
         {
             wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
@@ -442,10 +447,77 @@ void Panel_Search::SelectItem(wxString name, bool isfolder, bool editname)
 
 void Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event)
 {
-    wxMenu menu;
-    menu.Append(1, "Rename");
-    menu.Append(2, "Delete");
-    PopupMenu(&menu);
+    wxDataViewItem item;
+    wxDataViewColumn col = wxDataViewColumn("", new wxDataViewIconTextRenderer(), 0);
+    wxDataViewColumn* colptr = &col;
+    wxPoint hit = this->m_DataViewListCtrl_ObjectList->ScreenToClient(wxGetMousePosition());
+    this->m_DataViewListCtrl_ObjectList->HitTest(hit, item, colptr);
+    if (item.IsOk())
+    {
+        wxMenu menu;
+        menu.Append(1, "Rename");
+        menu.Append(2, "Delete");
+        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
+            switch (event.GetId())
+            {
+                case 1: 
+                    this->m_DataViewListCtrl_ObjectList->EditItem(item, this->m_DataViewListCtrl_ObjectList->GetColumn(0));
+                    break;
+                case 2: 
+                    {
+                        wxVariant v;
+                        bool isfolder;
+                        wxDataViewIconText it;
+                        int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(item);
+                        this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 0);
+                        it << v;
+                        this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 1);
+                        isfolder = v.GetBool();
+                        if (isfolder)
+                        {
+                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the directory '%s'?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+                            if (dialog.ShowModal() == wxID_YES)
+                            {
+                                // TODO: Delete all of the children recursively so that non-empty directories can be removed
+                                wxString path = this->m_CurrFolder.GetPathWithSep() + it.GetText();
+                                if (wxRmdir(path))
+                                    this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
+                            }
+                        }
+                        else
+                        {
+                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the asset '%s'?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+                            if (dialog.ShowModal() == wxID_YES)
+                            {
+                                wxString path = this->m_CurrFolder.GetPathWithSep() + it.GetText() + this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+                                if (wxRemoveFile(path))
+                                    this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
+                            }
+                        }
+                    }
+                    break;
+            }
+            event.Skip();
+        });
+        PopupMenu(&menu);
+    }
+    else
+    {
+        wxMenu menu;
+        menu.Append(1, "New Asset");
+        menu.Append(2, "New Folder");
+        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
+            wxCommandEvent evt;
+            switch (event.GetId())
+            {
+                case 1: this->m_Button_NewAsset_OnButtonClick(evt); break;
+                case 2: this->m_Button_NewFolder_OnButtonClick(evt); break;
+            }
+            event.Skip();
+        });
+        PopupMenu(&menu);
+    }
+    event.Skip();
 }
 
 wxFileName Panel_Search::GetMainFolder()
