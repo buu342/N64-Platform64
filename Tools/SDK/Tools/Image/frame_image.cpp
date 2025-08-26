@@ -586,6 +586,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_TextCtrl_MaskPosW->Hide();
     this->m_TextCtrl_MaskPosH->Hide();
     //this->m_Tool_PalettePreview->Hide();
+
 }
 
 Frame_ImageBrowser::~Frame_ImageBrowser()
@@ -679,15 +680,15 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
 
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
 {
-    m_Splitter_Vertical->SetSashPosition( 0 );
-    m_Splitter_Vertical->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_VerticalOnIdle ), NULL, this );
+    this->m_Splitter_Vertical->SetSashPosition(0);
+    this->m_Splitter_Vertical->Disconnect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_VerticalOnIdle), NULL, this);
     event.Skip();
 }
 
 void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
 {
-    m_Splitter_Horizontal->SetSashPosition( 0 );
-    m_Splitter_Horizontal->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Frame_ImageBrowser::m_Splitter_HorizontalOnIdle ), NULL, this );
+    this->m_Splitter_Horizontal->SetSashPosition(this->m_Panel_Edit->GetSize().y - this->m_Panel_Config->GetBestSize().y);
+    this->m_Splitter_Horizontal->Disconnect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_HorizontalOnIdle), NULL, this);
     event.Skip();
 }
 
