@@ -475,12 +475,12 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& ev
                         isfolder = v.GetBool();
                         if (isfolder)
                         {
-                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the directory '%s'?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
                             if (dialog.ShowModal() == wxID_YES)
                             {
                                 // TODO: Delete all of the children recursively so that non-empty directories can be removed
                                 wxString path = this->m_CurrFolder.GetPathWithSep() + it.GetText();
-                                if (wxRmdir(path))
+                                if (wxDir::Remove(path, wxPATH_RMDIR_RECURSIVE))
                                     this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
                             }
                         }
