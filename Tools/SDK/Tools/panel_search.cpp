@@ -290,7 +290,7 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
     cont = dir.GetFirst(&filename, wxEmptyString, wxDIR_DIRS);
     while (cont)
     {
-        if (filter == wxEmptyString || filename.Lower().Contains(filter))
+        if (filter == wxEmptyString || filename.Lower().Contains(filter.Lower()))
             list.Add(filename);
         cont = dir.GetNext(&filename);
     }
@@ -309,7 +309,7 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
     cont = dir.GetFirst(&filename, this->m_AssetExt, wxDIR_FILES);
     while (cont)
     {
-        if (filter == wxEmptyString || filename.Lower().Contains(filter))
+        if (filter == wxEmptyString || filename.Lower().Contains(filter.Lower()))
         {
             wxFileName f(filename);
             list.Add(f.GetName());
