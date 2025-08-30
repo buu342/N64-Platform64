@@ -164,9 +164,15 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
             img_h = floor(img_h*zoom.y);
         }
         if (img_w > screen_w)
+        {
             img_x = 0;
+            canvas_x = 0;
+        }
         if (img_h > screen_h)
+        {
             img_y = 0;
+            canvas_y = 0;
+        }
         canvas_x = round(canvas_x*zoom.x);
         canvas_y = round(canvas_y*zoom.y);
 
