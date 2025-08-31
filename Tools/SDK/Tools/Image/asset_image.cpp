@@ -569,6 +569,63 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     (*srcptr) = out;
 }
 
+void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in)
+{
+    uint8_t alpha1 = 0xFF;
+    uint8_t alpha2 = 0xFF;
+    uint32_t texelcount = this->CalculateTexelCount();
+    this->m_FinalSize = this->CalculateImageSize();
+    this->m_FinalTexels = (uint8_t*)malloc(texelcount);
+
+    for (int i=0; i<texelcount; i++)
+    {
+        switch (this->m_ImageFormat)
+        {
+            case FMT_RGBA32:
+                if (alphasrc != NULL)
+                    alpha1 = alphasrc[i];
+                this->m_FinalTexels[i*4 + 0] = src[i*3 + 0];
+                this->m_FinalTexels[i*4 + 1] = src[i*3 + 1];
+                this->m_FinalTexels[i*4 + 2] = src[i*3 + 2];
+                this->m_FinalTexels[i*4 + 3] = alpha1;
+                break;
+            case FMT_RGBA16:
+                if (alphasrc != NULL)
+                    alpha1 = alphasrc[i];
+                this->m_FinalTexels[i*2 + 0] = ((src[(i*3) + 0]) & 0b11111000) | ((src[(i*3) + 1]  >> 5 & 0b00000111));
+                this->m_FinalTexels[i*2 + 1] = ((src[(i*3) + 1] << 6) & 0b11000000) | ((src[(i*3) + 2] >> 2) & 0b00111110) | ((alpha1 >> 7) & 0b00000001);
+                break;
+            case FMT_IA16: 
+                if (alphasrc != NULL)
+                    alpha1 = alphasrc[i];
+                this->m_FinalTexels[i*2 + 0] = src[i*3];
+                this->m_FinalTexels[i*2 + 1] = alpha1;
+                break;
+            case FMT_IA8:
+                if (alphasrc != NULL)
+                    alpha1 = alphasrc[i];
+                this->m_FinalTexels[i] = (src[i*3] & 0b11110000) | ((alpha1 >> 4) &0b00001111);
+                break;
+            case FMT_IA4:
+                if (alphasrc != NULL)
+                {
+                    alpha1 = alphasrc[i+0];
+                    alpha2 = alphasrc[i+1];
+                }
+                this->m_FinalTexels[i] = (src[(i+0)*3] & 0b11100000) | ((alpha1 >> 3) &0b0001000) | ((src[(i+1)*3] >> 4) & 0b00001110) | ((alpha2 >> 7) &0b0000001);
+                i++;
+                break;
+            case FMT_I8: 
+                this->m_FinalTexels[i] = src[i];
+                break;
+            case FMT_I4:
+                this->m_FinalTexels[i] = (src[(i+0)*3] & 0b11110000) | ((src[(i+1)*3] >> 4) & 0b00001111);
+                i++;
+                break;
+        }
+    }
+}
+
 void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
 {
     if (!this->m_Image.IsOk())
@@ -652,6 +709,7 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     }
     
     // Generate the final texels
+    this->GenerateTexels(base_rgb, base_alpha, newsize.x, newsize.y);
 
     // Generate some images for wxWidgets preview
     if (bitmap_filter)

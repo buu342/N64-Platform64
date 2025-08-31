@@ -73,6 +73,7 @@ class P64Asset_Image
         void Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
+        void GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
         void Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
 
