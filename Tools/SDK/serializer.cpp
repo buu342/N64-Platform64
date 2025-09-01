@@ -78,6 +78,13 @@ void serialize_wxstring(std::vector<uint8_t>* buff, wxString str)
         buff->push_back(strb[i]);
 }
 
+void serialize_buffer(std::vector<uint8_t>* buff, uint8_t* data, uint32_t size)
+{
+    for (int i=0; i<size; i++)
+        buff->push_back(data[i]);
+    serialize_pad(buff);
+}
+
 uint32_t deserialize_header(uint8_t* buff, uint32_t pos, char* header, uint32_t* version)
 {
     int len = strlen((char*)buff)+1;
@@ -126,4 +133,13 @@ uint32_t deserialize_wxstring(uint8_t* buff, uint32_t pos, wxString* str)
     *str = wxString::FromUTF8((char*)buff+pos);
     pos += len;
     return pos; 
+}
+
+uint32_t deserialize_buffer(uint8_t* buff, uint32_t pos, uint8_t* data, uint32_t size)
+{
+    memcpy(buff, data, size);
+    pos += size;
+    if (pos % 4 != 0)
+        pos += 4 - (pos % 4);
+    return pos;
 }
