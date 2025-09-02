@@ -36,7 +36,8 @@ P64Asset_Image::P64Asset_Image()
 
 P64Asset_Image::~P64Asset_Image()
 {
-
+    if (this->m_FinalTexels != NULL)
+        free(this->m_FinalTexels);
 }
 
 std::vector<uint8_t> P64Asset_Image::Serialize()
@@ -62,6 +63,10 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     serialize_u8(&data, this->m_AlphaColor.Green());
     serialize_u8(&data, this->m_AlphaColor.Blue());
     serialize_wxstring(&data, this->m_AlphaPath.GetFullPath());
+    serialize_u32(&data, this->m_FinalSize.x);
+    serialize_u32(&data, this->m_FinalSize.y);
+    if (this->m_FinalSize.x > 0 && this->m_FinalSize.y > 0)
+        serialize_buffer(&data, this->m_FinalTexels, this->CalculateTexelCount());
 
     return data;
 }
@@ -119,6 +124,23 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     asset->m_AlphaColor.Set(temp_8[0], temp_8[1], temp_8[2], 255);
     pos = deserialize_wxstring(bytesptr, pos, &temp_str);
     asset->m_AlphaPath = wxFileName(temp_str);
+
+    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.x);
+    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.y);
+    if (asset->m_FinalSize.x > 0 && asset->m_FinalSize.y > 0)
+    {
+        asset->m_FinalTexels = (uint8_t*)malloc(asset->CalculateTexelCount());
+        if (asset->m_FinalTexels == NULL)
+        {
+            wxMessageDialog dialog(NULL, "Unable to allocate memory", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+            dialog.ShowModal();
+            delete asset;
+            return NULL;
+        }
+        pos = deserialize_buffer(bytesptr, pos, (uint8_t*)&asset->m_FinalTexels, asset->CalculateTexelCount());
+    }
+    else
+        asset->m_FinalTexels = NULL;
 
     return asset;
 }
@@ -575,7 +597,14 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
     uint8_t alpha2 = 0xFF;
     uint32_t texelcount = this->CalculateTexelCount();
     this->m_FinalSize = this->CalculateImageSize();
+    if (this->m_FinalTexels != NULL)
+        free(this->m_FinalTexels);
     this->m_FinalTexels = (uint8_t*)malloc(texelcount);
+    if (this->m_FinalTexels == NULL)
+    {
+        this->m_FinalSize = wxSize(0, 0);
+        return;
+    }
 
     for (int i=0; i<texelcount; i++)
     {
@@ -584,22 +613,22 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
             case FMT_RGBA32:
                 if (alphasrc != NULL)
                     alpha1 = alphasrc[i];
-                this->m_FinalTexels[i*4 + 0] = src[i*3 + 0];
-                this->m_FinalTexels[i*4 + 1] = src[i*3 + 1];
-                this->m_FinalTexels[i*4 + 2] = src[i*3 + 2];
-                this->m_FinalTexels[i*4 + 3] = alpha1;
+                this->m_FinalTexels[(i*4) + 0] = src[(i*3) + 0];
+                this->m_FinalTexels[(i*4) + 1] = src[(i*3) + 1];
+                this->m_FinalTexels[(i*4) + 2] = src[(i*3) + 2];
+                this->m_FinalTexels[(i*4) + 3] = alpha1;
                 break;
             case FMT_RGBA16:
                 if (alphasrc != NULL)
                     alpha1 = alphasrc[i];
-                this->m_FinalTexels[i*2 + 0] = ((src[(i*3) + 0]) & 0b11111000) | ((src[(i*3) + 1]  >> 5 & 0b00000111));
-                this->m_FinalTexels[i*2 + 1] = ((src[(i*3) + 1] << 6) & 0b11000000) | ((src[(i*3) + 2] >> 2) & 0b00111110) | ((alpha1 >> 7) & 0b00000001);
+                this->m_FinalTexels[(i*2) + 0] = ((src[(i*3) + 0]) & 0b11111000) | ((src[(i*3) + 1]  >> 5 & 0b00000111));
+                this->m_FinalTexels[(i*2) + 1] = ((src[(i*3) + 1] << 6) & 0b11000000) | ((src[(i*3) + 2] >> 2) & 0b00111110) | ((alpha1 >> 7) & 0b00000001);
                 break;
             case FMT_IA16: 
                 if (alphasrc != NULL)
                     alpha1 = alphasrc[i];
-                this->m_FinalTexels[i*2 + 0] = src[i*3];
-                this->m_FinalTexels[i*2 + 1] = alpha1;
+                this->m_FinalTexels[(i*2) + 0] = src[i*3];
+                this->m_FinalTexels[(i*2) + 1] = alpha1;
                 break;
             case FMT_IA8:
                 if (alphasrc != NULL)
