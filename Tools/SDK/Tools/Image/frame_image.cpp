@@ -769,6 +769,8 @@ void Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked(wxCommandEvent& eve
 
 void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
 {
+    this->m_ScrolledWin_Preview->ToggleStatisticsDisplay();
+    this->m_ScrolledWin_Preview->RefreshDrawing();
     event.Skip();
 }
 

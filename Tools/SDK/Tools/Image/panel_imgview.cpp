@@ -96,6 +96,11 @@ bool Panel_ImgView::GetFilterDisplay()
     return this->m_PreviewSettings.showfilter;
 }
 
+void Panel_ImgView::ToggleStatisticsDisplay()
+{
+    this->m_PreviewSettings.showstats = !this->m_PreviewSettings.showstats;
+}
+
 void Panel_ImgView::ReloadAsset()
 {
     if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_BitmapFinal.IsOk())
@@ -212,6 +217,66 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         else
             dc.SetUserScale(zoom.x, zoom.y);
         dc.DrawBitmap(this->m_Bitmap, img_x, img_y, false);
+    }
+
+    if (this->m_PreviewSettings.showstats)
+    {
+        wxString str;
+        uint32_t y = screen_h;
+        dc.SetBackgroundMode(wxPENSTYLE_SOLID);
+        dc.SetTextBackground(wxColor(0, 0, 0, 128));
+        dc.SetUserScale(1, 1);
+
+        // TMEM Load count
+        if (this->m_LoadedAsset != NULL)
+        {
+            if (this->m_LoadedAsset->m_FinalTexelCount != 0)
+                dc.SetTextForeground(wxColor(255, 255, 255));
+            else
+                dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString::Format("TMEM Loads: %d", (int)ceilf(((float)this->m_LoadedAsset->m_FinalTexelCount)/4096)); // TODO: Make this more accurate once you implement it properly on the N64
+        }
+        else
+        {
+            dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString("TMEM Loads: 0");
+        }
+        y -= GetTextExtent(str).y;
+        dc.DrawText(str, wxPoint(0, y));
+
+        // Texel count
+        if (this->m_LoadedAsset != NULL)
+        {
+            if (this->m_LoadedAsset->m_FinalTexelCount != 0 && this->m_LoadedAsset->m_FinalTexelCount <= 4096)
+                dc.SetTextForeground(wxColor(255, 255, 255));
+            else
+                dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString::Format("Texel count: %d", this->m_LoadedAsset->m_FinalTexelCount);
+        }
+        else
+        {
+            dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString("Texel count: 0");
+        }
+        y -= GetTextExtent(str).y;
+        dc.DrawText(str, wxPoint(0, y));
+
+        // Image size
+        if (this->m_LoadedAsset != NULL)
+        {
+            if (this->m_LoadedAsset->m_FinalSize.x != 0 && this->m_LoadedAsset->m_FinalSize.y != 0)
+                dc.SetTextForeground(wxColor(255, 255, 255));
+            else
+                dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString::Format("Size: %dx%d", this->m_LoadedAsset->m_FinalSize.x, this->m_LoadedAsset->m_FinalSize.y);
+        }
+        else
+        {
+            dc.SetTextForeground(wxColor(255, 0, 0));
+            str = wxString("Size: 0x0");
+        }
+        y -= GetTextExtent(str).y;
+        dc.DrawText(str, wxPoint(0, y));
     }
 
     event.Skip();

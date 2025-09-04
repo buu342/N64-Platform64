@@ -35,6 +35,7 @@ class Panel_ImgView : public wxScrolledWindow
         bool GetAlphaDisplay();
         void ToggleFilterDisplay();
         bool GetFilterDisplay();
+        void ToggleStatisticsDisplay();
         void SetDefaultSettings();
         void SetAsset(P64Asset_Image* asset);
         void ReloadAsset();

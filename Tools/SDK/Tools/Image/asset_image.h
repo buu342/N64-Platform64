@@ -93,6 +93,7 @@ class P64Asset_Image
         wxColor               m_AlphaColor;
         wxFileName            m_AlphaPath;
         wxSize                m_FinalSize;
+        uint32_t              m_FinalTexelCount;
         uint8_t*              m_FinalTexels;
 
         wxImage               m_Image;

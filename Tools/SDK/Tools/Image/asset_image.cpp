@@ -65,7 +65,8 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     serialize_wxstring(&data, this->m_AlphaPath.GetFullPath());
     serialize_u32(&data, this->m_FinalSize.x);
     serialize_u32(&data, this->m_FinalSize.y);
-    if (this->m_FinalSize.x != 0 && this->m_FinalSize.y != 0)
+    serialize_u32(&data, this->m_FinalTexelCount);
+    if (this->m_FinalTexelCount != 0)
         serialize_buffer(&data, this->m_FinalTexels, this->CalculateTexelCount());
 
     return data;
@@ -127,7 +128,8 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
 
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.x);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.y);
-    if (asset->m_FinalSize.x != 0 && asset->m_FinalSize.y != 0)
+    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalTexelCount);
+    if (asset->m_FinalTexelCount != 0)
     {
         asset->m_FinalTexels = (uint8_t*)malloc(asset->CalculateTexelCount());
         if (asset->m_FinalTexels == NULL)
@@ -596,11 +598,11 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
     uint32_t ti, si;
     uint8_t alpha1 = 0xFF;
     uint8_t alpha2 = 0xFF;
-    uint32_t texelcount = this->CalculateTexelCount();
+    this->m_FinalTexelCount = this->CalculateTexelCount();
     this->m_FinalSize = wxSize(w_in, h_in);
     if (this->m_FinalTexels != NULL)
         free(this->m_FinalTexels);
-    this->m_FinalTexels = (uint8_t*)malloc(texelcount);
+    this->m_FinalTexels = (uint8_t*)malloc(this->m_FinalTexelCount);
     if (this->m_FinalTexels == NULL)
     {
         this->m_FinalSize = wxSize(0, 0);
@@ -609,7 +611,7 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
 
     ti = 0;
     si = 0;
-    while (ti<texelcount)
+    while (ti< this->m_FinalTexelCount)
     {
         switch (this->m_ImageFormat)
         {
@@ -667,6 +669,8 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
 
 void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
 {
+    this->m_FinalTexelCount = 0;
+    this->m_FinalSize = wxSize(0, 0);
     if (!this->m_Image.IsOk())
         return;
     wxSize rawsize = this->m_Image.GetSize();
