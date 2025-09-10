@@ -38,6 +38,9 @@ wxIcon   Icon_ZoomFit = wxNullIcon;
 wxIcon   Icon_ZoomIn = wxNullIcon;
 wxIcon   Icon_ZoomOut = wxNullIcon;
 wxBitmap Tex_Missing = wxNullBitmap;
+wxIcon   Icon_MissingSmall = wxNullIcon;
+wxIcon   Icon_MissingLarge = wxNullIcon;
+
 
 /*==============================
     App (Constructor)
@@ -108,6 +111,14 @@ bool App::OnInit()
 
     // Initialize textures
     Tex_Missing = wxBITMAP_PNG_FROM_DATA(MISSING);
+
+    // Initialize missing icons
+    tempimg = Tex_Missing.ConvertToImage();
+    tempimg.Rescale(16, 16);
+    Icon_MissingSmall.CopyFromBitmap(tempimg);
+    tempimg = Tex_Missing.ConvertToImage();
+    tempimg.Rescale(64, 64);
+    Icon_MissingLarge.CopyFromBitmap(tempimg);
 
     // Initialize blank cursor
     wxBitmap img = wxBitmap(1, 1, 1);

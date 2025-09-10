@@ -240,7 +240,7 @@ void Panel_Search::Search_SetAssetType(wxString type, wxString ext)
     this->m_AssetExt = ext;
 }
 
-void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool))
+void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool, wxFileName))
 {
     this->m_IconGenFunc = function;
 }
@@ -271,6 +271,7 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
     wxArrayString list;
     wxString filename;
     wxDir dir;
+    wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
 
     // Try to oepn the directory
     dir.Open(path.GetPathWithSep());
@@ -317,13 +318,13 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
         cont = dir.GetNext(&filename);
     }
     list.Sort();
-    for (wxString folder : list)
+    for (wxString asset : list)
     {
         wxVector<wxVariant> items;
         if (this->m_IconGenFunc == NULL)
-            items.push_back((wxVariant)wxDataViewIconText(folder, wxNullIcon));
+            items.push_back((wxVariant)wxDataViewIconText(asset, wxNullIcon));
         else
-            items.push_back((wxVariant)wxDataViewIconText(folder, this->m_IconGenFunc(false)));
+            items.push_back((wxVariant)wxDataViewIconText(asset, this->m_IconGenFunc(false, path.GetPathWithSep() + asset + extwithoutasterisk)));
         items.push_back((wxVariant)false);
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
         items.pop_back();

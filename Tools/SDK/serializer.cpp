@@ -137,7 +137,7 @@ uint32_t deserialize_wxstring(uint8_t* buff, uint32_t pos, wxString* str)
 
 uint32_t deserialize_buffer(uint8_t* buff, uint32_t pos, uint8_t* data, uint32_t size)
 {
-    memcpy(buff, data, size);
+    memcpy(data, buff + pos, size);
     pos += size;
     if (pos % 4 != 0)
         pos += 4 - (pos % 4);

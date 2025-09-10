@@ -14,9 +14,35 @@ TODO
 #define CONTENT_NAME       wxString("Image")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
 
-static wxIcon IconGenerator(bool large)
+static wxIcon IconGenerator(bool large, wxFileName path)
 {
-    return Icon_Texture;
+    wxFile file;
+    std::vector<uint8_t> data;
+    P64Asset_Image* img;
+    wxIcon ret = large ? Icon_MissingLarge : Icon_MissingSmall;
+
+    // Open the file and get its bytes
+    data.resize(path.GetSize().ToULong());
+    file.Open(path.GetFullPath(), wxFile::read);
+    if (!file.IsOpened())
+        return ret;
+    file.Read(&data[0], data.capacity());
+    file.Close();
+
+    // Read the asset file
+    img = P64Asset_Image::Deserialize(data);
+    if (img == NULL)
+        return ret;
+
+    // Grab the thumbnail
+    if (large && img->m_Thumbnail.IsValidLarge())
+        ret = img->m_Thumbnail.m_IconLarge;
+    else if (!large && img->m_Thumbnail.IsValidSmall())
+        ret = img->m_Thumbnail.m_IconSmall;
+
+    // Finish
+    delete img;
+    return ret;
 }
 
 static void AssetGenerator(wxFrame* frame, wxFileName path)

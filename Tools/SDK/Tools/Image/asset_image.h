@@ -6,6 +6,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/bitmap.h>
 #include <vector>
 #include <stdint.h>
+#include "../asset_thumbnail.h"
 
 typedef enum {
     RESIZETYPE_NONE = 0,
@@ -67,17 +68,20 @@ typedef enum {
 class P64Asset_Image
 {
     private:
+        wxImage  m_ImageFinalRaw;
+
         wxSize CalculateImageSize();
         void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
         void Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
-        void GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
         void Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
+        void GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in);
 
     public:
+        // File data
         wxFileName            m_SourcePath;
         P64Img_Resize         m_ResizeMode;
         wxSize                m_CustomSize;
@@ -95,11 +99,14 @@ class P64Asset_Image
         wxSize                m_FinalSize;
         uint32_t              m_FinalTexelCount;
         uint8_t*              m_FinalTexels;
+        P64Asset_Thumbnail    m_Thumbnail;
 
+        // Loaded images
         wxImage               m_Image;
         wxImage               m_ImageAlpha;
+
+        // Preview image
         wxImage               m_ImageFinal;
-        wxBitmap              m_BitmapFinal;
 
         P64Asset_Image();
         ~P64Asset_Image();

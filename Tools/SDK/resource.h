@@ -55,5 +55,8 @@
     extern wxIcon   Icon_ZoomFit;
     extern wxIcon   Icon_ZoomIn;
     extern wxIcon   Icon_ZoomOut;
+
     extern wxBitmap Tex_Missing;
+    extern wxIcon   Icon_MissingSmall;
+    extern wxIcon   Icon_MissingLarge;
 #endif

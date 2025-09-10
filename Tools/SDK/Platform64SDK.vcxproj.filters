@@ -25,6 +25,9 @@
     <ClCompile Include="serializer.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="asset_thumbnail.cpp">
+      <Filter>Source\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -87,7 +90,6 @@
     <ClInclude Include="Tools\Image\asset_image.h">
       <Filter>Source\Tools\Image</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomOut.h">
       <Filter>Resources\Icons</Filter>
     </ClInclude>
@@ -121,9 +123,11 @@
     <ClInclude Include="serializer.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
     <ClInclude Include="Resources\Cursors\Cursor_Pipette.h">
       <Filter>Resources\Cursors</Filter>
+    </ClInclude>
+    <ClInclude Include="asset_thumbnail.h">
+      <Filter>Source\Tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -103,10 +103,10 @@ void Panel_ImgView::ToggleStatisticsDisplay()
 
 void Panel_ImgView::ReloadAsset()
 {
-    if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_BitmapFinal.IsOk())
+    if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_ImageFinal.IsOk())
         this->m_Bitmap = Tex_Missing;
     else
-        this->m_Bitmap = this->m_LoadedAsset->m_BitmapFinal;
+        this->m_Bitmap = wxBitmap(this->m_LoadedAsset->m_ImageFinal);
     this->RefreshDrawing();
 }
 
@@ -222,13 +222,14 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
     if (this->m_PreviewSettings.showstats)
     {
         wxString str;
+        bool validasset = this->m_LoadedAsset != NULL && this->m_LoadedAsset->m_Image.IsOk();
         uint32_t y = screen_h;
         dc.SetBackgroundMode(wxPENSTYLE_SOLID);
         dc.SetTextBackground(wxColor(0, 0, 0, 128));
         dc.SetUserScale(1, 1);
 
         // TMEM Load count
-        if (this->m_LoadedAsset != NULL)
+        if (validasset)
         {
             if (this->m_LoadedAsset->m_FinalTexelCount != 0)
                 dc.SetTextForeground(wxColor(255, 255, 255));
@@ -245,7 +246,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         dc.DrawText(str, wxPoint(0, y));
 
         // Texel count
-        if (this->m_LoadedAsset != NULL)
+        if (validasset)
         {
             if (this->m_LoadedAsset->m_FinalTexelCount != 0 && this->m_LoadedAsset->m_FinalTexelCount <= 4096)
                 dc.SetTextForeground(wxColor(255, 255, 255));
@@ -262,7 +263,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
         dc.DrawText(str, wxPoint(0, y));
 
         // Image size
-        if (this->m_LoadedAsset != NULL)
+        if (validasset)
         {
             if (this->m_LoadedAsset->m_FinalSize.x != 0 && this->m_LoadedAsset->m_FinalSize.y != 0)
                 dc.SetTextForeground(wxColor(255, 255, 255));

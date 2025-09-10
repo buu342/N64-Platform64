@@ -26,12 +26,14 @@ P64Asset_Image::P64Asset_Image()
     this->m_AlphaPath = "";
 
     this->m_FinalSize = wxSize(0, 0);
+    this->m_FinalTexelCount = 0;
     this->m_FinalTexels = NULL;
+    this->m_Thumbnail = P64Asset_Thumbnail();
 
     this->m_Image = wxImage();
     this->m_ImageAlpha = wxImage();
     this->m_ImageFinal = wxImage();
-    this->m_BitmapFinal = wxBitmap();
+    this->m_ImageFinalRaw = wxImage();
 }
 
 P64Asset_Image::~P64Asset_Image()
@@ -43,6 +45,7 @@ P64Asset_Image::~P64Asset_Image()
 std::vector<uint8_t> P64Asset_Image::Serialize()
 {
     std::vector<uint8_t> data;
+    std::vector<uint8_t> tdata;
 
     serialize_header(&data, P64ASSET_HEADER, P64ASSET_VERSION);
     serialize_wxstring(&data, this->m_SourcePath.GetFullPath());
@@ -63,18 +66,27 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     serialize_u8(&data, this->m_AlphaColor.Green());
     serialize_u8(&data, this->m_AlphaColor.Blue());
     serialize_wxstring(&data, this->m_AlphaPath.GetFullPath());
+
+    // Texel data
     serialize_u32(&data, this->m_FinalSize.x);
     serialize_u32(&data, this->m_FinalSize.y);
     serialize_u32(&data, this->m_FinalTexelCount);
     if (this->m_FinalTexelCount != 0)
         serialize_buffer(&data, this->m_FinalTexels, this->CalculateTexelCount());
 
+    // Thumbnail
+    this->m_Thumbnail.GenerateThumbnails(this->m_ImageFinalRaw);
+    tdata = this->m_Thumbnail.Serialize();
+    serialize_buffer(&data, &tdata[0], tdata.size());
+
+    // Done
     return data;
 }
 
 P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
 {
     P64Asset_Image* asset;
+    P64Asset_Thumbnail* thumb;
     wxString temp_str;
     uint32_t temp_32;
     uint8_t temp_8[3];
@@ -131,7 +143,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalTexelCount);
     if (asset->m_FinalTexelCount != 0)
     {
-        asset->m_FinalTexels = (uint8_t*)malloc(asset->CalculateTexelCount());
+        asset->m_FinalTexels = (uint8_t*)malloc(asset->m_FinalTexelCount);
         if (asset->m_FinalTexels == NULL)
         {
             wxMessageDialog dialog(NULL, "Unable to allocate memory", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
@@ -139,11 +151,15 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
             delete asset;
             return NULL;
         }
-        pos = deserialize_buffer(bytesptr, pos, (uint8_t*)&asset->m_FinalTexels, asset->CalculateTexelCount());
+        pos = deserialize_buffer(bytesptr, pos, asset->m_FinalTexels, asset->m_FinalTexelCount);
     }
     else
         asset->m_FinalTexels = NULL;
-
+    thumb = P64Asset_Thumbnail::Deserialize(&bytesptr[pos]);
+    if (thumb != NULL)
+        asset->m_Thumbnail = *thumb;
+    else
+        asset->m_Thumbnail = P64Asset_Thumbnail();
     return asset;
 }
 
@@ -669,8 +685,6 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
 
 void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
 {
-    this->m_FinalTexelCount = 0;
-    this->m_FinalSize = wxSize(0, 0);
     if (!this->m_Image.IsOk())
         return;
     wxSize rawsize = this->m_Image.GetSize();
@@ -755,6 +769,7 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     this->GenerateTexels(base_rgb, base_alpha, newsize.x, newsize.y);
 
     // Generate some images for wxWidgets preview
+    this->m_ImageFinalRaw = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, true);
     if (bitmap_filter)
     {
         this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
@@ -768,5 +783,4 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
         base_alpha = NULL;
     }
     this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
-    this->m_BitmapFinal = wxBitmap(this->m_ImageFinal);
 }
