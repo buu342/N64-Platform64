@@ -1,5 +1,6 @@
 CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
 			  Tools/panel_search.cpp \
+			  Tools/asset_thumbnail.cpp \
 			  $(wildcard Tools/**/*.cpp)
 LIBFILES    = 
 #ifeq ($(DEBUG),1)

@@ -340,6 +340,39 @@ void Panel_Search::RefreshList()
     this->LoadAssetsInDir(this->m_CurrFolder.GetPathWithSep());
 }
 
+void Panel_Search::RefreshThumbnail(wxString assetname)
+{
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        bool isfolder;
+        wxVariant variant;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
+        isfolder = variant.GetBool();
+        if (!isfolder)
+        {
+            wxDataViewIconText icontext;
+            this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+            icontext << variant;
+            if (icontext.GetText() == assetname)
+            {
+                wxVector<wxVariant> newitem;
+                bool wasselected = this->m_DataViewListCtrl_ObjectList->IsRowSelected(i);
+                wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+                icontext.SetIcon(this->m_IconGenFunc(false, this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + extwithoutasterisk));
+                this->m_DataViewListCtrl_ObjectList->DeleteItem(i);
+                newitem.push_back((wxVariant)icontext);
+                newitem.push_back((wxVariant)isfolder);
+                this->m_DataViewListCtrl_ObjectList->InsertItem(i, newitem);
+                newitem.pop_back();
+                if (wasselected)
+                    this->m_DataViewListCtrl_ObjectList->SelectRow(i);
+
+                break;
+            }
+        }
+    }
+}
+
 void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event)
 {
     wxVariant variant;

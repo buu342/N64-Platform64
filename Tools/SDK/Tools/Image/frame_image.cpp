@@ -654,9 +654,11 @@ void Frame_ImageBrowser::SaveChanges()
     this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
     this->m_AssetModified = false;
 
-    // If the file got removed, then refresh the list
+    // If the file got removed, then refresh the entire list, otherwise just the thumbnail
     if (refresh)
         this->m_Panel_Search->RefreshList();
+    else
+        this->m_Panel_Search->RefreshThumbnail(this->m_AssetFilePath.GetName());
 }
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)
