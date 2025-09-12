@@ -7,6 +7,22 @@ TODO
 #include "panel_search.h"
 #include "../resource.h"
 #include "../json.h"
+#include <wx/msgqueue.h>
+
+
+typedef struct {
+    wxFileName file;
+    bool large;
+} ThreadWork;
+
+typedef struct {
+    wxFileName file;
+    wxIcon icon;
+} ThreadResult;
+
+
+static wxMessageQueue<ThreadWork*> global_msgqueue_iconthread;
+
 
 Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name) : wxPanel(parent, id, pos, size, style, name)
 {
@@ -84,12 +100,14 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu), NULL, this);
     this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler(Panel_Search::m_DataViewListCtrl_ObjectList_ItemEditingDone), NULL, this);
+    this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_Search::ThreadEvent));
 
 }
 
 Panel_Search::~Panel_Search()
 {
-
+    this->StopThread_IconGenerator();
+    this->Disconnect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_Search::ThreadEvent));
 }
 
 void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
@@ -243,6 +261,8 @@ void Panel_Search::Search_SetAssetType(wxString type, wxString ext)
 void Panel_Search::Search_IconGenerator(wxIcon (*function)(bool, wxFileName))
 {
     this->m_IconGenFunc = function;
+    this->StopThread_IconGenerator();
+    this->StartThread_IconGenerator();
 }
 
 void Panel_Search::Search_NewAssetGenerator(void (*function)(wxFrame*, wxFileName))
@@ -321,13 +341,11 @@ bool Panel_Search::LoadAssetsInDir(wxFileName path, wxString filter)
     for (wxString asset : list)
     {
         wxVector<wxVariant> items;
-        if (this->m_IconGenFunc == NULL)
-            items.push_back((wxVariant)wxDataViewIconText(asset, wxNullIcon));
-        else
-            items.push_back((wxVariant)wxDataViewIconText(asset, this->m_IconGenFunc(false, path.GetPathWithSep() + asset + extwithoutasterisk)));
+        items.push_back((wxVariant)wxDataViewIconText(asset, wxNullIcon));
         items.push_back((wxVariant)false);
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
         items.pop_back();
+        global_msgqueue_iconthread.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + asset + extwithoutasterisk), false});
     }
 
     // Done
@@ -342,35 +360,8 @@ void Panel_Search::RefreshList()
 
 void Panel_Search::RefreshThumbnail(wxString assetname)
 {
-    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
-    {
-        bool isfolder;
-        wxVariant variant;
-        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
-        isfolder = variant.GetBool();
-        if (!isfolder)
-        {
-            wxDataViewIconText icontext;
-            this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
-            icontext << variant;
-            if (icontext.GetText() == assetname)
-            {
-                wxVector<wxVariant> newitem;
-                bool wasselected = this->m_DataViewListCtrl_ObjectList->IsRowSelected(i);
-                wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
-                icontext.SetIcon(this->m_IconGenFunc(false, this->m_CurrFolder.GetPathWithSep() + icontext.GetText() + extwithoutasterisk));
-                this->m_DataViewListCtrl_ObjectList->DeleteItem(i);
-                newitem.push_back((wxVariant)icontext);
-                newitem.push_back((wxVariant)isfolder);
-                this->m_DataViewListCtrl_ObjectList->InsertItem(i, newitem);
-                newitem.pop_back();
-                if (wasselected)
-                    this->m_DataViewListCtrl_ObjectList->SelectRow(i);
-
-                break;
-            }
-        }
-    }
+    wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+    global_msgqueue_iconthread.Post(new ThreadWork{ wxFileName(this->m_CurrFolder.GetPathWithSep() + assetname + extwithoutasterisk), false });
 }
 
 void Panel_Search::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event)
@@ -557,4 +548,125 @@ void Panel_Search::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& ev
 wxFileName Panel_Search::GetMainFolder()
 {
     return this->m_MainFolder;
+}
+
+
+/*==============================
+    ServerBrowser::StartThread_IconGenerator
+    Starts the icon generator thread
+==============================*/
+
+void Panel_Search::StartThread_IconGenerator()
+{
+    if (this->m_IconGeneratorThread == NULL)
+    {
+        this->m_IconGeneratorThread = new IconGeneratorThread(this, this->m_IconGenFunc);
+        if (this->m_IconGeneratorThread->Run() != wxTHREAD_NO_ERROR)
+        {
+            delete this->m_IconGeneratorThread;
+            this->m_IconGeneratorThread = NULL;
+        }
+    }
+}
+
+
+/*==============================
+    ServerBrowser::StopThread_IconGenerator
+    Stops the icon generator thread
+==============================*/
+
+void Panel_Search::StopThread_IconGenerator()
+{
+    if (this->m_IconGeneratorThread != NULL)
+    {
+        this->m_IconGeneratorThread->Delete();
+        delete this->m_IconGeneratorThread;
+        this->m_IconGeneratorThread = NULL;
+    }
+}
+
+void Panel_Search::ThreadEvent(wxThreadEvent& event)
+{
+    ThreadResult* iconresult = event.GetPayload<ThreadResult*>();
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        bool isfolder;
+        wxVariant variant;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
+        isfolder = variant.GetBool();
+        if (!isfolder)
+        {
+            wxDataViewIconText icontext;
+            this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+            icontext << variant;
+            if (icontext.GetText() == iconresult->file.GetName())
+            {
+                wxVector<wxVariant> newitem;
+                bool wasselected = this->m_DataViewListCtrl_ObjectList->IsRowSelected(i);
+                wxString extwithoutasterisk = this->m_AssetExt.SubString(1, this->m_AssetExt.Length() - 1);
+                icontext.SetIcon(iconresult->icon);
+                this->m_DataViewListCtrl_ObjectList->DeleteItem(i);
+                newitem.push_back((wxVariant)icontext);
+                newitem.push_back((wxVariant)isfolder);
+                this->m_DataViewListCtrl_ObjectList->InsertItem(i, newitem);
+                newitem.pop_back();
+                if (wasselected)
+                    this->m_DataViewListCtrl_ObjectList->SelectRow(i);
+                break;
+            }
+        }
+    }
+}
+
+
+/*=============================================================
+                     Icon Generator Thread
+=============================================================*/
+
+/*==============================
+    IconGeneratorThread (Constructor)
+    Initializes the class
+==============================*/
+
+IconGeneratorThread::IconGeneratorThread(Panel_Search* panel, wxIcon(*func)(bool, wxFileName)) : wxThread(wxTHREAD_JOINABLE)
+{
+    this->m_Panel = panel;
+    this->m_IconGenFunc = func;
+}
+
+
+/*==============================
+    IconGeneratorThread (Destructor)
+    Cleans up the class before deletion
+==============================*/
+
+IconGeneratorThread::~IconGeneratorThread()
+{
+
+}
+
+
+/*==============================
+    IconGeneratorThread::Entry
+    The entry function for the thread
+    @return The exit code
+==============================*/
+
+void* IconGeneratorThread::Entry()
+{
+    while (!TestDestroy())
+    {
+        ThreadWork* t;
+        while (global_msgqueue_iconthread.ReceiveTimeout(0, t) == wxMSGQUEUE_NO_ERROR)
+        {
+            wxIcon i = this->m_IconGenFunc(t->large, t->file);
+            wxThreadEvent evt = wxThreadEvent(wxEVT_THREAD, wxID_ANY);
+            ThreadResult* r = new ThreadResult();
+            r->file = t->file;
+            r->icon = i;
+            evt.SetPayload<ThreadResult*>(r);
+            wxQueueEvent(this->m_Panel, evt.Clone());
+        }
+    }
+    return NULL;
 }

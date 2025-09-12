@@ -23,6 +23,15 @@ typedef struct IUnknown IUnknown;
 #include <wx/panel.h>
 #include <wx/dir.h>
 
+
+/*********************************
+             Classes
+*********************************/
+
+// Prototypes
+class IconGeneratorThread;
+
+// Search panel
 class Panel_Search : public wxPanel
 {
     private:
@@ -46,6 +55,7 @@ class Panel_Search : public wxPanel
         wxDataViewListCtrl* m_DataViewListCtrl_ObjectList;
         wxDataViewColumn* m_DataViewListColumn_Assets;
         wxDataViewListCtrl* m_DataViewListCtrl_ObjectGrid;
+        IconGeneratorThread* m_IconGeneratorThread;
 
         void m_Button_Back_OnButtonClick(wxCommandEvent& event);
         void m_Button_NewAsset_OnButtonClick(wxCommandEvent& event);
@@ -56,6 +66,9 @@ class Panel_Search : public wxPanel
         void m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event);
         void m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event);
         void m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event);
+        void ThreadEvent(wxThreadEvent& event);
+        void StartThread_IconGenerator();
+        void StopThread_IconGenerator();
 
     public:
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
@@ -73,4 +86,20 @@ class Panel_Search : public wxPanel
         void SelectItem(wxString name, bool isfolder, bool editname=false);
 
         wxFileName GetMainFolder();
+};
+
+// Icon generator thread
+class IconGeneratorThread : public wxThread
+{
+    private:
+        wxIcon(*m_IconGenFunc)(bool, wxFileName);
+        Panel_Search* m_Panel;
+
+    protected:
+
+    public:
+        IconGeneratorThread(Panel_Search* panel, wxIcon(*func)(bool, wxFileName));
+        ~IconGeneratorThread();
+
+        virtual void* Entry() wxOVERRIDE;
 };
