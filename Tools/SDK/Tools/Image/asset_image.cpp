@@ -20,7 +20,7 @@ P64Asset_Image::P64Asset_Image()
     this->m_TilingY = TILING_MIRROR;
     this->m_MaskStart = wxPoint(0, 0);
     this->m_UseMipmaps = false;
-    this->m_Dithering = DITHERING_ORDERED;
+    this->m_Dithering = DITHERING_NONE;
     this->m_AlphaMode = ALPHA_NONE;
     this->m_AlphaColor = wxColor(0, 0, 0);
     this->m_AlphaPath = "";

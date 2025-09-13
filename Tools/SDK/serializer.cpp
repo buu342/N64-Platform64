@@ -80,7 +80,7 @@ void serialize_wxstring(std::vector<uint8_t>* buff, wxString str)
 
 void serialize_buffer(std::vector<uint8_t>* buff, uint8_t* data, uint32_t size)
 {
-    for (int i=0; i<size; i++)
+    for (uint32_t i=0; i<size; i++)
         buff->push_back(data[i]);
     serialize_pad(buff);
 }
