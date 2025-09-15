@@ -238,13 +238,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Splitter_Vertical->SetMinimumPaneSize(1);
 
     this->m_Panel_Search = new Panel_Search(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    this->m_Panel_Search->Search_SetAssetType(CONTENT_NAME, CONTENT_EXTENSION);
-    this->m_Panel_Search->Search_IconGenerator(IconGenerator);
-    this->m_Panel_Search->Search_NewAssetGenerator(AssetGenerator);
-    this->m_Panel_Search->Search_LoadAssetFunc(AssetLoad);
-    this->m_Panel_Search->Search_RenameAssetFunc(AssetRename);
-    this->m_Panel_Search->Search_SetFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
-    this->m_Panel_Search->Search_SetTarget(this);
+    this->m_Panel_Search->SetAssetType(CONTENT_NAME, CONTENT_EXTENSION);
+    this->m_Panel_Search->SetTargetFrame(this);
+    this->m_Panel_Search->SetAssetGenerator(AssetGenerator);
+    this->m_Panel_Search->SetLoadAssetFunc(AssetLoad);
+    this->m_Panel_Search->SetRenameAssetFunc(AssetRename);
+    this->m_Panel_Search->SetIconGenerator(IconGenerator);
+    this->m_Panel_Search->SetMainFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
 
     m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxWANTS_CHARS);
     wxBoxSizer* m_Sizer_Edit;
@@ -655,10 +655,10 @@ void Frame_ImageBrowser::SaveChanges()
     this->m_AssetModified = false;
 
     // If the file got removed, then refresh the entire list, otherwise just the thumbnail
-    if (refresh)
-        this->m_Panel_Search->RefreshList();
-    else
-        this->m_Panel_Search->RefreshThumbnail(this->m_AssetFilePath.GetName());
+    //if (refresh)
+    //    this->m_Panel_Search->RefreshList();
+    //else
+    //    this->m_Panel_Search->RefreshThumbnail(this->m_AssetFilePath.GetName());
 }
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)

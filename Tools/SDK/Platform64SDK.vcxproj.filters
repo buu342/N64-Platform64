@@ -25,7 +25,7 @@
     <ClCompile Include="serializer.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="asset_thumbnail.cpp">
+    <ClCompile Include="Tools\asset_thumbnail.cpp">
       <Filter>Source\Tools</Filter>
     </ClCompile>
   </ItemGroup>
@@ -126,7 +126,7 @@
     <ClInclude Include="Resources\Cursors\Cursor_Pipette.h">
       <Filter>Resources\Cursors</Filter>
     </ClInclude>
-    <ClInclude Include="asset_thumbnail.h">
+    <ClInclude Include="Tools\asset_thumbnail.h">
       <Filter>Source\Tools</Filter>
     </ClInclude>
   </ItemGroup>

@@ -41,13 +41,12 @@ class Frame_ImageBrowser : public wxFrame
 	protected:
         wxSplitterWindow* m_Splitter_Vertical;
         Panel_Search* m_Panel_Search;
-        wxPanel* m_Panel_Edit;
         wxSplitterWindow* m_Splitter_Horizontal;
         wxToolBarToolBase* m_Tool_Save;
         wxToolBarToolBase* m_Tool_Alpha;
         wxToolBarToolBase* m_Tool_Tiling;
         wxToolBarToolBase* m_Tool_Filtering;
-        wxToolBarToolBase* m_Tool_PalettePreview;
+        //wxToolBarToolBase* m_Tool_PalettePreview;
         wxToolBarToolBase* m_Tool_Statistics;
         wxToolBarToolBase* m_Tool_ZoomIn;
         wxToolBarToolBase* m_Tool_ZoomOut;
@@ -121,6 +120,7 @@ class Frame_ImageBrowser : public wxFrame
         bool m_AssetModified;
         bool m_UsingPipette;
 
+        wxPanel* m_Panel_Edit;
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;
         Panel_ImgView* m_ScrolledWin_Preview;
