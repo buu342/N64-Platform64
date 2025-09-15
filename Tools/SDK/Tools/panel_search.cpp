@@ -122,22 +122,7 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
         name += this->m_AssetExt_NoAsterisk;
     this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
-
-    // TODO: Select the item and make the textbox editable
-    /*
-    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
-    {
-        wxVariant variant;
-        wxDataViewIconText icontext;
-        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
-        icontext << variant;
-        if ((icontext.GetText() + extwithoutasterisk) == name)
-        {
-            this->m_DataViewListCtrl_ObjectList->EditItem(this->m_DataViewListCtrl_ObjectList->RowToItem(i), this->m_DataViewListCtrl_ObjectList->GetColumn(0));
-            break;
-        }
-    }
-    */
+    this->m_Display_Current->SelectItem(name, false, true);
     event.Skip();
 }
 
@@ -157,23 +142,7 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
     }
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
-
-    // TODO: Select the item and make the textbox editable
-    /*
-    this->SelectItem(name, true);
-    for (int i = 0; i < this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
-    {
-        wxVariant variant;
-        wxDataViewIconText icontext;
-        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
-        icontext << variant;
-        if (icontext.GetText() == name)
-        {
-            this->m_DataViewListCtrl_ObjectList->EditItem(this->m_DataViewListCtrl_ObjectList->RowToItem(i), this->m_DataViewListCtrl_ObjectList->GetColumn(0));
-            break;
-        }
-    }
-    */
+    this->m_Display_Current->SelectItem(name, true, true);
     event.Skip();
 }
 
@@ -182,14 +151,14 @@ void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
     if (this->m_TextCtrl_Search->IsShown())
     {
         this->m_TextCtrl_Search->Hide();
-        //if (this->m_TextCtrl_Search->GetValue().Length() > 0)
-        //    this->LoadAssetsInDir(this->m_CurrFolder);
+        if (this->m_TextCtrl_Search->GetValue().Length() > 0)
+            this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     }
     else
     {
         this->m_TextCtrl_Search->Show();
-        //if (this->m_TextCtrl_Search->GetValue().Length() > 0)
-        //    this->LoadAssetsInDir(this->m_CurrFolder, this->m_TextCtrl_Search->GetValue());
+        if (this->m_TextCtrl_Search->GetValue().Length() > 0)
+            this->m_Display_Current->LoadDirectory(this->m_CurrFolder, this->m_TextCtrl_Search->GetValue());
     }
     this->Layout();
 
@@ -335,6 +304,13 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
     return true;
 }
 
+void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool rename)
+{
+    (void)itemname;
+    (void)isfolder;
+    (void)rename;
+}
+
 
 /*==============================
     ServerBrowser::StartThread_IconGenerator
@@ -433,10 +409,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
             parent->m_CurrFolder.Assign(newpath);
     }
     else
-    {
-        wxString extwithoutasterisk = parent->m_AssetExt.SubString(1, parent->m_AssetExt.Length() - 1);
-        parent->m_LoadAssetFunc(parent->m_TargetFrame, parent->m_CurrFolder.GetPathWithSep() + icontext.GetText() + extwithoutasterisk);
-    }
+        parent->m_LoadAssetFunc(parent->m_TargetFrame, parent->m_CurrFolder.GetPathWithSep() + icontext.GetText() + parent->m_AssetExt_NoAsterisk);
 
     // Clear the search bar
     parent->m_TextCtrl_Search->ChangeValue(wxEmptyString);
@@ -547,9 +520,8 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
         newname = parent->m_CurrFolder.GetPathWithSep() + newicontext.GetText();
         if (!isfolder)
         {
-            wxString extwithoutasterisk = parent->m_AssetExt_NoAsterisk;
-            oldname += extwithoutasterisk;
-            newname += extwithoutasterisk;
+            oldname += parent->m_AssetExt_NoAsterisk;
+            newname += parent->m_AssetExt_NoAsterisk;
         }
         if (((isfolder && wxDirExists(newname)) || (!isfolder && wxFileExists(newname))) || !wxRenameFile(oldname, newname, false))
         {
@@ -605,6 +577,31 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
         this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->m_AssetExt_NoAsterisk), false});
     }
     return true;
+}
+
+void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool rename)
+{
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        wxVariant variant;
+        wxDataViewIconText icontext;
+        wxString finalname;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+        icontext << variant;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
+        finalname = icontext.GetText();
+        if (!variant.GetBool())
+            finalname += parent->m_AssetExt_NoAsterisk;
+        if (variant.GetBool() == isfolder && !finalname.Cmp(itemname))
+        {
+            if (rename)
+                this->m_DataViewListCtrl_ObjectList->EditItem(this->m_DataViewListCtrl_ObjectList->RowToItem(i), this->m_DataViewListCtrl_ObjectList->GetColumn(0));
+            else
+                this->m_DataViewListCtrl_ObjectList->SelectRow(i);
+            break;
+        }
+    }
 }
 
 void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
@@ -667,6 +664,13 @@ bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
     for (wxString f : this->m_Assets)
         this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->m_AssetExt_NoAsterisk), true});
     return true;
+}
+
+void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool rename)
+{
+    (void)itemname;
+    (void)isfolder;
+    (void)rename;
 }
 
 

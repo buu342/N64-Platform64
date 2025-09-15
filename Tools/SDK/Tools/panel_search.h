@@ -34,6 +34,7 @@ typedef struct IUnknown IUnknown;
 typedef struct {
     wxFileName file;
     bool large;
+    bool isnew;
 } ThreadWork;
 
 typedef struct {
@@ -124,6 +125,7 @@ class Panel_AssetDisplay : public wxPanel
         wxMessageQueue<ThreadWork*> m_ThreadQueue;
 
         bool virtual LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
+        void virtual SelectItem(wxString itemname, bool isfolder, bool rename=false);
 
         Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay();
@@ -145,6 +147,7 @@ class Panel_AssetDisplay_List : public Panel_AssetDisplay
 
     public:
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
+        void SelectItem(wxString itemname, bool isfolder, bool rename=false);
         
         Panel_AssetDisplay_List(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay_List();
@@ -159,6 +162,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
 
     public:
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
+        void SelectItem(wxString itemname, bool isfolder, bool rename=false);
 
         Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay_Grid();
