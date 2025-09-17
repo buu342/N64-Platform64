@@ -546,6 +546,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
             }
         }
     }
+    event.Skip();
 }
 
 bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
@@ -621,20 +622,14 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
             icontext << variant;
             if (icontext.GetText() == iconresult->file.GetName())
             {
-                wxVector<wxVariant> newitem;
-                bool wasselected = this->m_DataViewListCtrl_ObjectList->IsRowSelected(i);
                 icontext.SetIcon(iconresult->icon);
-                this->m_DataViewListCtrl_ObjectList->DeleteItem(i);
-                newitem.push_back((wxVariant)icontext);
-                newitem.push_back((wxVariant)isfolder);
-                this->m_DataViewListCtrl_ObjectList->InsertItem(i, newitem);
-                newitem.pop_back();
-                if (wasselected)
-                    this->m_DataViewListCtrl_ObjectList->SelectRow(i);
+                variant << icontext;
+                this->m_DataViewListCtrl_ObjectList->SetValue(variant, i, 0);
                 break;
             }
         }
     }
+    event.Skip();
 }
 
 
