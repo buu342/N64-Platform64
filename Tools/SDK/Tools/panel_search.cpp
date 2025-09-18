@@ -20,6 +20,7 @@ Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     this->m_NewAssetFunc = NULL;
     this->m_LoadAssetFunc = NULL;
     this->m_RenameAssetFunc = NULL;
+    this->m_TargetFrame = NULL;
 
     wxFlexGridSizer* m_Sizer_Search;
     m_Sizer_Search = new wxFlexGridSizer( 0, 1, 0, 0 );
@@ -121,6 +122,7 @@ void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
     else
         name += this->m_AssetExt_NoAsterisk;
     this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name);
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     this->m_Display_Current->SelectItem(name, false, true);
     event.Skip();
@@ -137,10 +139,12 @@ void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
         {
             testname = wxString::Format("%s (%d)", name, i);
             i++;
-        } while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
+        } 
+        while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
         name = testname;
     }
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     this->m_Display_Current->SelectItem(name, true, true);
     event.Skip();
@@ -181,11 +185,12 @@ void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     this->m_Display_Current->Show();
     this->Layout();
-    event.Skip();
+    event.Skip(false); // False is needed because for some reason SetBitmap causes OnButtonClick to fire twice on the first click
 }
 
 void Panel_Search::m_TextCtrl_Search_OnText(wxCommandEvent& event)
 {
+    this->m_Display_Current->LoadDirectory(this->m_CurrFolder, event.GetString());
     event.Skip();
 }
 
