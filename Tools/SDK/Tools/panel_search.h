@@ -58,16 +58,28 @@ class Panel_Search : public wxPanel
 {
     private:
         wxFileName m_MainFolder;
+        wxFileName m_CurrFolder;
+        wxFrame* m_TargetFrame;
+        wxString m_AssetType;
+        wxString m_AssetExt;
+        wxString m_AssetExt_NoAsterisk;
+        void (*m_NewAssetFunc)(wxFrame*, wxFileName);
+        void (*m_LoadAssetFunc)(wxFrame*, wxFileName);
+        void (*m_RenameAssetFunc)(wxFrame*, wxFileName, wxFileName);
         
+        wxBitmapButton* m_Button_Back;
         wxBitmapButton* m_Button_NewAsset;
         wxBitmapButton* m_Button_NewFolder;
         wxBitmapToggleButton* m_ToggleButton_Search;
         wxBitmapButton* m_Button_ViewMode;
+        wxTextCtrl* m_TextCtrl_Search;
         Panel_AssetDisplay_List* m_Display_List;
         Panel_AssetDisplay_Grid* m_Display_Grid;
         Panel_AssetDisplay* m_Display_Current;
 
         void m_Button_Back_OnButtonClick(wxCommandEvent& event);
+        void m_Button_NewAsset_OnButtonClick(wxCommandEvent& event);
+        void m_Button_NewFolder_OnButtonClick(wxCommandEvent& event);
         void m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event);
         void m_Button_ViewMode_OnButtonClick(wxCommandEvent& event);
         void m_TextCtrl_Search_OnText(wxCommandEvent& event);
@@ -75,21 +87,6 @@ class Panel_Search : public wxPanel
     protected:
 
     public:
-        wxBitmapButton* m_Button_Back;
-        wxFileName m_CurrFolder;
-        wxString m_AssetType;
-        wxString m_AssetExt;
-        wxString m_AssetExt_NoAsterisk;
-
-        void (*m_NewAssetFunc)(wxFrame*, wxFileName);
-        void (*m_LoadAssetFunc)(wxFrame*, wxFileName);
-        void (*m_RenameAssetFunc)(wxFrame*, wxFileName, wxFileName);
-        wxTextCtrl* m_TextCtrl_Search;
-        wxFrame* m_TargetFrame;
-
-        void m_Button_NewAsset_OnButtonClick(wxCommandEvent& event);
-        void m_Button_NewFolder_OnButtonClick(wxCommandEvent& event);
-
         void SetMainFolder(wxFileName path);
         void SetAssetType(wxString name, wxString type);
         void SetAssetGenerator(void (*function)(wxFrame*, wxFileName));
@@ -97,7 +94,19 @@ class Panel_Search : public wxPanel
         void SetLoadAssetFunc(void (*function)(wxFrame*, wxFileName));
         void SetRenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxFileName));
         void SetTargetFrame(wxFrame* target);
+        void SetCurrentFolder(wxFileName path);
+        void ClearSearchbox();
+
         wxFileName GetMainFolder();
+        wxFileName GetCurrentFolder();
+        wxString GetAssetType();
+        wxString GetAssetExtension(bool asterisk=false);
+        wxFrame* GetTargetFrame();
+
+        void CreateNewAsset();
+        void CreateNewFolder();
+        void LoadAsset(wxFileName path);
+        void RenameAsset(wxFileName oldpath, wxFileName newpath);
 
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
         ~Panel_Search();
@@ -112,7 +121,9 @@ class Panel_AssetDisplay : public wxPanel
         std::list<wxString> m_Assets;
 
         IconGeneratorThread* m_IconGeneratorThread;
+        wxMessageQueue<ThreadWork*> m_ThreadQueue;
 
+        wxIcon (*m_IconGenFunc)(bool, wxFileName);
         std::list<wxIcon> m_IconCache_LRU;
         std::unordered_map<wxString, std::list<wxIcon>::iterator> m_IconCache_Map;
 
@@ -121,11 +132,11 @@ class Panel_AssetDisplay : public wxPanel
         void StopThread_IconGenerator();
 
     public:
-        wxIcon (*m_IconGenFunc)(bool, wxFileName);
-        wxMessageQueue<ThreadWork*> m_ThreadQueue;
-
         bool virtual LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void virtual SelectItem(wxString itemname, bool isfolder, bool rename=false);
+        
+        void SetIconGenerator(wxIcon (*function)(bool, wxFileName));
+        wxMessageQueue<ThreadWork*>* GetThreadQueue();
 
         Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay();

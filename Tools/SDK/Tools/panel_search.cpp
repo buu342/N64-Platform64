@@ -98,7 +98,9 @@ Panel_Search::~Panel_Search()
 
 void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 {
-    this->m_CurrFolder.RemoveLastDir();
+    wxFileName curr = this->m_CurrFolder;
+    curr.RemoveLastDir();
+    this->SetCurrentFolder(curr);
     this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     event.Skip();
@@ -106,47 +108,13 @@ void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 
 void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
 {
-    wxString name = wxString("New ") + this->m_AssetType;
-    if (wxFileName(this->m_CurrFolder.GetPathWithSep() + name + this->m_AssetExt_NoAsterisk).Exists())
-    {
-        wxString testname;
-        int i = 2;
-        do
-        {
-            testname = wxString::Format("%s (%d)%s", name, i, this->m_AssetExt_NoAsterisk);
-            i++;
-        } 
-        while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname).Exists());
-        name = testname;
-    }
-    else
-        name += this->m_AssetExt_NoAsterisk;
-    this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name);
-    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
-    this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
-    this->m_Display_Current->SelectItem(name, false, true);
+    this->CreateNewAsset();
     event.Skip();
 }
 
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 {
-    wxString name = "New folder";
-    if (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + name))
-    {
-        wxString testname;
-        int i = 2;
-        do
-        {
-            testname = wxString::Format("%s (%d)", name, i);
-            i++;
-        } 
-        while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
-        name = testname;
-    }
-    wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
-    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
-    this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
-    this->m_Display_Current->SelectItem(name, true, true);
+    this->CreateNewFolder();
     event.Skip();
 }
 
@@ -194,15 +162,10 @@ void Panel_Search::m_TextCtrl_Search_OnText(wxCommandEvent& event)
     event.Skip();
 }
 
-wxFileName Panel_Search::GetMainFolder()
-{
-    return this->m_MainFolder;
-}
-
 void Panel_Search::SetMainFolder(wxFileName path)
 {
     this->m_MainFolder = path;
-    this->m_CurrFolder = path;
+    this->SetCurrentFolder(path);
     this->m_Display_Current->LoadDirectory(path);
 }
 
@@ -215,8 +178,8 @@ void Panel_Search::SetAssetType(wxString type, wxString ext)
 
 void Panel_Search::SetIconGenerator(wxIcon (*function)(bool, wxFileName))
 {
-    this->m_Display_List->m_IconGenFunc = function;
-    this->m_Display_Grid->m_IconGenFunc = function;
+    this->m_Display_List->SetIconGenerator(function);
+    this->m_Display_Grid->SetIconGenerator(function);
 }
 
 void Panel_Search::SetAssetGenerator(void (*function)(wxFrame*, wxFileName))
@@ -237,6 +200,95 @@ void Panel_Search::SetRenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxF
 void Panel_Search::SetTargetFrame(wxFrame* target)
 {
     this->m_TargetFrame = target;
+}
+
+void Panel_Search::SetCurrentFolder(wxFileName path)
+{
+    this->m_CurrFolder = path;
+    OutputDebugStringA((const char*)wxString(this->m_CurrFolder.GetPathWithSep() + " " + this->m_MainFolder.GetPathWithSep() + "\n").c_str());
+    this->m_Button_Back->Enable(this->m_CurrFolder.GetPathWithSep().Cmp(this->m_MainFolder.GetPathWithSep()));
+}
+
+void Panel_Search::ClearSearchbox()
+{
+    this->m_TextCtrl_Search->SetValue(wxEmptyString);
+}
+
+wxFileName Panel_Search::GetMainFolder()
+{
+    return this->m_MainFolder;
+}
+
+wxFileName Panel_Search::GetCurrentFolder()
+{
+    return this->m_CurrFolder;
+}
+
+wxString Panel_Search::GetAssetType()
+{
+    return this->m_AssetType;
+}
+
+wxString Panel_Search::GetAssetExtension(bool asterisk)
+{
+    return asterisk ? this->m_AssetExt : this->m_AssetExt_NoAsterisk;
+}
+
+wxFrame* Panel_Search::GetTargetFrame()
+{
+    return this->m_TargetFrame;
+}
+
+void Panel_Search::CreateNewAsset()
+{
+    wxString name = wxString("New ") + this->m_AssetType;
+    if (wxFileName(this->m_CurrFolder.GetPathWithSep() + name + this->m_AssetExt_NoAsterisk).Exists())
+    {
+        wxString testname;
+        int i = 2;
+        do
+        {
+            testname = wxString::Format("%s (%d)%s", name, i, this->m_AssetExt_NoAsterisk);
+            i++;
+        } while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname).Exists());
+        name = testname;
+    }
+    else
+        name += this->m_AssetExt_NoAsterisk;
+    this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name);
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
+    this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
+    this->m_Display_Current->SelectItem(name, false, true);
+}
+
+void Panel_Search::CreateNewFolder()
+{
+    wxString name = "New folder";
+    if (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + name))
+    {
+        wxString testname;
+        int i = 2;
+        do
+        {
+            testname = wxString::Format("%s (%d)", name, i);
+            i++;
+        } while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
+        name = testname;
+    }
+    wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
+    this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
+    this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
+    this->m_Display_Current->SelectItem(name, true, true);
+}
+
+void Panel_Search::LoadAsset(wxFileName path)
+{
+    this->m_LoadAssetFunc(this->m_TargetFrame, path);
+}
+
+void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
+{
+    this->m_RenameAssetFunc(this->m_TargetFrame, oldpath, newpath);
 }
 
 
@@ -265,13 +317,10 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
     wxDir dir;
     Panel_Search* parent = (Panel_Search*)this->GetParent();
 
-    // Try to oepn the directory
+    // Try to open the directory
     dir.Open(path.GetPathWithSep());
     if (!dir.IsOpened())
         return false;
-
-    // Disable the back button if we're in the root
-    parent->m_Button_Back->Enable(parent->GetMainFolder().GetPathWithSep().Cmp(path.GetPathWithSep()));
 
     // Clear the lists
     this->m_Assets.clear();
@@ -291,7 +340,7 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
 
     // List assets
     list.Empty();
-    cont = dir.GetFirst(&filename, parent->m_AssetExt, wxDIR_FILES);
+    cont = dir.GetFirst(&filename, parent->GetAssetExtension(true), wxDIR_FILES);
     while (cont)
     {
         if (filter == wxEmptyString || filename.Lower().Contains(filter.Lower()))
@@ -318,7 +367,7 @@ void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool renam
 
 
 /*==============================
-    ServerBrowser::StartThread_IconGenerator
+    Panel_AssetDisplay::StartThread_IconGenerator
     Starts the icon generator thread
 ==============================*/
 
@@ -337,7 +386,7 @@ void Panel_AssetDisplay::StartThread_IconGenerator()
 
 
 /*==============================
-    ServerBrowser::StopThread_IconGenerator
+    Panel_AssetDisplay::StopThread_IconGenerator
     Stops the icon generator thread
 ==============================*/
 
@@ -354,6 +403,16 @@ void Panel_AssetDisplay::StopThread_IconGenerator()
 void Panel_AssetDisplay::ThreadEvent(wxThreadEvent& event)
 {
     event.Skip();
+}
+
+void Panel_AssetDisplay::SetIconGenerator(wxIcon(*function)(bool, wxFileName))
+{
+    this->m_IconGenFunc = function;
+}
+
+wxMessageQueue<ThreadWork*>* Panel_AssetDisplay::GetThreadQueue()
+{
+    return &this->m_ThreadQueue;
 }
 
 
@@ -409,15 +468,15 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
     // Handle activation
     if (isfolder)
     {
-        wxFileName newpath = parent->m_CurrFolder.GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator();
+        wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator();
         if (this->LoadDirectory(newpath))
-            parent->m_CurrFolder.Assign(newpath);
+            parent->SetCurrentFolder(newpath);
     }
     else
-        parent->m_LoadAssetFunc(parent->m_TargetFrame, parent->m_CurrFolder.GetPathWithSep() + icontext.GetText() + parent->m_AssetExt_NoAsterisk);
+        parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + icontext.GetText() + parent->GetAssetExtension());
 
     // Clear the search bar
-    parent->m_TextCtrl_Search->ChangeValue(wxEmptyString);
+    parent->ClearSearchbox();
     event.Skip();
 }
 
@@ -455,7 +514,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataVi
                             wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
                             if (dialog.ShowModal() == wxID_YES)
                             {
-                                wxString path = parent->m_CurrFolder.GetPathWithSep() + it.GetText();
+                                wxString path = parent->GetCurrentFolder().GetPathWithSep() + it.GetText();
                                 if (wxDir::Remove(path, wxPATH_RMDIR_RECURSIVE))
                                     this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
                             }
@@ -465,7 +524,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataVi
                             wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the asset '%s'?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
                             if (dialog.ShowModal() == wxID_YES)
                             {
-                                wxString path = parent->m_CurrFolder.GetPathWithSep() + it.GetText() + parent->m_AssetExt_NoAsterisk;
+                                wxString path = parent->GetCurrentFolder().GetPathWithSep() + it.GetText() + parent->GetAssetExtension();
                                 if (wxRemoveFile(path))
                                     this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
                             }
@@ -486,8 +545,8 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataVi
             wxCommandEvent evt;
             switch (event.GetId())
             {
-                case 1: parent->m_Button_NewAsset_OnButtonClick(evt); break;
-                case 2: parent->m_Button_NewFolder_OnButtonClick(evt); break;
+                case 1: parent->CreateNewAsset(); break;
+                case 2: parent->CreateNewFolder(); break;
             }
             event.Skip();
         });
@@ -521,24 +580,24 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
         newicontext << variant;
 
         // Perform the rename
-        oldname = parent->m_CurrFolder.GetPathWithSep() + oldicontext.GetText();
-        newname = parent->m_CurrFolder.GetPathWithSep() + newicontext.GetText();
+        oldname = parent->GetCurrentFolder().GetPathWithSep() + oldicontext.GetText();
+        newname = parent->GetCurrentFolder().GetPathWithSep() + newicontext.GetText();
         if (!isfolder)
         {
-            oldname += parent->m_AssetExt_NoAsterisk;
-            newname += parent->m_AssetExt_NoAsterisk;
+            oldname += parent->GetAssetExtension();
+            newname += parent->GetAssetExtension();
         }
         if (((isfolder && wxDirExists(newname)) || (!isfolder && wxFileExists(newname))) || !wxRenameFile(oldname, newname, false))
         {
             event.Veto();
             return;
         }
-        parent->m_RenameAssetFunc(parent->m_TargetFrame, oldname, newname);
+        parent->RenameAsset(oldname, newname);
 
         // Reload the list and select the renamed item
         // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
         event.Veto();
-        this->LoadDirectory(parent->m_CurrFolder);
+        this->LoadDirectory(parent->GetCurrentFolder());
         for (int i = 0; i < this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
         {
             wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
@@ -580,7 +639,7 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
         items.push_back((wxVariant)wxDataViewIconText(f, wxNullIcon));
         items.push_back((wxVariant)false);
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
-        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->m_AssetExt_NoAsterisk), false});
+        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), false});
     }
     return true;
 }
@@ -598,7 +657,7 @@ void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool 
         this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
         finalname = icontext.GetText();
         if (!variant.GetBool())
-            finalname += parent->m_AssetExt_NoAsterisk;
+            finalname += parent->GetAssetExtension();
         if (variant.GetBool() == isfolder && !finalname.Cmp(itemname))
         {
             if (rename)
@@ -662,7 +721,7 @@ bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
 
     // Generate icons
     for (wxString f : this->m_Assets)
-        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->m_AssetExt_NoAsterisk), true});
+        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), true});
     return true;
 }
 
@@ -712,7 +771,7 @@ void* IconGeneratorThread::Entry()
     while (!TestDestroy())
     {
         ThreadWork* t;
-        while (this->m_Parent->m_ThreadQueue.ReceiveTimeout(0, t) == wxMSGQUEUE_NO_ERROR)
+        while (this->m_Parent->GetThreadQueue()->ReceiveTimeout(0, t) == wxMSGQUEUE_NO_ERROR)
         {
             wxIcon i = this->m_IconGenFunc(t->large, t->file);
             wxThreadEvent evt = wxThreadEvent(wxEVT_THREAD, wxID_ANY);
