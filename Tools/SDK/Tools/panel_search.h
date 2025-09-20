@@ -124,8 +124,8 @@ class Panel_AssetDisplay : public wxPanel
         wxMessageQueue<ThreadWork*> m_ThreadQueue;
 
         wxIcon (*m_IconGenFunc)(bool, wxFileName);
-        std::list<wxIcon> m_IconCache_LRU;
-        std::unordered_map<wxString, std::list<wxIcon>::iterator> m_IconCache_Map;
+        std::list<std::tuple<wxString, wxIcon>> m_IconCache_LRU;
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator> m_IconCache_Map;
 
         void ThreadEvent(wxThreadEvent& event);
         void StartThread_IconGenerator();

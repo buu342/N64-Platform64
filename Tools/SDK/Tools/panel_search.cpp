@@ -9,6 +9,7 @@ TODO
 #include "../json.h"
 #include <wx/msgqueue.h>
 
+#define ICONCACHESIZE 100
 
 /*=============================================================
                          Search Panel
@@ -205,7 +206,6 @@ void Panel_Search::SetTargetFrame(wxFrame* target)
 void Panel_Search::SetCurrentFolder(wxFileName path)
 {
     this->m_CurrFolder = path;
-    OutputDebugStringA((const char*)wxString(this->m_CurrFolder.GetPathWithSep() + " " + this->m_MainFolder.GetPathWithSep() + "\n").c_str());
     this->m_Button_Back->Enable(this->m_CurrFolder.GetPathWithSep().Cmp(this->m_MainFolder.GetPathWithSep()));
 }
 
@@ -631,15 +631,23 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
     }
 
-    // Add assets to the view and queue the icon generation
+    // Add assets to the view
     this->StartThread_IconGenerator();
     for (wxString f : this->m_Assets)
     {
+        wxIcon icon = wxNullIcon;
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(path.GetPathWithSep() + f + parent->GetAssetExtension());
+        if (it != this->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
+        {
+            icon = std::get<1>(*it->second);
+            this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
+        }
+        else // Icon does not exist in the cache, generate it in another thread
+            this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), false});
         wxVector<wxVariant> items;
-        items.push_back((wxVariant)wxDataViewIconText(f, wxNullIcon));
+        items.push_back((wxVariant)wxDataViewIconText(f, icon));
         items.push_back((wxVariant)false);
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
-        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), false});
     }
     return true;
 }
@@ -686,6 +694,22 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
             icontext << variant;
             if (icontext.GetText() == iconresult->file.GetName())
             {
+                std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(iconresult->file.GetFullPath());
+                if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
+                {
+                    if (this->m_IconCache_LRU.size() == ICONCACHESIZE) // Cache is full, pop the least recently used icon
+                    {
+                        this->m_IconCache_Map.erase(std::get<0>(this->m_IconCache_LRU.back()));
+                        this->m_IconCache_LRU.pop_back();
+                    }
+                    this->m_IconCache_LRU.push_front({iconresult->file.GetFullPath(), iconresult->icon});
+                    this->m_IconCache_Map[iconresult->file.GetFullPath()] = this->m_IconCache_LRU.begin();
+                }
+                else // If the icon was was in the cache, update it and move it to the beginning of the recently accessed list
+                {
+                    std::get<1>(*it->second) = iconresult->icon;
+                    this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
+                }
                 icontext.SetIcon(iconresult->icon);
                 variant << icontext;
                 this->m_DataViewListCtrl_ObjectList->SetValue(variant, i, 0);
@@ -693,6 +717,7 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
             }
         }
     }
+    free(iconresult);
     event.Skip();
 }
 
@@ -780,6 +805,7 @@ void* IconGeneratorThread::Entry()
             r->icon = i;
             evt.SetPayload<ThreadResult*>(r);
             wxQueueEvent(this->m_Parent, evt.Clone());
+            free(t);
         }
     }
     return NULL;
