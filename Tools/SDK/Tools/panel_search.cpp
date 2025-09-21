@@ -9,7 +9,13 @@ TODO
 #include "../json.h"
 #include <wx/msgqueue.h>
 
+
+/*=============================================================
+                            Macros
+=============================================================*/
+
 #define ICONCACHESIZE 100
+
 
 /*=============================================================
                          Search Panel
@@ -728,12 +734,46 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 
 Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
 {
+    this->m_Selection = NULL;
 
+    wxBoxSizer* m_Sizer_Main;
+    m_Sizer_Main = new wxBoxSizer(wxVERTICAL);
+
+    m_Panel_Icons = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
+    m_Panel_Icons->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    m_Panel_Icons->SetWindowStyle(wxBORDER_THEME);
+    m_Panel_Icons->SetScrollRate(0, 5);
+    m_Sizer_Icons = new wxWrapSizer(wxHORIZONTAL, wxWRAPSIZER_DEFAULT_FLAGS);
+
+    m_Panel_Icons->SetSizer(m_Sizer_Icons);
+    m_Panel_Icons->Layout();
+    m_Sizer_Icons->Fit(m_Panel_Icons);
+    m_Sizer_Main->Add(m_Panel_Icons, 1, wxEXPAND | wxALL, 5);
+
+    this->SetSizer(m_Sizer_Main);
+    this->Layout();
+    
+    m_Panel_Icons->Connect(wxEVT_SIZE, wxSizeEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize), NULL, this);
 }
 
 Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
 {
 
+}
+
+void Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize(wxSizeEvent& event)
+{
+    if (this->m_Panel_Icons != NULL)
+        this->m_Panel_Icons->SetVirtualSize(this->GetSize());
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid::CreateIconPanel(wxFileName filepath, bool isfolder)
+{
+    Panel_AssetDisplay_Grid_Item* item = new Panel_AssetDisplay_Grid_Item(this->m_Panel_Icons);
+    item->SetFile(filepath, isfolder);
+    this->m_Sizer_Icons->Add(item, 1, wxALL | wxEXPAND, 5);
+    this->Layout();
 }
 
 bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
@@ -744,9 +784,14 @@ bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
     if (Panel_AssetDisplay::LoadDirectory(path, filter) == false)
         return false;
 
-    // Generate icons
+    // Remove all the old panels
+    this->m_Sizer_Icons->Clear(true);
+
+    // Add the new panels
+    for (wxString f : this->m_Folders)
+        this->CreateIconPanel(f, true);
     for (wxString f : this->m_Assets)
-        this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), true});
+        this->CreateIconPanel(f, false);
     return true;
 }
 
@@ -756,6 +801,109 @@ void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool 
     (void)isfolder;
     (void)rename;
 }
+
+void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
+{
+    if (this->m_Selection != NULL)
+        this->m_Selection->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_Selection = item;
+    if (item != NULL)
+        item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
+    this->Refresh();
+}
+
+
+/*=============================================================
+                    Asset Display Grid Item
+=============================================================*/
+
+Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : wxPanel(parent)
+{
+    this->m_IsFolder = false;
+
+    this->SetSize(wxSize(128, 128));
+    this->SetWindowStyle(wxTAB_TRAVERSAL);
+    this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->SetMinSize(wxSize(128, 128));
+    this->SetMaxSize(wxSize(128, 128));
+
+    wxFlexGridSizer* m_Sizer_Icon;
+    m_Sizer_Icon = new wxFlexGridSizer(3, 1, 0, 0);
+    m_Sizer_Icon->AddGrowableCol(0);
+    m_Sizer_Icon->AddGrowableRow(0);
+    m_Sizer_Icon->SetFlexibleDirection(wxBOTH);
+    m_Sizer_Icon->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_NONE);
+
+    m_Sizer_Icon->SetMinSize(wxSize(128, 128));
+    m_Bitmap_Icon = new wxStaticBitmap(this, wxID_ANY, wxNullIcon, wxDefaultPosition, wxSize(64, 64), 0);
+    m_Bitmap_Icon->SetMinSize(wxSize(64, 64));
+    m_Bitmap_Icon->SetMaxSize(wxSize(64, 64));
+
+    m_Sizer_Icon->Add(m_Bitmap_Icon, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 12);
+
+    m_StaticText_Name = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    m_StaticText_Name->Wrap(127);
+    m_Sizer_Icon->Add(m_StaticText_Name, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+    m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    m_TextCtrl_NameEdit->Hide();
+    m_Sizer_Icon->Add(m_TextCtrl_NameEdit, 0, wxALL, 5);
+
+    this->SetSizer(m_Sizer_Icon);
+    this->Layout();
+
+    this->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDClick));
+    this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDown));
+    this->m_StaticText_Name->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_Name_OnLeftDown), NULL, this);
+    this->m_TextCtrl_NameEdit->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter), NULL, this);
+
+}
+
+Panel_AssetDisplay_Grid_Item::~Panel_AssetDisplay_Grid_Item()
+{
+
+}
+
+void Panel_AssetDisplay_Grid_Item::SetFile(wxFileName filepath, bool isfolder)
+{
+    this->m_StaticText_Name->SetLabel(filepath.GetName());
+    this->m_IsFolder = isfolder;
+    if (isfolder)
+        this->m_Bitmap_Icon->SetBitmap(Icon_Folder);
+    else
+        this->m_Bitmap_Icon->SetBitmap(Icon_MissingLarge);
+}
+
+void Panel_AssetDisplay_Grid_Item::m_OnLeftDClick(wxMouseEvent& event)
+{
+    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    parent->HighlightItem(NULL);
+    if (this->m_IsFolder)
+    {
+        wxString newpath = ((Panel_Search*)parent->GetParent())->GetCurrentFolder().GetPathWithSep() + this->m_StaticText_Name->GetLabel() + wxFileName::GetPathSeparator();
+        OutputDebugStringA((const char*)(newpath + "\n").c_str());
+        parent->LoadDirectory(newpath);
+    }
+    event.Skip(false);
+}
+
+void Panel_AssetDisplay_Grid_Item::m_OnLeftDown(wxMouseEvent& event)
+{
+    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    parent->HighlightItem(this);
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid_Item::m_Icon_Name_OnLeftDown(wxMouseEvent& event)
+{
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& event)
+{
+    event.Skip();
+}
+
 
 
 /*=============================================================

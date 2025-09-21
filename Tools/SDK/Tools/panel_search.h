@@ -23,6 +23,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/panel.h>
 #include <wx/dir.h>
 #include <wx/msgqueue.h>
+#include <wx/wrapsizer.h>
 #include <list>
 #include <unordered_map>
 
@@ -51,7 +52,8 @@ typedef struct {
 class IconGeneratorThread;
 class Panel_AssetDisplay;
 class Panel_AssetDisplay_List;
-class Panel_AssetDisplay_Grid; 
+class Panel_AssetDisplay_Grid;
+class Panel_AssetDisplay_Grid_Item;
 
 // Search panel
 class Panel_Search : public wxPanel
@@ -167,16 +169,46 @@ class Panel_AssetDisplay_List : public Panel_AssetDisplay
 class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
 {
     private:
+        wxScrolledWindow* m_Panel_Icons = NULL;
+        wxWrapSizer* m_Sizer_Icons;
+        Panel_AssetDisplay_Grid_Item* m_Selection;
+        
+        void ThreadEvent(wxThreadEvent& event);
+        void CreateIconPanel(wxFileName filepath, bool isfolder);
+
+        void m_Panel_Icons_OnSize(wxSizeEvent& event);
 
     protected:
-        void ThreadEvent(wxThreadEvent& event);
 
     public:
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
+        void HighlightItem(Panel_AssetDisplay_Grid_Item* item);
 
         Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay_Grid();
+};
+
+class Panel_AssetDisplay_Grid_Item : public wxPanel
+{
+    private:
+        wxStaticBitmap* m_Bitmap_Icon;
+        wxStaticText* m_StaticText_Name;
+        wxTextCtrl* m_TextCtrl_NameEdit;
+        bool m_IsFolder;
+
+        void m_OnLeftDClick(wxMouseEvent& event);
+        void m_OnLeftDown(wxMouseEvent& event);
+        void m_Icon_Name_OnLeftDown(wxMouseEvent& event);
+        void m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& event);
+
+    protected:
+
+    public:
+        void SetFile(wxFileName filepath, bool isfolder);
+
+        Panel_AssetDisplay_Grid_Item(wxWindow* parent);
+        ~Panel_AssetDisplay_Grid_Item();
 };
 
 // Icon generator thread
