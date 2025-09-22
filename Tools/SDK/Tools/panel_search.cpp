@@ -297,6 +297,13 @@ void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
     this->m_RenameAssetFunc(this->m_TargetFrame, oldpath, newpath);
 }
 
+void Panel_Search::ReloadThumbnail(wxFileName path)
+{
+    // TODO: Check if thumbnail in cache before submitting the post
+    this->m_Display_List->GetThreadQueue()->Post(new ThreadWork{path, false});
+    this->m_Display_Grid->GetThreadQueue()->Post(new ThreadWork{path, true});
+}
+
 
 /*=============================================================
                    Asset Display Base Class
@@ -437,7 +444,7 @@ Panel_AssetDisplay_List::Panel_AssetDisplay_List(wxWindow* parent, wxWindowID id
 
     m_DataViewListCtrl_ObjectList = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER | wxDV_ROW_LINES);
     m_DataViewListColumn_Assets = m_DataViewListCtrl_ObjectList->AppendIconTextColumn(_("Assets"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
-    m_DataViewListColumn_IsFolder = m_DataViewListCtrl_ObjectList->AppendIconTextColumn(_("Assets"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN);
+    m_DataViewListColumn_IsFolder = m_DataViewListCtrl_ObjectList->AppendToggleColumn(_("Assets"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN);
     m_Sizer_Main->Add(m_DataViewListCtrl_ObjectList, 0, wxALL | wxEXPAND, 5);
 
     this->SetSizer(m_Sizer_Main);
@@ -642,14 +649,15 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
     for (wxString f : this->m_Assets)
     {
         wxIcon icon = wxNullIcon;
-        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(path.GetPathWithSep() + f + parent->GetAssetExtension());
+        wxString fpath = path.GetPathWithSep() + f + parent->GetAssetExtension();
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(fpath);
         if (it != this->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
         {
             icon = std::get<1>(*it->second);
             this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
         }
         else // Icon does not exist in the cache, generate it in another thread
-            this->m_ThreadQueue.Post(new ThreadWork{wxFileName(path.GetPathWithSep() + f + parent->GetAssetExtension()), false});
+            this->m_ThreadQueue.Post(new ThreadWork{wxFileName(fpath), false});
         wxVector<wxVariant> items;
         items.push_back((wxVariant)wxDataViewIconText(f, icon));
         items.push_back((wxVariant)false);
@@ -698,7 +706,7 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
             wxDataViewIconText icontext;
             this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
             icontext << variant;
-            if (icontext.GetText() == iconresult->file.GetName())
+            if (!icontext.GetText().Cmp(iconresult->file.GetName()))
             {
                 std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(iconresult->file.GetFullPath());
                 if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
@@ -754,6 +762,7 @@ Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id
     this->Layout();
     
     m_Panel_Icons->Connect(wxEVT_SIZE, wxSizeEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize), NULL, this);
+    this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
 }
 
 Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
@@ -785,9 +794,11 @@ bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
         return false;
 
     // Remove all the old panels
+    this->HighlightItem(NULL);
     this->m_Sizer_Icons->Clear(true);
 
     // Add the new panels
+    this->StartThread_IconGenerator();
     for (wxString f : this->m_Folders)
         this->CreateIconPanel(f, true);
     for (wxString f : this->m_Assets)
@@ -808,8 +819,54 @@ void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
         this->m_Selection->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     this->m_Selection = item;
     if (item != NULL)
-        item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
+        item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT));
     this->Refresh();
+}
+
+int Panel_AssetDisplay_Grid::GetItemCount()
+{
+    return this->m_Sizer_Icons->GetItemCount();
+}
+
+Panel_AssetDisplay_Grid_Item* Panel_AssetDisplay_Grid::GetItemAtPos(int pos)
+{
+    return (Panel_AssetDisplay_Grid_Item*)(this->m_Sizer_Icons->GetItem(pos)->GetWindow());
+}
+
+void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
+{
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    ThreadResult* iconresult = event.GetPayload<ThreadResult*>();
+    for (int i=0; i<this->GetItemCount(); i++)
+    {
+        Panel_AssetDisplay_Grid_Item* item = this->GetItemAtPos(i);
+        if (item != NULL && !item->IsFolder())
+        {
+            if (!item->GetFileName().Cmp(iconresult->file.GetName()))
+            {
+                std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(iconresult->file.GetFullPath());
+                if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
+                {
+                    if (this->m_IconCache_LRU.size() == ICONCACHESIZE) // Cache is full, pop the least recently used icon
+                    {
+                        this->m_IconCache_Map.erase(std::get<0>(this->m_IconCache_LRU.back()));
+                        this->m_IconCache_LRU.pop_back();
+                    }
+                    this->m_IconCache_LRU.push_front({iconresult->file.GetFullPath(), iconresult->icon});
+                    this->m_IconCache_Map[iconresult->file.GetFullPath()] = this->m_IconCache_LRU.begin();
+                }
+                else // If the icon was was in the cache, update it and move it to the beginning of the recently accessed list
+                {
+                    std::get<1>(*it->second) = iconresult->icon;
+                    this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
+                }
+                item->SetIcon(iconresult->icon);
+                break;
+            }
+        }
+    }
+    free(iconresult);
+    event.Skip();
 }
 
 
@@ -854,9 +911,10 @@ Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : w
 
     this->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDClick));
     this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDown));
+    this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick), NULL, this);
+    this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown), NULL, this);
     this->m_StaticText_Name->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_Name_OnLeftDown), NULL, this);
     this->m_TextCtrl_NameEdit->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter), NULL, this);
-
 }
 
 Panel_AssetDisplay_Grid_Item::~Panel_AssetDisplay_Grid_Item()
@@ -868,22 +926,39 @@ void Panel_AssetDisplay_Grid_Item::SetFile(wxFileName filepath, bool isfolder)
 {
     this->m_StaticText_Name->SetLabel(filepath.GetName());
     this->m_IsFolder = isfolder;
-    if (isfolder)
-        this->m_Bitmap_Icon->SetBitmap(Icon_Folder);
+    if (!isfolder)
+    {
+        Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+        Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
+        wxIcon icon = wxNullIcon;
+        wxString fpath = parent_parent->GetCurrentFolder().GetPathWithSep() + this->GetFileName() + parent_parent->GetAssetExtension();
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = parent->m_IconCache_Map.find(fpath);
+        if (it != parent->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
+        {
+            icon = std::get<1>(*it->second);
+            parent->m_IconCache_LRU.splice(parent->m_IconCache_LRU.begin(), parent->m_IconCache_LRU, it->second);
+        }
+        else // Icon does not exist in the cache, generate it in another thread
+            parent->GetThreadQueue()->Post(new ThreadWork{wxFileName(fpath), true});
+        this->m_Bitmap_Icon->SetBitmap(icon);
+    }
     else
-        this->m_Bitmap_Icon->SetBitmap(Icon_MissingLarge);
+        this->m_Bitmap_Icon->SetBitmap(Icon_Folder_Large);
 }
 
 void Panel_AssetDisplay_Grid_Item::m_OnLeftDClick(wxMouseEvent& event)
 {
     Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
     parent->HighlightItem(NULL);
     if (this->m_IsFolder)
     {
-        wxString newpath = ((Panel_Search*)parent->GetParent())->GetCurrentFolder().GetPathWithSep() + this->m_StaticText_Name->GetLabel() + wxFileName::GetPathSeparator();
-        OutputDebugStringA((const char*)(newpath + "\n").c_str());
-        parent->LoadDirectory(newpath);
+        wxString newpath = parent_parent->GetCurrentFolder().GetPathWithSep() + this->m_StaticText_Name->GetLabel() + wxFileName::GetPathSeparator();
+        if (parent->LoadDirectory(newpath))
+            parent_parent->SetCurrentFolder(newpath);
     }
+    else
+        parent_parent->LoadAsset(parent_parent->GetCurrentFolder().GetPathWithSep() + this->m_StaticText_Name->GetLabel() + parent_parent->GetAssetExtension());
     event.Skip(false);
 }
 
@@ -891,6 +966,18 @@ void Panel_AssetDisplay_Grid_Item::m_OnLeftDown(wxMouseEvent& event)
 {
     Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
     parent->HighlightItem(this);
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event)
+{
+    event.ResumePropagation(wxEVENT_PROPAGATE_MAX);
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event)
+{
+    event.ResumePropagation(wxEVENT_PROPAGATE_MAX);
     event.Skip();
 }
 
@@ -904,6 +991,20 @@ void Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& e
     event.Skip();
 }
 
+wxString Panel_AssetDisplay_Grid_Item::GetFileName()
+{
+    return this->m_StaticText_Name->GetLabel();
+}
+
+bool Panel_AssetDisplay_Grid_Item::IsFolder()
+{
+    return this->m_IsFolder;
+}
+
+void Panel_AssetDisplay_Grid_Item::SetIcon(wxIcon icon)
+{
+    this->m_Bitmap_Icon->SetBitmap(icon);
+}
 
 
 /*=============================================================

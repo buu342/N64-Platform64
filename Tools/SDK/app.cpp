@@ -27,6 +27,7 @@ wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
 wxIcon   Icon_Save = wxNullIcon;
 wxIcon   Icon_Folder = wxNullIcon;
+wxIcon   Icon_Folder_Large = wxNullIcon;
 wxIcon   Icon_Palette = wxNullIcon;
 wxIcon   Icon_Pipette = wxNullIcon;
 wxIcon   Icon_ToggleAlpha = wxNullIcon;
@@ -98,6 +99,7 @@ bool App::OnInit()
     Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
     Icon_Save.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Save));
     Icon_Folder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder));
+    Icon_Folder_Large.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder_Large));
     Icon_Palette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Palette));
     Icon_Pipette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Pipette));
     Icon_ToggleAlpha.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleAlpha));

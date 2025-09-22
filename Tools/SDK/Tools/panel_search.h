@@ -108,6 +108,7 @@ class Panel_Search : public wxPanel
         void CreateNewAsset();
         void CreateNewFolder();
         void LoadAsset(wxFileName path);
+        void ReloadThumbnail(wxFileName path);
         void RenameAsset(wxFileName oldpath, wxFileName newpath);
 
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
@@ -126,16 +127,17 @@ class Panel_AssetDisplay : public wxPanel
         wxMessageQueue<ThreadWork*> m_ThreadQueue;
 
         wxIcon (*m_IconGenFunc)(bool, wxFileName);
-        std::list<std::tuple<wxString, wxIcon>> m_IconCache_LRU;
-        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator> m_IconCache_Map;
 
         void ThreadEvent(wxThreadEvent& event);
         void StartThread_IconGenerator();
         void StopThread_IconGenerator();
 
     public:
-        bool virtual LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
-        void virtual SelectItem(wxString itemname, bool isfolder, bool rename=false);
+        std::list<std::tuple<wxString, wxIcon>> m_IconCache_LRU;
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator> m_IconCache_Map;
+        
+        virtual bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
+        virtual void  SelectItem(wxString itemname, bool isfolder, bool rename=false);
         
         void SetIconGenerator(wxIcon (*function)(bool, wxFileName));
         wxMessageQueue<ThreadWork*>* GetThreadQueue();
@@ -173,10 +175,10 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         wxWrapSizer* m_Sizer_Icons;
         Panel_AssetDisplay_Grid_Item* m_Selection;
         
-        void ThreadEvent(wxThreadEvent& event);
         void CreateIconPanel(wxFileName filepath, bool isfolder);
 
         void m_Panel_Icons_OnSize(wxSizeEvent& event);
+        void ThreadEvent(wxThreadEvent& event);
 
     protected:
 
@@ -184,6 +186,9 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
         void HighlightItem(Panel_AssetDisplay_Grid_Item* item);
+
+        int GetItemCount();
+        Panel_AssetDisplay_Grid_Item* GetItemAtPos(int pos);
 
         Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay_Grid();
@@ -199,6 +204,8 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
 
         void m_OnLeftDClick(wxMouseEvent& event);
         void m_OnLeftDown(wxMouseEvent& event);
+        void m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event);
+        void m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event);
         void m_Icon_Name_OnLeftDown(wxMouseEvent& event);
         void m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& event);
 
@@ -206,6 +213,10 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
 
     public:
         void SetFile(wxFileName filepath, bool isfolder);
+        void SetIcon(wxIcon icon);
+
+        wxString GetFileName();
+        bool IsFolder();
 
         Panel_AssetDisplay_Grid_Item(wxWindow* parent);
         ~Panel_AssetDisplay_Grid_Item();

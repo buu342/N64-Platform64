@@ -985,6 +985,8 @@
                         <property name="window_extra_style"></property>
                         <property name="window_name"></property>
                         <property name="window_style"></property>
+                        <event name="OnLeftDClick">m_Bitmap_Icon_OnLeftDClick</event>
+                        <event name="OnLeftDown">m_Bitmap_Icon_OnLeftDown</event>
                       </object>
                     </object>
                     <object class="sizeritem" expanded="false">
