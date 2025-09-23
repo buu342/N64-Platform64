@@ -747,21 +747,22 @@ Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id
     wxBoxSizer* m_Sizer_Main;
     m_Sizer_Main = new wxBoxSizer(wxVERTICAL);
 
-    m_Panel_Icons = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
-    m_Panel_Icons->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    m_Panel_Icons->SetWindowStyle(wxBORDER_THEME);
-    m_Panel_Icons->SetScrollRate(0, 5);
-    m_Sizer_Icons = new wxWrapSizer(wxHORIZONTAL, wxWRAPSIZER_DEFAULT_FLAGS);
+    this->m_Panel_Icons = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
+    this->m_Panel_Icons->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_Panel_Icons->SetWindowStyle(wxBORDER_THEME);
+    this->m_Panel_Icons->SetScrollRate(0, 5);
+    this->m_Sizer_Icons = new wxWrapSizer(wxHORIZONTAL, wxWRAPSIZER_DEFAULT_FLAGS);
 
-    m_Panel_Icons->SetSizer(m_Sizer_Icons);
-    m_Panel_Icons->Layout();
-    m_Sizer_Icons->Fit(m_Panel_Icons);
-    m_Sizer_Main->Add(m_Panel_Icons, 1, wxEXPAND | wxALL, 5);
+    this->m_Panel_Icons->SetSizer(m_Sizer_Icons);
+    this->m_Panel_Icons->Layout();
+    this->m_Sizer_Icons->Fit(m_Panel_Icons);
+    m_Sizer_Main->Add(this->m_Panel_Icons, 1, wxEXPAND | wxALL, 5);
 
     this->SetSizer(m_Sizer_Main);
     this->Layout();
     
-    m_Panel_Icons->Connect(wxEVT_SIZE, wxSizeEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize), NULL, this);
+    this->m_Panel_Icons->Connect(wxEVT_SIZE, wxSizeEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize), NULL, this);
+    this->m_Panel_Icons->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnLeftDown), NULL, this);
     this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
 }
 
@@ -774,6 +775,12 @@ void Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize(wxSizeEvent& event)
 {
     if (this->m_Panel_Icons != NULL)
         this->m_Panel_Icons->SetVirtualSize(this->GetSize());
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid::m_Panel_Icons_OnLeftDown(wxMouseEvent& event)
+{
+    this->HighlightItem(NULL);
     event.Skip();
 }
 
@@ -819,7 +826,13 @@ void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
         this->m_Selection->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     this->m_Selection = item;
     if (item != NULL)
-        item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT));
+    {
+        #if defined(MACOS) || defined(LINUX)
+            item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT));
+        #else
+            item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
+        #endif
+    }
     this->Refresh();
 }
 
@@ -892,19 +905,19 @@ Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : w
     m_Sizer_Icon->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_NONE);
 
     m_Sizer_Icon->SetMinSize(wxSize(128, 128));
-    m_Bitmap_Icon = new wxStaticBitmap(this, wxID_ANY, wxNullIcon, wxDefaultPosition, wxSize(64, 64), 0);
-    m_Bitmap_Icon->SetMinSize(wxSize(64, 64));
-    m_Bitmap_Icon->SetMaxSize(wxSize(64, 64));
+    this->m_Bitmap_Icon = new wxStaticBitmap(this, wxID_ANY, wxNullIcon, wxDefaultPosition, wxSize(64, 64), 0);
+    this->m_Bitmap_Icon->SetMinSize(wxSize(64, 64));
+    this->m_Bitmap_Icon->SetMaxSize(wxSize(64, 64));
 
-    m_Sizer_Icon->Add(m_Bitmap_Icon, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 12);
+    m_Sizer_Icon->Add(this->m_Bitmap_Icon, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 12);
 
-    m_StaticText_Name = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    m_StaticText_Name->Wrap(127);
-    m_Sizer_Icon->Add(m_StaticText_Name, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+    this->m_StaticText_Name = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    this->m_StaticText_Name->Wrap(127);
+    m_Sizer_Icon->Add(this->m_StaticText_Name, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
-    m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
-    m_TextCtrl_NameEdit->Hide();
-    m_Sizer_Icon->Add(m_TextCtrl_NameEdit, 0, wxALL, 5);
+    this->m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    this->m_TextCtrl_NameEdit->Hide();
+    m_Sizer_Icon->Add(this->m_TextCtrl_NameEdit, 0, wxALL, 5);
 
     this->SetSizer(m_Sizer_Icon);
     this->Layout();
@@ -971,13 +984,13 @@ void Panel_AssetDisplay_Grid_Item::m_OnLeftDown(wxMouseEvent& event)
 
 void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event)
 {
-    event.ResumePropagation(wxEVENT_PROPAGATE_MAX);
+    event.ResumePropagation(1);
     event.Skip();
 }
 
 void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event)
 {
-    event.ResumePropagation(wxEVENT_PROPAGATE_MAX);
+    event.ResumePropagation(1);
     event.Skip();
 }
 

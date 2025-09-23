@@ -178,6 +178,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         void CreateIconPanel(wxFileName filepath, bool isfolder);
 
         void m_Panel_Icons_OnSize(wxSizeEvent& event);
+        void m_Panel_Icons_OnLeftDown(wxMouseEvent& event);
         void ThreadEvent(wxThreadEvent& event);
 
     protected:

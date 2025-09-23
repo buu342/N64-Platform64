@@ -851,6 +851,7 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style">wxBORDER_THEME|wxHSCROLL|wxVSCROLL</property>
+            <event name="OnLeftDown">m_Panel_Icons_OnLeftDown</event>
             <event name="OnSize">m_Panel_Icons_OnSize</event>
             <object class="wxWrapSizer" expanded="true">
               <property name="flags">wxWRAPSIZER_DEFAULT_FLAGS</property>
