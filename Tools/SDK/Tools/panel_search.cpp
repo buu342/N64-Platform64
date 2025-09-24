@@ -299,9 +299,10 @@ void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
 
 void Panel_Search::ReloadThumbnail(wxFileName path)
 {
-    // TODO: Check if thumbnail in cache before submitting the post
-    this->m_Display_List->GetThreadQueue()->Post(new ThreadWork{path, false});
-    this->m_Display_Grid->GetThreadQueue()->Post(new ThreadWork{path, true});
+    if (this->m_Display_List->IsIconInCache(path.GetFullPath()))
+        this->m_Display_List->GetThreadQueue()->Post(new ThreadWork{path, false});
+    if (this->m_Display_Grid->IsIconInCache(path.GetFullPath()))
+        this->m_Display_Grid->GetThreadQueue()->Post(new ThreadWork{path, true});
 }
 
 
@@ -376,6 +377,46 @@ void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool renam
     (void)itemname;
     (void)isfolder;
     (void)rename;
+}
+
+bool Panel_AssetDisplay::IsIconInCache(wxString filepath)
+{
+    std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(filepath);
+    return it != this->m_IconCache_Map.end();
+}
+
+wxIcon Panel_AssetDisplay::GetIconFromCache(wxString filepath, bool islarge)
+{
+    wxIcon icon = wxNullIcon;
+    std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(filepath);
+    if (it != this->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
+    {
+        icon = std::get<1>(*it->second);
+        this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
+    }
+    else // Icon does not exist in the cache, generate it in another thread
+        this->GetThreadQueue()->Post(new ThreadWork{wxFileName(filepath), islarge});
+    return icon;
+}
+
+void Panel_AssetDisplay::InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon)
+{
+    std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(filepath);
+    if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
+    {
+        if (this->m_IconCache_LRU.size() == ICONCACHESIZE) // Cache is full, pop the least recently used icon
+        {
+            this->m_IconCache_Map.erase(std::get<0>(this->m_IconCache_LRU.back()));
+            this->m_IconCache_LRU.pop_back();
+        }
+        this->m_IconCache_LRU.push_front({filepath, icon});
+        this->m_IconCache_Map[filepath] = this->m_IconCache_LRU.begin();
+    }
+    else // If the icon was was in the cache, update it and move it to the beginning of the recently accessed list
+    {
+        std::get<1>(*it->second) = icon;
+        this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
+    }
 }
 
 
@@ -648,16 +689,7 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
     this->StartThread_IconGenerator();
     for (wxString f : this->m_Assets)
     {
-        wxIcon icon = wxNullIcon;
-        wxString fpath = path.GetPathWithSep() + f + parent->GetAssetExtension();
-        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(fpath);
-        if (it != this->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
-        {
-            icon = std::get<1>(*it->second);
-            this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
-        }
-        else // Icon does not exist in the cache, generate it in another thread
-            this->m_ThreadQueue.Post(new ThreadWork{wxFileName(fpath), false});
+        wxIcon icon = this->GetIconFromCache(path.GetPathWithSep() + f + parent->GetAssetExtension(), false);
         wxVector<wxVariant> items;
         items.push_back((wxVariant)wxDataViewIconText(f, icon));
         items.push_back((wxVariant)false);
@@ -708,22 +740,7 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
             icontext << variant;
             if (!icontext.GetText().Cmp(iconresult->file.GetName()))
             {
-                std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(iconresult->file.GetFullPath());
-                if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
-                {
-                    if (this->m_IconCache_LRU.size() == ICONCACHESIZE) // Cache is full, pop the least recently used icon
-                    {
-                        this->m_IconCache_Map.erase(std::get<0>(this->m_IconCache_LRU.back()));
-                        this->m_IconCache_LRU.pop_back();
-                    }
-                    this->m_IconCache_LRU.push_front({iconresult->file.GetFullPath(), iconresult->icon});
-                    this->m_IconCache_Map[iconresult->file.GetFullPath()] = this->m_IconCache_LRU.begin();
-                }
-                else // If the icon was was in the cache, update it and move it to the beginning of the recently accessed list
-                {
-                    std::get<1>(*it->second) = iconresult->icon;
-                    this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
-                }
+                this->InsertOrUpdateCachedIcon(iconresult->file.GetFullPath(), iconresult->icon);
                 icontext.SetIcon(iconresult->icon);
                 variant << icontext;
                 this->m_DataViewListCtrl_ObjectList->SetValue(variant, i, 0);
@@ -857,22 +874,7 @@ void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
         {
             if (!item->GetFileName().Cmp(iconresult->file.GetName()))
             {
-                std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(iconresult->file.GetFullPath());
-                if (it == this->m_IconCache_Map.end()) // If the icon was not in the cache, pop it
-                {
-                    if (this->m_IconCache_LRU.size() == ICONCACHESIZE) // Cache is full, pop the least recently used icon
-                    {
-                        this->m_IconCache_Map.erase(std::get<0>(this->m_IconCache_LRU.back()));
-                        this->m_IconCache_LRU.pop_back();
-                    }
-                    this->m_IconCache_LRU.push_front({iconresult->file.GetFullPath(), iconresult->icon});
-                    this->m_IconCache_Map[iconresult->file.GetFullPath()] = this->m_IconCache_LRU.begin();
-                }
-                else // If the icon was was in the cache, update it and move it to the beginning of the recently accessed list
-                {
-                    std::get<1>(*it->second) = iconresult->icon;
-                    this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
-                }
+                this->InsertOrUpdateCachedIcon(iconresult->file.GetFullPath(), iconresult->icon);
                 item->SetIcon(iconresult->icon);
                 break;
             }
@@ -943,16 +945,7 @@ void Panel_AssetDisplay_Grid_Item::SetFile(wxFileName filepath, bool isfolder)
     {
         Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
         Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
-        wxIcon icon = wxNullIcon;
-        wxString fpath = parent_parent->GetCurrentFolder().GetPathWithSep() + this->GetFileName() + parent_parent->GetAssetExtension();
-        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = parent->m_IconCache_Map.find(fpath);
-        if (it != parent->m_IconCache_Map.end()) // If the icon exists in the cache, get it and mark the icon as recently used
-        {
-            icon = std::get<1>(*it->second);
-            parent->m_IconCache_LRU.splice(parent->m_IconCache_LRU.begin(), parent->m_IconCache_LRU, it->second);
-        }
-        else // Icon does not exist in the cache, generate it in another thread
-            parent->GetThreadQueue()->Post(new ThreadWork{wxFileName(fpath), true});
+        wxIcon icon = parent->GetIconFromCache(parent_parent->GetCurrentFolder().GetPathWithSep() + this->GetFileName() + parent_parent->GetAssetExtension(), true);
         this->m_Bitmap_Icon->SetBitmap(icon);
     }
     else

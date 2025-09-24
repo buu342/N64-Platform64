@@ -125,6 +125,8 @@ class Panel_AssetDisplay : public wxPanel
 
         IconGeneratorThread* m_IconGeneratorThread;
         wxMessageQueue<ThreadWork*> m_ThreadQueue;
+        std::list<std::tuple<wxString, wxIcon>> m_IconCache_LRU;
+        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator> m_IconCache_Map;
 
         wxIcon (*m_IconGenFunc)(bool, wxFileName);
 
@@ -133,13 +135,15 @@ class Panel_AssetDisplay : public wxPanel
         void StopThread_IconGenerator();
 
     public:
-        std::list<std::tuple<wxString, wxIcon>> m_IconCache_LRU;
-        std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator> m_IconCache_Map;
         
         virtual bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
-        virtual void  SelectItem(wxString itemname, bool isfolder, bool rename=false);
+        virtual void SelectItem(wxString itemname, bool isfolder, bool rename=false);
+
         
         void SetIconGenerator(wxIcon (*function)(bool, wxFileName));
+        bool IsIconInCache(wxString filepath);
+        wxIcon GetIconFromCache(wxString filepath, bool islarge);
+        void InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon);
         wxMessageQueue<ThreadWork*>* GetThreadQueue();
 
         Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
