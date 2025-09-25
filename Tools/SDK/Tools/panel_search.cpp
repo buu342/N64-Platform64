@@ -295,6 +295,8 @@ void Panel_Search::LoadAsset(wxFileName path)
 void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
 {
     this->m_RenameAssetFunc(this->m_TargetFrame, oldpath, newpath);
+    this->m_Display_List->RenameIconInCache(oldpath.GetFullPath(), newpath.GetFullPath());
+    this->m_Display_Grid->RenameIconInCache(oldpath.GetFullPath(), newpath.GetFullPath());
 }
 
 void Panel_Search::ReloadThumbnail(wxFileName path)
@@ -417,6 +419,19 @@ void Panel_AssetDisplay::InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon
         std::get<1>(*it->second) = icon;
         this->m_IconCache_LRU.splice(this->m_IconCache_LRU.begin(), this->m_IconCache_LRU, it->second);
     }
+}
+
+void Panel_AssetDisplay::RenameIconInCache(wxString oldpath, wxString newpath)
+{
+    std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(oldpath);
+    if (it == this->m_IconCache_Map.end())
+        return;
+    wxIcon icon = std::get<1>(*it->second);
+    this->m_IconCache_LRU.erase(it->second);
+    this->m_IconCache_Map.erase(oldpath);
+
+    this->m_IconCache_LRU.push_front({newpath, icon});
+    this->m_IconCache_Map[newpath] = this->m_IconCache_LRU.begin();
 }
 
 
@@ -798,6 +813,7 @@ void Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize(wxSizeEvent& event)
 void Panel_AssetDisplay_Grid::m_Panel_Icons_OnLeftDown(wxMouseEvent& event)
 {
     this->HighlightItem(NULL);
+    this->SetFocus();
     event.Skip();
 }
 
@@ -840,7 +856,10 @@ void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool 
 void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
 {
     if (this->m_Selection != NULL)
+    {
         this->m_Selection->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+        this->m_Selection->ApplyNameChange();
+    }
     this->m_Selection = item;
     if (item != NULL)
     {
@@ -851,6 +870,45 @@ void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
         #endif
     }
     this->Refresh();
+}
+
+void Panel_AssetDisplay_Grid::ReinsertItem(Panel_AssetDisplay_Grid_Item* item)
+{
+    bool wasselected = this->m_Selection == item;
+
+    // If the item was highlighted, remove the highlight
+    if (wasselected)
+        this->HighlightItem(NULL);
+
+    // Remove the item from the sizer
+    for (int i=0; i<this->m_Sizer_Icons->GetItemCount(); i++)
+    {
+        if (this->m_Sizer_Icons->GetItem(i)->GetWindow() == item)
+        {
+            this->m_Sizer_Icons->Remove(i);
+            break;
+        }
+    }
+
+    // Insert it back in the correct place
+    for (int i=0; i<this->GetItemCount(); i++)
+    {
+        Panel_AssetDisplay_Grid_Item* other = (Panel_AssetDisplay_Grid_Item*)this->m_Sizer_Icons->GetItem(i)->GetWindow();
+        if (item->IsFolder() && !other->IsFolder())
+            return;
+        if (!item->IsFolder() && other->IsFolder())
+            continue;
+        if (item->GetFileName().Cmp(other->GetFileName()) < 0)
+        {
+            this->m_Sizer_Icons->Insert(i, item, 1, wxALL | wxEXPAND, 5);
+            break;
+        }
+    }
+
+    // Highlight it again if it was selected
+    if (wasselected)
+        this->HighlightItem(item);
+    this->Layout();
 }
 
 int Panel_AssetDisplay_Grid::GetItemCount()
@@ -917,7 +975,7 @@ Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : w
     this->m_StaticText_Name->Wrap(127);
     m_Sizer_Icon->Add(this->m_StaticText_Name, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
-    this->m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    this->m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_PROCESS_ENTER);
     this->m_TextCtrl_NameEdit->Hide();
     m_Sizer_Icon->Add(this->m_TextCtrl_NameEdit, 0, wxALL, 5);
 
@@ -928,8 +986,9 @@ Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : w
     this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDown));
     this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick), NULL, this);
     this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown), NULL, this);
-    this->m_StaticText_Name->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_Name_OnLeftDown), NULL, this);
-    this->m_TextCtrl_NameEdit->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter), NULL, this);
+    this->m_StaticText_Name->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_StaticText_Name_OnLeftDown), NULL, this);
+    this->m_TextCtrl_NameEdit->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnTextEnter), NULL, this);
+    this->m_TextCtrl_NameEdit->Connect(wxEVT_KILL_FOCUS, wxFocusEventHandler(Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnKillFocus), NULL, this);
 }
 
 Panel_AssetDisplay_Grid_Item::~Panel_AssetDisplay_Grid_Item()
@@ -971,6 +1030,7 @@ void Panel_AssetDisplay_Grid_Item::m_OnLeftDClick(wxMouseEvent& event)
 void Panel_AssetDisplay_Grid_Item::m_OnLeftDown(wxMouseEvent& event)
 {
     Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    this->SetFocus();
     parent->HighlightItem(this);
     event.Skip();
 }
@@ -987,13 +1047,27 @@ void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event)
     event.Skip();
 }
 
-void Panel_AssetDisplay_Grid_Item::m_Icon_Name_OnLeftDown(wxMouseEvent& event)
+void Panel_AssetDisplay_Grid_Item::m_StaticText_Name_OnLeftDown(wxMouseEvent& event)
 {
+    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    parent->HighlightItem(this);
+    this->m_TextCtrl_NameEdit->SetValue(this->m_StaticText_Name->GetLabel());
+    this->m_StaticText_Name->Hide();
+    this->m_TextCtrl_NameEdit->Show();
+    this->m_TextCtrl_NameEdit->SetFocus();
+    this->Layout();
     event.Skip();
 }
 
-void Panel_AssetDisplay_Grid_Item::m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& event)
+void Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnTextEnter(wxCommandEvent& event)
 {
+    this->ApplyNameChange(this->m_StaticText_Name->GetLabel(), event.GetString());
+    event.Skip();
+}
+
+void Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnKillFocus(wxFocusEvent& event)
+{
+    this->ApplyNameChange(this->m_StaticText_Name->GetLabel(), this->m_TextCtrl_NameEdit->GetValue());
     event.Skip();
 }
 
@@ -1010,6 +1084,37 @@ bool Panel_AssetDisplay_Grid_Item::IsFolder()
 void Panel_AssetDisplay_Grid_Item::SetIcon(wxIcon icon)
 {
     this->m_Bitmap_Icon->SetBitmap(icon);
+}
+
+void Panel_AssetDisplay_Grid_Item::ApplyNameChange()
+{
+    if (!this->m_TextCtrl_NameEdit->IsShown())
+        return;
+    this->ApplyNameChange(this->m_StaticText_Name->GetLabel(), this->m_TextCtrl_NameEdit->GetValue());
+}
+
+void Panel_AssetDisplay_Grid_Item::ApplyNameChange(wxString oldname, wxString newname)
+{
+    wxString oldpath, newpath;
+    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
+    Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
+    this->m_TextCtrl_NameEdit->Hide();
+    this->m_StaticText_Name->Show();
+    this->Layout();
+
+    // Perform the rename
+    oldpath = parent_parent->GetCurrentFolder().GetPathWithSep() + oldname;
+    newpath = parent_parent->GetCurrentFolder().GetPathWithSep() + newname;
+    if (!this->m_IsFolder)
+    {
+        oldpath += parent_parent->GetAssetExtension();
+        newpath += parent_parent->GetAssetExtension();
+    }
+    if (((this->m_IsFolder && wxDirExists(newpath)) || (!this->m_IsFolder && wxFileExists(newpath))) || !wxRenameFile(oldpath, newpath, false))
+        return;
+    parent_parent->RenameAsset(oldpath, newpath);
+    this->m_StaticText_Name->SetLabel(newname);
+    parent->ReinsertItem(this);
 }
 
 

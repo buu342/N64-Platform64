@@ -110,6 +110,7 @@ class Panel_Search : public wxPanel
         void LoadAsset(wxFileName path);
         void ReloadThumbnail(wxFileName path);
         void RenameAsset(wxFileName oldpath, wxFileName newpath);
+        void DeleteItem(wxFileName path);
 
         Panel_Search(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(500, 300), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString);
         ~Panel_Search();
@@ -135,15 +136,14 @@ class Panel_AssetDisplay : public wxPanel
         void StopThread_IconGenerator();
 
     public:
-        
         virtual bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         virtual void SelectItem(wxString itemname, bool isfolder, bool rename=false);
-
         
         void SetIconGenerator(wxIcon (*function)(bool, wxFileName));
         bool IsIconInCache(wxString filepath);
         wxIcon GetIconFromCache(wxString filepath, bool islarge);
         void InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon);
+        void RenameIconInCache(wxString oldpath, wxString newpath);
         wxMessageQueue<ThreadWork*>* GetThreadQueue();
 
         Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
@@ -191,6 +191,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
         void HighlightItem(Panel_AssetDisplay_Grid_Item* item);
+        void ReinsertItem(Panel_AssetDisplay_Grid_Item* item);
 
         int GetItemCount();
         Panel_AssetDisplay_Grid_Item* GetItemAtPos(int pos);
@@ -207,12 +208,15 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
         wxTextCtrl* m_TextCtrl_NameEdit;
         bool m_IsFolder;
 
+        void ApplyNameChange(wxString oldname, wxString newname);
+
         void m_OnLeftDClick(wxMouseEvent& event);
         void m_OnLeftDown(wxMouseEvent& event);
         void m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event);
         void m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event);
-        void m_Icon_Name_OnLeftDown(wxMouseEvent& event);
-        void m_Icon_TextCtrl_OnTextEnter(wxCommandEvent& event);
+        void m_StaticText_Name_OnLeftDown(wxMouseEvent& event);
+        void m_TextCtrl_NameEdit_OnTextEnter(wxCommandEvent& event);
+        void m_TextCtrl_NameEdit_OnKillFocus(wxFocusEvent& event);
 
     protected:
 
@@ -220,6 +224,7 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
         void SetFile(wxFileName filepath, bool isfolder);
         void SetIcon(wxIcon icon);
 
+        void ApplyNameChange();
         wxString GetFileName();
         bool IsFolder();
 
