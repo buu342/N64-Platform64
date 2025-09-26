@@ -850,7 +850,8 @@
             <property name="tooltip"></property>
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
-            <property name="window_style">wxBORDER_THEME|wxHSCROLL|wxVSCROLL</property>
+            <property name="window_style">wxBORDER_THEME|wxVSCROLL|wxWANTS_CHARS</property>
+            <event name="OnChar">m_Panel_Icons_OnChar</event>
             <event name="OnLeftDown">m_Panel_Icons_OnLeftDown</event>
             <event name="OnSize">m_Panel_Icons_OnSize</event>
             <object class="wxWrapSizer" expanded="true">
@@ -914,7 +915,8 @@
                   <property name="tooltip"></property>
                   <property name="window_extra_style"></property>
                   <property name="window_name"></property>
-                  <property name="window_style">wxTAB_TRAVERSAL</property>
+                  <property name="window_style">wxWANTS_CHARS</property>
+                  <event name="OnChar">m_OnChar</event>
                   <event name="OnLeftDClick">m_OnLeftDClick</event>
                   <event name="OnLeftDown">m_OnLeftDown</event>
                   <object class="wxFlexGridSizer" expanded="true">

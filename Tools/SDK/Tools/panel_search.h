@@ -181,6 +181,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         
         void CreateIconPanel(wxFileName filepath, bool isfolder);
 
+        void m_Panel_Icons_OnChar(wxKeyEvent& event);
         void m_Panel_Icons_OnSize(wxSizeEvent& event);
         void m_Panel_Icons_OnLeftDown(wxMouseEvent& event);
         void ThreadEvent(wxThreadEvent& event);
@@ -192,9 +193,11 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
         void HighlightItem(Panel_AssetDisplay_Grid_Item* item);
         void ReinsertItem(Panel_AssetDisplay_Grid_Item* item);
+        void HandleKey(int key);
 
         int GetItemCount();
         Panel_AssetDisplay_Grid_Item* GetItemAtPos(int pos);
+        int GetPosFromItem(Panel_AssetDisplay_Grid_Item* item);
 
         Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
         ~Panel_AssetDisplay_Grid();
@@ -210,6 +213,7 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
 
         void ApplyNameChange(wxString oldname, wxString newname);
 
+        void m_OnChar(wxKeyEvent& event);
         void m_OnLeftDClick(wxMouseEvent& event);
         void m_OnLeftDown(wxMouseEvent& event);
         void m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event);
@@ -224,9 +228,11 @@ class Panel_AssetDisplay_Grid_Item : public wxPanel
         void SetFile(wxFileName filepath, bool isfolder);
         void SetIcon(wxIcon icon);
 
-        void ApplyNameChange();
         wxString GetFileName();
         bool IsFolder();
+
+        void BeginRename();
+        void ApplyNameChange();
 
         Panel_AssetDisplay_Grid_Item(wxWindow* parent);
         ~Panel_AssetDisplay_Grid_Item();
