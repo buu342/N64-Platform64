@@ -246,7 +246,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Search->SetIconGenerator(IconGenerator);
     this->m_Panel_Search->SetMainFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
 
-    m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL|wxWANTS_CHARS);
+    m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
     wxBoxSizer* m_Sizer_Edit;
     m_Sizer_Edit = new wxBoxSizer(wxVERTICAL);
 

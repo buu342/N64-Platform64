@@ -193,7 +193,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
         void HighlightItem(Panel_AssetDisplay_Grid_Item* item);
         void ReinsertItem(Panel_AssetDisplay_Grid_Item* item);
-        void HandleKey(int key);
+        void HandleKey(wxKeyEvent& event);
 
         int GetItemCount();
         Panel_AssetDisplay_Grid_Item* GetItemAtPos(int pos);
@@ -206,6 +206,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
 class Panel_AssetDisplay_Grid_Item : public wxPanel
 {
     private:
+        wxString m_FileName;
         wxStaticBitmap* m_Bitmap_Icon;
         wxStaticText* m_StaticText_Name;
         wxTextCtrl* m_TextCtrl_NameEdit;
