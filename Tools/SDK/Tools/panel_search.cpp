@@ -8,6 +8,7 @@ TODO
 #include "../resource.h"
 #include "../json.h"
 #include <wx/msgqueue.h>
+#include <wx/textwrapper.h>
 
 
 /*=============================================================
@@ -248,20 +249,20 @@ wxFrame* Panel_Search::GetTargetFrame()
 void Panel_Search::CreateNewAsset()
 {
     wxString name = wxString("New ") + this->m_AssetType;
+    wxString namewithext;
     if (wxFileName(this->m_CurrFolder.GetPathWithSep() + name + this->m_AssetExt_NoAsterisk).Exists())
     {
         wxString testname;
         int i = 2;
         do
         {
-            testname = wxString::Format("%s (%d)%s", name, i, this->m_AssetExt_NoAsterisk);
+            testname = wxString::Format("%s (%d)", name, i);
             i++;
-        } while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname).Exists());
+        } while (wxFileName(this->m_CurrFolder.GetPathWithSep() + testname + this->m_AssetExt_NoAsterisk).Exists());
         name = testname;
     }
-    else
-        name += this->m_AssetExt_NoAsterisk;
-    this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name);
+
+    this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name + this->m_AssetExt_NoAsterisk);
     this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
     this->m_Display_Current->SelectItem(name, false, true);
@@ -464,18 +465,19 @@ void Panel_AssetDisplay::ContextMenu()
         menu.Append(1, "Rename");
         menu.Append(2, "Delete");
         menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
+            wxString name = isfolder ? item.GetDirs().back() : item.GetName();
             switch (event.GetId())
             {
                 case 1:
-                    this->SelectItem(item.GetName(), isfolder, true);
+                    this->SelectItem(name, isfolder, true);
                     break;
                 case 2:
                 {
                     wxMessageDialog dialog(this, wxEmptyString, "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
                     if (isfolder)
-                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", item.GetDirs().back()));
+                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", name));
                     else
-                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the asset '%s'?", item.GetName()));
+                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the asset '%s'?", name));
                     if (dialog.ShowModal() == wxID_YES)
                         this->DeleteItem(item);
                     break;
@@ -621,7 +623,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event)
 {
     this->ContextMenu();
-    event.Skip();
+    event.Skip(false);
 }
 
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event)
@@ -725,8 +727,6 @@ void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool 
         icontext << variant;
         this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
         finalname = icontext.GetText();
-        if (!variant.GetBool())
-            finalname += parent->GetAssetExtension();
         if (variant.GetBool() == isfolder && !finalname.Cmp(itemname))
         {
             if (rename)
@@ -872,18 +872,18 @@ Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
 void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEvent& event)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
-    wxListItem item = event.GetItem();
-    bool isfolder = (item.GetId() < (long)(this->m_Folders.size()));
+    bool isfolder = (event.GetIndex() < (long)(this->m_Folders.size()));
+    wxString item = this->m_ListCtrl_ObjectGrid->GetItemText(event.GetIndex());
 
     // Handle activation
     if (isfolder)
     {
-        wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + item.GetText() + wxFileName::GetPathSeparator();
+        wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + item + wxFileName::GetPathSeparator();
         if (this->LoadDirectory(newpath))
             parent->SetCurrentFolder(newpath);
     }
     else
-        parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + item.GetText() + parent->GetAssetExtension());
+        parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + item + parent->GetAssetExtension());
 
     // Clear the search bar
     parent->ClearSearchbox();
@@ -980,6 +980,7 @@ void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
     free(iconresult);
     event.Skip();
 }
+
 
 /*=============================================================
                      Icon Generator Thread
