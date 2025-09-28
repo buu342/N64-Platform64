@@ -39,6 +39,8 @@
     extern wxIcon   Icon_Texture;
     extern wxIcon   Icon_Material;
     extern wxIcon   Icon_Back;
+    extern wxIcon   Icon_Blank;
+    extern wxIcon   Icon_BlankLarge;
     extern wxIcon   Icon_NewAsset;
     extern wxIcon   Icon_NewFolder;
     extern wxIcon   Icon_Search;

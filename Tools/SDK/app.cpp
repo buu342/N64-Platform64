@@ -20,6 +20,8 @@ wxIcon   Icon_Material = wxNullIcon;
 wxCursor Cursor_Blank = wxNullCursor;
 wxCursor Cursor_Pipette = wxNullCursor;
 wxIcon   Icon_Back = wxNullIcon;
+wxIcon   Icon_Blank = wxNullIcon;
+wxIcon   Icon_BlankLarge = wxNullIcon;
 wxIcon   Icon_NewAsset = wxNullIcon;
 wxIcon   Icon_NewFolder = wxNullIcon;
 wxIcon   Icon_Search = wxNullIcon;
@@ -127,6 +129,11 @@ bool App::OnInit()
     wxBitmap mask = wxBitmap(1, 1, 1);
     img.SetMask(new wxMask(mask));
     Cursor_Blank = wxCursor(img.ConvertToImage());
+    Icon_Blank.CopyFromBitmap(img);
+    img = wxBitmap(64, 64);
+    mask = wxBitmap(64, 64);
+    img.SetMask(new wxMask(img, wxColour(0, 0, 0, 0)));
+    Icon_BlankLarge.CopyFromBitmap(img);
 
     // Show the main window
     this->m_Frame = new Frame_Main();

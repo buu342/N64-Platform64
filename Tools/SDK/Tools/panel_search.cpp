@@ -376,9 +376,27 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
 
 void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
+    // This method should be overwritten by other classes, so it's blank
+    // Still need to void out arguments to prevent "Unused arguments" compiler warning
     (void)itemname;
     (void)isfolder;
     (void)rename;
+}
+
+
+wxFileName Panel_AssetDisplay::ItemAtPos(wxPoint mousepos)
+{
+    // This method should be overwritten by other classes, so it's blank
+    // Still need to void out arguments to prevent "Unused arguments" compiler warning
+    (void)mousepos;
+    return wxFileName();
+}
+
+void Panel_AssetDisplay::DeleteItem(wxFileName itempath)
+{
+    // This method should be overwritten by other classes, so it's blank
+    // Still need to void out arguments to prevent "Unused arguments" compiler warning
+    (void)itempath;
 }
 
 bool Panel_AssetDisplay::IsIconInCache(wxString filepath)
@@ -432,6 +450,57 @@ void Panel_AssetDisplay::RenameIconInCache(wxString oldpath, wxString newpath)
 
     this->m_IconCache_LRU.push_front({newpath, icon});
     this->m_IconCache_Map[newpath] = this->m_IconCache_LRU.begin();
+}
+
+
+void Panel_AssetDisplay::ContextMenu()
+{
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    wxFileName item = this->ItemAtPos(wxGetMousePosition());
+    if (item.IsOk())
+    {
+        bool isfolder = item.IsDir();
+        wxMenu menu;
+        menu.Append(1, "Rename");
+        menu.Append(2, "Delete");
+        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
+            switch (event.GetId())
+            {
+                case 1:
+                    this->SelectItem(item.GetName(), isfolder, true);
+                    break;
+                case 2:
+                {
+                    wxMessageDialog dialog(this, wxEmptyString, "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+                    if (isfolder)
+                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", item.GetDirs().back()));
+                    else
+                        dialog.SetMessage(wxString::Format("Are you sure you want to delete the asset '%s'?", item.GetName()));
+                    if (dialog.ShowModal() == wxID_YES)
+                        this->DeleteItem(item);
+                    break;
+                }
+            }
+            event.Skip();
+        });
+        PopupMenu(&menu);
+    }
+    else
+    {
+        wxMenu menu;
+        menu.Append(1, "New Asset");
+        menu.Append(2, "New Folder");
+        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
+            wxCommandEvent evt;
+            switch (event.GetId())
+            {
+                case 1: parent->CreateNewAsset(); break;
+                case 2: parent->CreateNewFolder(); break;
+            }
+            event.Skip();
+        });
+        PopupMenu(&menu);
+    }
 }
 
 
@@ -551,76 +620,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
 
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event)
 {
-    wxDataViewItem item;
-    wxDataViewColumn col = wxDataViewColumn("", new wxDataViewIconTextRenderer(), 0);
-    wxDataViewColumn* colptr = &col;
-    Panel_Search* parent = (Panel_Search*)this->GetParent();
-    wxPoint hit = this->m_DataViewListCtrl_ObjectList->ScreenToClient(wxGetMousePosition());
-    this->m_DataViewListCtrl_ObjectList->HitTest(hit, item, colptr);
-    if (item.IsOk())
-    {
-        wxMenu menu;
-        menu.Append(1, "Rename");
-        menu.Append(2, "Delete");
-        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
-            switch (event.GetId())
-            {
-                case 1: 
-                    this->m_DataViewListCtrl_ObjectList->EditItem(item, this->m_DataViewListCtrl_ObjectList->GetColumn(0));
-                    break;
-                case 2: 
-                    {
-                        wxVariant v;
-                        bool isfolder;
-                        wxDataViewIconText it;
-                        int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(item);
-                        this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 0);
-                        it << v;
-                        this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 1);
-                        isfolder = v.GetBool();
-                        if (isfolder)
-                        {
-                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the directory '%s' and all of its contents?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
-                            if (dialog.ShowModal() == wxID_YES)
-                            {
-                                wxString path = parent->GetCurrentFolder().GetPathWithSep() + it.GetText();
-                                if (wxDir::Remove(path, wxPATH_RMDIR_RECURSIVE))
-                                    this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
-                            }
-                        }
-                        else
-                        {
-                            wxMessageDialog dialog(this, wxString::Format("Are you sure you want to delete the asset '%s'?", it.GetText()), "Delete?", wxCENTER | wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
-                            if (dialog.ShowModal() == wxID_YES)
-                            {
-                                wxString path = parent->GetCurrentFolder().GetPathWithSep() + it.GetText() + parent->GetAssetExtension();
-                                if (wxRemoveFile(path))
-                                    this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
-                            }
-                        }
-                    }
-                    break;
-            }
-            event.Skip();
-        });
-        PopupMenu(&menu);
-    }
-    else
-    {
-        wxMenu menu;
-        menu.Append(1, "New Asset");
-        menu.Append(2, "New Folder");
-        menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
-            wxCommandEvent evt;
-            switch (event.GetId())
-            {
-                case 1: parent->CreateNewAsset(); break;
-                case 2: parent->CreateNewFolder(); break;
-            }
-            event.Skip();
-        });
-        PopupMenu(&menu);
-    }
+    this->ContextMenu();
     event.Skip();
 }
 
@@ -667,12 +667,12 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
         // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
         event.Veto();
         this->LoadDirectory(parent->GetCurrentFolder());
-        for (int i = 0; i < this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+        for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
         {
             wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
             this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
             oldicontext << variant;
-            if (oldicontext.GetText() == newicontext.GetText())
+            if (!oldicontext.GetText().Cmp(newicontext.GetText()))
             {
                 this->m_DataViewListCtrl_ObjectList->Select(item);
                 break;
@@ -738,6 +738,77 @@ void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool 
     }
 }
 
+wxFileName Panel_AssetDisplay_List::ItemAtPos(wxPoint mousepos)
+{
+    int row;
+    bool isfolder;
+    wxVariant v;
+    wxDataViewItem item;
+    wxDataViewIconText it;
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    wxDataViewColumn col = wxDataViewColumn("", new wxDataViewIconTextRenderer(), 0);
+    wxDataViewColumn* colptr = &col;
+    wxPoint hit = this->m_DataViewListCtrl_ObjectList->ScreenToClient(mousepos);
+    this->m_DataViewListCtrl_ObjectList->HitTest(hit, item, colptr);
+
+    // No file found, stop here
+    if (!item.IsOk())
+        return wxFileName();              
+
+    // Get item data
+    row = this->m_DataViewListCtrl_ObjectList->ItemToRow(item);
+    this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 0);
+    it << v;
+    this->m_DataViewListCtrl_ObjectList->GetValue(v, row, 1);
+    isfolder = v.GetBool();
+
+    // Return the path to this file
+    if (isfolder)
+        return parent->GetCurrentFolder().GetPathWithSep() + it.GetText() + wxFileName::GetPathSeparator();
+    else
+        return parent->GetCurrentFolder().GetPathWithSep() + it.GetText() + parent->GetAssetExtension();
+}
+
+void Panel_AssetDisplay_List::DeleteItem(wxFileName itempath)
+{
+    wxString itemname;
+    bool isfolder = itempath.IsDir();
+    if (isfolder)
+        itemname = itempath.GetDirs().back();
+    else
+        itemname = itempath.GetName();
+    for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
+    {
+        bool itemisfolder;
+        wxVariant variant;
+        wxDataViewIconText icontext;
+        wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
+        icontext << variant;
+        this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 1);
+        itemisfolder = variant.GetBool();
+
+        if (itemisfolder == isfolder)
+        {
+            if (!icontext.GetText().Cmp(itemname))
+            {
+                int row = this->m_DataViewListCtrl_ObjectList->ItemToRow(item);
+                if (isfolder)
+                {
+                    if (wxDir::Remove(itempath.GetFullPath(), wxPATH_RMDIR_RECURSIVE))
+                        this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
+                }
+                else
+                {
+                    if (wxRemoveFile(itempath.GetFullPath()))
+                        this->m_DataViewListCtrl_ObjectList->DeleteItem(row);
+                }
+                break;
+            }
+        }
+    }
+}
+
 void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
@@ -774,29 +845,23 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 
 Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
 {
-    this->m_Selection = NULL;
+    wxFlexGridSizer* m_Sizer_Main;
+    m_Sizer_Main = new wxFlexGridSizer(0, 0, 0, 0);
+    m_Sizer_Main->AddGrowableCol(0);
+    m_Sizer_Main->AddGrowableRow(0);
+    m_Sizer_Main->SetFlexibleDirection(wxBOTH);
+    m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-    wxBoxSizer* m_Sizer_Main;
-    m_Sizer_Main = new wxBoxSizer(wxVERTICAL);
+    this->m_ListCtrl_ObjectGrid = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_EDIT_LABELS | wxLC_ICON | wxLC_SINGLE_SEL);
+    m_Sizer_Main->Add(this->m_ListCtrl_ObjectGrid, 0, wxALL | wxEXPAND, 5);
 
-    this->m_Panel_Icons = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxWANTS_CHARS);
-    this->m_Panel_Icons->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_Panel_Icons->SetWindowStyle(wxBORDER_THEME);
-    this->m_Panel_Icons->SetScrollRate(0, 5);
-    this->m_Sizer_Icons = new wxWrapSizer(wxHORIZONTAL, wxWRAPSIZER_DEFAULT_FLAGS);
-
-    this->m_Panel_Icons->SetSizer(m_Sizer_Icons);
-    this->m_Panel_Icons->Layout();
-    this->m_Sizer_Icons->Fit(m_Panel_Icons);
-    m_Sizer_Main->Add(this->m_Panel_Icons, 1, wxEXPAND | wxALL, 5);
+    this->m_ImgList = new wxImageList(64, 64, true);
 
     this->SetSizer(m_Sizer_Main);
     this->Layout();
-
-    this->m_Panel_Icons->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnChar), NULL, this);
-    this->m_Panel_Icons->Connect(wxEVT_SIZE, wxSizeEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize), NULL, this);
-    this->m_Panel_Icons->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid::m_Panel_Icons_OnLeftDown), NULL, this);
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated), NULL, this);
     this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
+
 }
 
 Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
@@ -804,457 +869,117 @@ Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
 
 }
 
-void Panel_AssetDisplay_Grid::m_Panel_Icons_OnChar(wxKeyEvent& event)
+void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEvent& event)
 {
-    if (this->m_Selection == NULL)
-        return;
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    wxListItem item = event.GetItem();
+    bool isfolder = (item.GetId() < (long)(this->m_Folders.size()));
 
-    this->HandleKey(event);
+    // Handle activation
+    if (isfolder)
+    {
+        wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + item.GetText() + wxFileName::GetPathSeparator();
+        if (this->LoadDirectory(newpath))
+            parent->SetCurrentFolder(newpath);
+    }
+    else
+        parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + item.GetText() + parent->GetAssetExtension());
+
+    // Clear the search bar
+    parent->ClearSearchbox();
     event.Skip();
-}
-
-void Panel_AssetDisplay_Grid::m_Panel_Icons_OnSize(wxSizeEvent& event)
-{
-    if (this->m_Panel_Icons != NULL)
-        this->m_Panel_Icons->SetVirtualSize(this->GetSize());
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid::m_Panel_Icons_OnLeftDown(wxMouseEvent& event)
-{
-    this->HighlightItem(NULL);
-    this->m_Panel_Icons->SetFocus();
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid::CreateIconPanel(wxFileName filepath, bool isfolder)
-{
-    Panel_AssetDisplay_Grid_Item* item = new Panel_AssetDisplay_Grid_Item(this->m_Panel_Icons);
-    item->SetFile(filepath, isfolder);
-    this->m_Sizer_Icons->Add(item, 1, wxALL | wxEXPAND, 5);
-    this->Layout();
 }
 
 bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
 {
+    int id = 0;
     Panel_Search* parent = (Panel_Search*)this->GetParent();
-    
+
     // Call the base class's load directory function
+    this->m_ListCtrl_ObjectGrid->DeleteAllItems();
     if (Panel_AssetDisplay::LoadDirectory(path, filter) == false)
         return false;
 
-    // Remove all the old panels
-    this->HighlightItem(NULL);
-    this->m_Sizer_Icons->Clear(true);
-
-    // Add the new panels
+    // Get asset icons
+    this->m_ImgList->RemoveAll();
+    this->m_ImgList->Add(Icon_Folder_Large);
     this->StartThread_IconGenerator();
-    for (wxString f : this->m_Folders)
-        this->CreateIconPanel(f, true);
-    for (wxString f : this->m_Assets)
-        this->CreateIconPanel(f, false);
-    this->m_Panel_Icons->SetFocus();
+    for (wxString file : this->m_Assets)
+    {
+        wxIcon icon = this->GetIconFromCache(path.GetPathWithSep() + file + parent->GetAssetExtension(), true);
+        if (icon.IsOk())
+            this->m_ImgList->Add(icon);
+        else
+            this->m_ImgList->Add(Icon_BlankLarge);
+    }
+    this->m_ListCtrl_ObjectGrid->SetImageList(this->m_ImgList, wxIMAGE_LIST_NORMAL);
+
+    // Add folders to the view
+    for (wxString folder : this->m_Folders)
+    {
+        wxIcon icon = Icon_Folder_Large;
+        wxListItem item;
+        item.SetId(id);
+        item.SetColumn(0);
+        item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+        item.SetText(folder);
+        item.SetImage(0);
+        this->m_ListCtrl_ObjectGrid->InsertItem(item);
+        id++;
+    }
+
+    // Add assets to the view
+    for (wxString file : this->m_Assets)
+    {
+        wxListItem item;
+        item.SetId(id);
+        item.SetColumn(0);
+        item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+        item.SetText(file);
+        item.SetImage(1 + (id - this->m_Folders.size()));
+        this->m_ListCtrl_ObjectGrid->InsertItem(item);
+        id++;
+    }
     return true;
 }
 
 void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
-    (void)itemname;
-    (void)isfolder;
-    (void)rename;
-}
-
-void Panel_AssetDisplay_Grid::HighlightItem(Panel_AssetDisplay_Grid_Item* item)
-{
-    if (this->m_Selection != NULL)
+    int start = isfolder ? 0 : this->m_Folders.size();
+    int item = this->m_ListCtrl_ObjectGrid->FindItem(start, itemname);
+    if (item != -1)
     {
-        this->m_Selection->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-        this->m_Selection->ApplyNameChange();
-    }
-    this->m_Selection = item;
-    if (item != NULL)
-    {
-        #if defined(MACOS) || defined(LINUX)
-            item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT));
-        #else
-            item->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
-        #endif
-    }
-    this->Refresh();
-}
-
-void Panel_AssetDisplay_Grid::ReinsertItem(Panel_AssetDisplay_Grid_Item* item)
-{
-    bool wasselected = this->m_Selection == item;
-
-    // If the item was highlighted, remove the highlight
-    if (wasselected)
-        this->HighlightItem(NULL);
-
-    // Remove the item from the sizer
-    for (int i=0; i<this->m_Sizer_Icons->GetItemCount(); i++)
-    {
-        if (this->m_Sizer_Icons->GetItem(i)->GetWindow() == item)
-        {
-            this->m_Sizer_Icons->Remove(i);
-            break;
-        }
-    }
-
-    // Insert it back in the correct place
-    for (int i=0; i<this->GetItemCount(); i++)
-    {
-        Panel_AssetDisplay_Grid_Item* other = (Panel_AssetDisplay_Grid_Item*)this->m_Sizer_Icons->GetItem(i)->GetWindow();
-        if (item->IsFolder() && !other->IsFolder())
-            return;
-        if (!item->IsFolder() && other->IsFolder())
-            continue;
-        if (item->GetFileName().Cmp(other->GetFileName()) < 0)
-        {
-            this->m_Sizer_Icons->Insert(i, item, 1, wxALL | wxEXPAND, 5);
-            break;
-        }
-    }
-
-    // Highlight it again if it was selected
-    if (wasselected)
-        this->HighlightItem(item);
-    this->Layout();
-}
-
-void Panel_AssetDisplay_Grid::HandleKey(wxKeyEvent& event)
-{
-    wxChar uc = event.GetUnicodeKey();
-    if (uc != WXK_NONE)
-    {
-        switch (uc)
-        {
-            case '\r':
-            case '\n':
-            {
-                if (this->m_Selection == NULL)
-                    break;
-                Panel_Search* parent = ((Panel_Search*)this->GetParent());
-                if (this->m_Selection->IsFolder())
-                {
-                    wxString newpath = parent->GetCurrentFolder().GetPathWithSep() + this->m_Selection->GetFileName() + wxFileName::GetPathSeparator();
-                    if (this->LoadDirectory(newpath))
-                        parent->SetCurrentFolder(newpath);
-                }
-                else
-                    parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + this->m_Selection->GetFileName() + parent->GetAssetExtension());
-                break;
-            }
-            case ' ':
-                if (this->m_Selection != NULL)
-                    this->m_Selection->BeginRename();
-                break;
-            default:
-                break;
-        }
-    }
-    else
-    {
-        int index = -1;
-        if (this->m_Selection != NULL)
-            index = this->GetPosFromItem(this->m_Selection);
-
-        switch (event.GetKeyCode())
-        {
-            case WXK_LEFT:
-                if (this->m_Selection == NULL)
-                    this->HighlightItem(this->GetItemAtPos(0));
-                else if (index - 1 >= 0)
-                    this->HighlightItem(this->GetItemAtPos(index-1));
-                break;
-            case WXK_RIGHT:
-                if (this->m_Selection == NULL)
-                    this->HighlightItem(this->GetItemAtPos(0));
-                else if (index + 1 < this->GetItemCount())
-                    this->HighlightItem(this->GetItemAtPos(index+1));
-                break;
-            case WXK_UP:
-            {
-                if (this->m_Selection == NULL)
-                {
-                    this->HighlightItem(this->GetItemAtPos(0));
-                    break;
-                }
-                wxPoint selectionpos = this->m_Selection->GetPosition();
-                int curindex = index - 1;
-                while (curindex >= 0)
-                {
-                    Panel_AssetDisplay_Grid_Item* target = this->GetItemAtPos(curindex);
-                    if (target->GetPosition().x == selectionpos.x && target->GetPosition().y < selectionpos.y)
-                    {
-                        this->HighlightItem(target);
-                        break;
-                    }
-                    curindex--;
-                }
-                break;
-            }
-            case WXK_DOWN:
-            {
-                if (this->m_Selection == NULL)
-                {
-                    this->HighlightItem(this->GetItemAtPos(0));
-                    break;
-                }
-                wxPoint selectionpos = this->m_Selection->GetPosition();
-                int curindex = index + 1;
-                while (curindex < this->m_Sizer_Icons->GetItemCount())
-                {
-                    Panel_AssetDisplay_Grid_Item* target = this->GetItemAtPos(curindex);
-                    if ((curindex == this->m_Sizer_Icons->GetItemCount() - 1) || (target->GetPosition().x == selectionpos.x && target->GetPosition().y > selectionpos.y))
-                    {
-                        this->HighlightItem(target);
-                        break;
-                    }
-                    curindex++;
-                }
-                break;
-            }
-            case WXK_F2:
-                if (this->m_Selection != NULL)
-                    this->m_Selection->BeginRename();
-                break;
-        }
+        this->m_ListCtrl_ObjectGrid->SetItemState(item, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
+        this->m_ListCtrl_ObjectGrid->SetItemState(item, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+        if (rename)
+            this->m_ListCtrl_ObjectGrid->EditLabel(item);
     }
 }
 
-int Panel_AssetDisplay_Grid::GetItemCount()
+wxFileName Panel_AssetDisplay_Grid::ItemAtPos(wxPoint mousepos)
 {
-    return this->m_Sizer_Icons->GetItemCount();
+    return wxFileName("");
 }
 
-Panel_AssetDisplay_Grid_Item* Panel_AssetDisplay_Grid::GetItemAtPos(int pos)
+void Panel_AssetDisplay_Grid::DeleteItem(wxFileName itempath)
 {
-    return (Panel_AssetDisplay_Grid_Item*)(this->m_Sizer_Icons->GetItem(pos)->GetWindow());
-}
 
-int Panel_AssetDisplay_Grid::GetPosFromItem(Panel_AssetDisplay_Grid_Item* item)
-{
-    for (int i=0; i<this->m_Sizer_Icons->GetItemCount(); i++)
-        if (this->m_Sizer_Icons->GetItem(i)->GetWindow() == item)
-            return i;
-    return -1;
 }
 
 void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
     ThreadResult* iconresult = event.GetPayload<ThreadResult*>();
-    for (int i=0; i<this->GetItemCount(); i++)
+    int item = this->m_ListCtrl_ObjectGrid->FindItem(this->m_Folders.size(), iconresult->file.GetName());
+    if (item != -1)
     {
-        Panel_AssetDisplay_Grid_Item* item = this->GetItemAtPos(i);
-        if (item != NULL && !item->IsFolder())
-        {
-            if (!item->GetFileName().Cmp(iconresult->file.GetName()))
-            {
-                this->InsertOrUpdateCachedIcon(iconresult->file.GetFullPath(), iconresult->icon);
-                item->SetIcon(iconresult->icon);
-                break;
-            }
-        }
+        this->m_ImgList->Replace(1 + (item - this->m_Folders.size()), iconresult->icon);
+        this->InsertOrUpdateCachedIcon(iconresult->file.GetFullPath(), iconresult->icon);
     }
+    this->m_ListCtrl_ObjectGrid->SetImageList(this->m_ImgList, wxIMAGE_LIST_NORMAL);
     free(iconresult);
     event.Skip();
 }
-
-
-/*=============================================================
-                    Asset Display Grid Item
-=============================================================*/
-
-Panel_AssetDisplay_Grid_Item::Panel_AssetDisplay_Grid_Item(wxWindow* parent) : wxPanel(parent)
-{
-    this->m_IsFolder = false;
-
-    this->SetSize(wxSize(128, 128));
-    this->SetWindowStyle(wxWANTS_CHARS);
-    this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->SetMinSize(wxSize(128, 128));
-    this->SetMaxSize(wxSize(128, 128));
-
-    wxFlexGridSizer* m_Sizer_Icon;
-    m_Sizer_Icon = new wxFlexGridSizer(3, 1, 0, 0);
-    m_Sizer_Icon->AddGrowableCol(0);
-    m_Sizer_Icon->AddGrowableRow(0);
-    m_Sizer_Icon->SetFlexibleDirection(wxBOTH);
-    m_Sizer_Icon->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_NONE);
-
-    m_Sizer_Icon->SetMinSize(wxSize(128, 128));
-    this->m_Bitmap_Icon = new wxStaticBitmap(this, wxID_ANY, wxNullIcon, wxDefaultPosition, wxSize(64, 64), 0);
-    this->m_Bitmap_Icon->SetMinSize(wxSize(64, 64));
-    this->m_Bitmap_Icon->SetMaxSize(wxSize(64, 64));
-
-    m_Sizer_Icon->Add(this->m_Bitmap_Icon, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 12);
-
-    this->m_StaticText_Name = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    this->m_StaticText_Name->Wrap(127);
-    m_Sizer_Icon->Add(this->m_StaticText_Name, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
-
-    this->m_TextCtrl_NameEdit = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_PROCESS_ENTER);
-    this->m_TextCtrl_NameEdit->Hide();
-    m_Sizer_Icon->Add(this->m_TextCtrl_NameEdit, 0, wxALL | wxEXPAND, 5);
-
-    this->SetSizer(m_Sizer_Icon);
-    this->Layout();
-
-    this->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Panel_AssetDisplay_Grid_Item::m_OnChar));
-    this->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDClick));
-    this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_OnLeftDown));
-    this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick), NULL, this);
-    this->m_Bitmap_Icon->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown), NULL, this);
-    this->m_StaticText_Name->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid_Item::m_StaticText_Name_OnLeftDown), NULL, this);
-    this->m_TextCtrl_NameEdit->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnTextEnter), NULL, this);
-    this->m_TextCtrl_NameEdit->Connect(wxEVT_KILL_FOCUS, wxFocusEventHandler(Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnKillFocus), NULL, this);
-}
-
-Panel_AssetDisplay_Grid_Item::~Panel_AssetDisplay_Grid_Item()
-{
-
-}
-
-void Panel_AssetDisplay_Grid_Item::SetFile(wxFileName filepath, bool isfolder)
-{
-    this->m_FileName = filepath.GetName();
-    this->m_StaticText_Name->SetLabel(this->m_FileName);
-    this->m_StaticText_Name->Wrap(127);
-    this->m_IsFolder = isfolder;
-    if (!isfolder)
-    {
-        Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-        Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
-        wxIcon icon = parent->GetIconFromCache(parent_parent->GetCurrentFolder().GetPathWithSep() + this->GetFileName() + parent_parent->GetAssetExtension(), true);
-        this->m_Bitmap_Icon->SetBitmap(icon);
-    }
-    else
-        this->m_Bitmap_Icon->SetBitmap(Icon_Folder_Large);
-}
-
-void Panel_AssetDisplay_Grid_Item::m_OnChar(wxKeyEvent& event)
-{
-    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-    parent->HandleKey(event);
-    event.Skip(false);
-}
-
-void Panel_AssetDisplay_Grid_Item::m_OnLeftDClick(wxMouseEvent& event)
-{
-    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-    Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
-    if (this->m_IsFolder)
-    {
-        wxString newpath = parent_parent->GetCurrentFolder().GetPathWithSep() + this->m_FileName + wxFileName::GetPathSeparator();
-        parent->HighlightItem(NULL);
-        if (parent->LoadDirectory(newpath))
-            parent_parent->SetCurrentFolder(newpath);
-    }
-    else
-        parent_parent->LoadAsset(parent_parent->GetCurrentFolder().GetPathWithSep() + this->m_FileName + parent_parent->GetAssetExtension());
-    event.Skip(false);
-}
-
-void Panel_AssetDisplay_Grid_Item::m_OnLeftDown(wxMouseEvent& event)
-{
-    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-    this->SetFocus();
-    parent->HighlightItem(this);
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDClick(wxMouseEvent& event)
-{
-    event.ResumePropagation(1);
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid_Item::m_Bitmap_Icon_OnLeftDown(wxMouseEvent& event)
-{
-    event.ResumePropagation(1);
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid_Item::m_StaticText_Name_OnLeftDown(wxMouseEvent& event)
-{
-    this->BeginRename();
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnTextEnter(wxCommandEvent& event)
-{
-    this->ApplyNameChange(this->m_FileName, event.GetString());
-    event.Skip();
-}
-
-void Panel_AssetDisplay_Grid_Item::m_TextCtrl_NameEdit_OnKillFocus(wxFocusEvent& event)
-{
-    this->ApplyNameChange(this->m_FileName, this->m_TextCtrl_NameEdit->GetValue());
-    event.Skip();
-}
-
-wxString Panel_AssetDisplay_Grid_Item::GetFileName()
-{
-    return this->m_FileName;
-}
-
-bool Panel_AssetDisplay_Grid_Item::IsFolder()
-{
-    return this->m_IsFolder;
-}
-
-void Panel_AssetDisplay_Grid_Item::SetIcon(wxIcon icon)
-{
-    this->m_Bitmap_Icon->SetBitmap(icon);
-}
-
-void Panel_AssetDisplay_Grid_Item::BeginRename()
-{
-    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-    parent->HighlightItem(this);
-    this->m_TextCtrl_NameEdit->SetValue(this->m_FileName);
-    this->m_TextCtrl_NameEdit->SetInsertionPointEnd();
-    this->m_StaticText_Name->Hide();
-    this->m_TextCtrl_NameEdit->Show();
-    this->m_TextCtrl_NameEdit->SetFocus();
-    this->Layout();
-}
-
-void Panel_AssetDisplay_Grid_Item::ApplyNameChange()
-{
-    if (!this->m_TextCtrl_NameEdit->IsShown())
-        return;
-    this->ApplyNameChange(this->m_StaticText_Name->GetLabel(), this->m_TextCtrl_NameEdit->GetValue());
-}
-
-void Panel_AssetDisplay_Grid_Item::ApplyNameChange(wxString oldname, wxString newname)
-{
-    wxString oldpath, newpath;
-    Panel_AssetDisplay_Grid* parent = ((Panel_AssetDisplay_Grid*)this->GetParent()->GetParent());
-    Panel_Search* parent_parent = ((Panel_Search*)parent->GetParent());
-    this->m_TextCtrl_NameEdit->Hide();
-    this->m_StaticText_Name->Show();
-    this->Layout();
-
-    // Perform the rename
-    oldpath = parent_parent->GetCurrentFolder().GetPathWithSep() + oldname;
-    newpath = parent_parent->GetCurrentFolder().GetPathWithSep() + newname;
-    if (!this->m_IsFolder)
-    {
-        oldpath += parent_parent->GetAssetExtension();
-        newpath += parent_parent->GetAssetExtension();
-    }
-    if (((this->m_IsFolder && wxDirExists(newpath)) || (!this->m_IsFolder && wxFileExists(newpath))) || !wxRenameFile(oldpath, newpath, false))
-        return;
-    parent_parent->RenameAsset(oldpath, newpath);
-    this->m_FileName = newname;
-    this->m_StaticText_Name->SetLabel(this->m_FileName);
-    this->m_StaticText_Name->Wrap(127);
-    parent->ReinsertItem(this);
-}
-
 
 /*=============================================================
                      Icon Generator Thread
