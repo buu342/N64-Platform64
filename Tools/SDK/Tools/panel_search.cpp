@@ -461,11 +461,12 @@ void Panel_AssetDisplay::ContextMenu()
     if (item.IsOk())
     {
         bool isfolder = item.IsDir();
+        wxString name = isfolder ? item.GetDirs().back() : item.GetName();
+        this->SelectItem(name, isfolder);
         wxMenu menu;
         menu.Append(1, "Rename");
         menu.Append(2, "Delete");
         menu.Bind(wxEVT_COMMAND_MENU_SELECTED, [=](wxCommandEvent& event) {
-            wxString name = isfolder ? item.GetDirs().back() : item.GetName();
             switch (event.GetId())
             {
                 case 1:
@@ -483,7 +484,7 @@ void Panel_AssetDisplay::ContextMenu()
                     break;
                 }
             }
-            event.Skip();
+            event.Skip(false);
         });
         PopupMenu(&menu);
     }
@@ -669,17 +670,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
         // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
         event.Veto();
         this->LoadDirectory(parent->GetCurrentFolder());
-        for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
-        {
-            wxDataViewItem item = this->m_DataViewListCtrl_ObjectList->RowToItem(i);
-            this->m_DataViewListCtrl_ObjectList->GetValue(variant, i, 0);
-            oldicontext << variant;
-            if (!oldicontext.GetText().Cmp(newicontext.GetText()))
-            {
-                this->m_DataViewListCtrl_ObjectList->Select(item);
-                break;
-            }
-        }
+        this->SelectItem(newicontext.GetText(), isfolder);
     }
     event.Skip();
 }
@@ -859,7 +850,9 @@ Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id
 
     this->SetSizer(m_Sizer_Main);
     this->Layout();
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_END_LABEL_EDIT, wxListEventHandler( Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit), NULL, this );
     this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated), NULL, this);
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler( Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown ), NULL, this);
     this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
 
 }
@@ -887,7 +880,44 @@ void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEv
 
     // Clear the search bar
     parent->ClearSearchbox();
+    event.Skip(false);
+}
+
+void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit(wxListEvent& event)
+{
+    if (!event.IsEditCancelled())
+    {
+        Panel_Search* parent = (Panel_Search*)this->GetParent();
+        bool isfolder = (event.GetIndex() < (long)(this->m_Folders.size()));
+        wxString oldname = this->m_ListCtrl_ObjectGrid->GetItemText(event.GetIndex());
+        wxString newname = event.GetText();
+        wxString oldpath = parent->GetCurrentFolder().GetPathWithSep() + oldname;
+        wxString newpath = parent->GetCurrentFolder().GetPathWithSep() + newname;
+        if (!isfolder)
+        {
+            oldpath += parent->GetAssetExtension();
+            newpath += parent->GetAssetExtension();
+        }
+        if (((isfolder && wxDirExists(newpath)) || (!isfolder && wxFileExists(newpath))) || !wxRenameFile(oldpath, newpath, false))
+        {
+            event.Veto();
+            return;
+        }
+        parent->RenameAsset(oldpath, newpath);
+
+        // Reload the list and select the renamed item
+        // Trust me, trying to "sort it" by using InsertItem is going to lead to headaches, so it's easier to just reload the entire directory
+        event.Veto();
+        this->LoadDirectory(parent->GetCurrentFolder());
+        this->SelectItem(newname, isfolder);
+    }
     event.Skip();
+}
+
+void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown(wxMouseEvent& event)
+{
+    this->ContextMenu();
+    event.Skip(false);
 }
 
 bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
@@ -947,7 +977,7 @@ void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool 
 {
     int start = isfolder ? 0 : this->m_Folders.size();
     int item = this->m_ListCtrl_ObjectGrid->FindItem(start, itemname);
-    if (item != -1)
+    if (item != wxNOT_FOUND)
     {
         this->m_ListCtrl_ObjectGrid->SetItemState(item, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
         this->m_ListCtrl_ObjectGrid->SetItemState(item, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -958,12 +988,46 @@ void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool 
 
 wxFileName Panel_AssetDisplay_Grid::ItemAtPos(wxPoint mousepos)
 {
-    return wxFileName("");
+    int flags = wxLIST_HITTEST_ONITEM;
+    Panel_Search* parent = (Panel_Search*)this->GetParent();
+    wxPoint hit = this->m_ListCtrl_ObjectGrid->ScreenToClient(mousepos);
+    long id = this->m_ListCtrl_ObjectGrid->HitTest(hit, flags, NULL);
+
+    // No file found, stop here
+    if (id == wxNOT_FOUND)
+        return wxFileName("");
+
+    if (id < (long)this->m_Folders.size())
+        return parent->GetCurrentFolder().GetPathWithSep() + this->m_ListCtrl_ObjectGrid->GetItemText(id) + wxFileName::GetPathSeparator();
+    else
+        return parent->GetCurrentFolder().GetPathWithSep() + this->m_ListCtrl_ObjectGrid->GetItemText(id) + parent->GetAssetExtension();
 }
 
 void Panel_AssetDisplay_Grid::DeleteItem(wxFileName itempath)
 {
-
+    long id;
+    int start;
+    wxString itemname;
+    bool isfolder = itempath.IsDir();
+    if (isfolder)
+        itemname = itempath.GetDirs().back();
+    else
+        itemname = itempath.GetName();
+    start = isfolder ? 0 : this->m_Folders.size();
+    id = this->m_ListCtrl_ObjectGrid->FindItem(start, itemname);
+    if (id != wxNOT_FOUND)
+    {
+        if (isfolder)
+        {
+            if (wxDir::Remove(itempath.GetFullPath(), wxPATH_RMDIR_RECURSIVE))
+                this->m_ListCtrl_ObjectGrid->DeleteItem(id);
+        }
+        else
+        {
+            if (wxRemoveFile(itempath.GetFullPath()))
+                this->m_ListCtrl_ObjectGrid->DeleteItem(id);
+        }
+    }
 }
 
 void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)

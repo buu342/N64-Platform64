@@ -188,6 +188,8 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
         wxListCtrl* m_ListCtrl_ObjectGrid;
 
         void m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEvent& event);
+        void m_ListCtrl_ObjectGrid_OnListEndLabelEdit(wxListEvent& event);
+        void m_ListCtrl_ObjectGrid_OnRightDown(wxMouseEvent& event);
         void ThreadEvent(wxThreadEvent& event);
 
     public:
