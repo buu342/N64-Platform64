@@ -308,6 +308,11 @@ void Panel_Search::ReloadThumbnail(wxFileName path)
         this->m_Display_Grid->GetThreadQueue()->Post(new ThreadWork{path, true});
 }
 
+void Panel_Search::ReloadDirectory()
+{
+    this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
+}
+
 
 /*=============================================================
                    Asset Display Base Class

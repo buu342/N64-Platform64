@@ -654,6 +654,9 @@ void Frame_ImageBrowser::SaveChanges()
     this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
     this->m_AssetModified = false;
     this->m_Panel_Search->ReloadThumbnail(this->m_AssetFilePath);
+    if (refresh)
+        this->m_Panel_Search->ReloadDirectory();
+
 }
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)

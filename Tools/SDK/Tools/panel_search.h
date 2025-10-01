@@ -110,6 +110,7 @@ class Panel_Search : public wxPanel
         void CreateNewFolder();
         void LoadAsset(wxFileName path);
         void ReloadThumbnail(wxFileName path);
+        void ReloadDirectory();
         void RenameAsset(wxFileName oldpath, wxFileName newpath);
         void DeleteItem(wxFileName path);
 
