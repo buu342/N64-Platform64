@@ -33,6 +33,7 @@ typedef struct IUnknown IUnknown;
              Types
 ******************************/
 
+// Thread structs.
 typedef struct {
     wxFileName file;
     bool large;
@@ -118,6 +119,9 @@ class Panel_Search : public wxPanel
         ~Panel_Search();
 };
 
+
+/* ---------------- Don't use anything else below ----------------*/
+
 // Asset display base class (don't use directly)
 class Panel_AssetDisplay : public wxPanel
 {
@@ -142,7 +146,7 @@ class Panel_AssetDisplay : public wxPanel
     public:
         virtual bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         virtual void SelectItem(wxString itemname, bool isfolder, bool rename=false);
-        virtual wxFileName ItemAtPos(wxPoint mousepos);
+        virtual wxFileName ItemAtMouse();
         virtual void DeleteItem(wxFileName itempath);
         
         void SetIconGenerator(wxIcon (*function)(bool, wxFileName));
@@ -174,7 +178,7 @@ class Panel_AssetDisplay_List : public Panel_AssetDisplay
     public:
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void SelectItem(wxString itemname, bool isfolder, bool rename=false);
-        wxFileName ItemAtPos(wxPoint mousepos);
+        wxFileName ItemAtMouse();
         void DeleteItem(wxFileName itempath);
         
         Panel_AssetDisplay_List(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
@@ -196,7 +200,7 @@ class Panel_AssetDisplay_Grid : public Panel_AssetDisplay
     public:
         bool LoadDirectory(wxFileName path, wxString filter = wxEmptyString);
         void SelectItem(wxString itemname, bool isfolder, bool rename = false);
-        wxFileName ItemAtPos(wxPoint mousepos);
+        wxFileName ItemAtMouse();
         void DeleteItem(wxFileName itempath);
 
         Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);

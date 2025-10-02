@@ -1,7 +1,11 @@
 /***************************************************************
                         panel_search.cpp
 
-TODO
+This file provides an asset and folder browser which filters 
+based on a specific extension. The search panel allows you see
+files in either a small list format or a large grid format. The
+preview icon for each asset is generated in a separate thread
+and cached for the best possible user experience.
 ***************************************************************/
 
 #include "panel_search.h"
@@ -22,87 +26,107 @@ TODO
                          Search Panel
 =============================================================*/
 
+/*==============================
+    Panel_Search (Constructor)
+    Initializes the class
+==============================*/
+
 Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name) : wxPanel(parent, id, pos, size, style, name)
 {
+    // Initialize object members
     this->m_MainFolder = wxFileName("");
+    this->m_CurrFolder = wxFileName("");
+    this->m_TargetFrame = NULL;
+    this->m_AssetType = wxString("");
+    this->m_AssetExt = wxString("");
+    this->m_AssetExt_NoAsterisk = wxString("");
     this->m_NewAssetFunc = NULL;
     this->m_LoadAssetFunc = NULL;
     this->m_RenameAssetFunc = NULL;
-    this->m_TargetFrame = NULL;
 
-    wxFlexGridSizer* m_Sizer_Search;
-    m_Sizer_Search = new wxFlexGridSizer( 0, 1, 0, 0 );
-    m_Sizer_Search->AddGrowableCol( 0 );
-    m_Sizer_Search->AddGrowableRow( 1 );
-    m_Sizer_Search->AddGrowableRow( 2 );
-    m_Sizer_Search->SetFlexibleDirection( wxBOTH );
-    m_Sizer_Search->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+    // Create the sizer for the search bar
+    wxFlexGridSizer* Sizer_Search;
+    Sizer_Search = new wxFlexGridSizer(0, 1, 0, 0);
+    Sizer_Search->AddGrowableCol(0);
+    Sizer_Search->AddGrowableRow(1);
+    Sizer_Search->AddGrowableRow(2);
+    Sizer_Search->SetFlexibleDirection(wxBOTH);
+    Sizer_Search->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-    wxFlexGridSizer* m_Sizer_Inputs;
-    m_Sizer_Inputs = new wxFlexGridSizer( 0, 1, 0, 0 );
-    m_Sizer_Inputs->AddGrowableCol( 0 );
-    m_Sizer_Inputs->SetFlexibleDirection( wxBOTH );
-    m_Sizer_Inputs->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+    // Create the sizer for the inputs (buttons + search bar)
+    wxFlexGridSizer* Sizer_Inputs;
+    Sizer_Inputs = new wxFlexGridSizer(0, 1, 0, 0);
+    Sizer_Inputs->AddGrowableCol(0);
+    Sizer_Inputs->SetFlexibleDirection(wxBOTH);
+    Sizer_Inputs->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-    wxBoxSizer* m_Sizer_Buttons;
-    m_Sizer_Buttons = new wxBoxSizer( wxHORIZONTAL );
+    // Create the sizer for the buttons
+    wxBoxSizer* Sizer_Buttons;
+    Sizer_Buttons = new wxBoxSizer(wxHORIZONTAL);
 
+    // Create the buttons
     this->m_Button_Back = new wxBitmapButton(this, wxID_ANY, Icon_Back, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
     this->m_Button_Back->SetToolTip(_("Go back a folder"));
-    m_Sizer_Buttons->Add(this->m_Button_Back, 0, wxALL, 5);
-
+    Sizer_Buttons->Add(this->m_Button_Back, 0, wxALL, 5);
     this->m_Button_NewAsset = new wxBitmapButton(this, wxID_ANY, Icon_NewAsset, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
     this->m_Button_NewAsset->SetToolTip(_("Create a new asset"));
-    m_Sizer_Buttons->Add(this->m_Button_NewAsset, 0, wxALL, 5);
-
+    Sizer_Buttons->Add(this->m_Button_NewAsset, 0, wxALL, 5);
     this->m_Button_NewFolder = new wxBitmapButton(this, wxID_ANY, Icon_NewFolder, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
     this->m_Button_NewFolder->SetToolTip(_("Create a new folder"));
-    m_Sizer_Buttons->Add(this->m_Button_NewFolder, 0, wxALL, 5);
-
-
-    m_Sizer_Buttons->Add(0, 0, 1, wxEXPAND, 5);
-
+    Sizer_Buttons->Add(this->m_Button_NewFolder, 0, wxALL, 5);
+    Sizer_Buttons->Add(0, 0, 1, wxEXPAND, 5);
     this->m_ToggleButton_Search = new wxBitmapToggleButton(this, wxID_ANY, Icon_Search, wxDefaultPosition, wxSize(28, 28), 0);
     this->m_ToggleButton_Search->SetToolTip(_("Toggle the search bar"));
-    m_Sizer_Buttons->Add(this->m_ToggleButton_Search, 0, wxALL, 5);
-
+    Sizer_Buttons->Add(this->m_ToggleButton_Search, 0, wxALL, 5);
     this->m_Button_ViewMode = new wxBitmapButton(this, wxID_ANY, Icon_ViewGrid, wxDefaultPosition, wxSize(28, 28), wxBU_AUTODRAW | 0);
     this->m_Button_ViewMode->SetToolTip(_("Change the view mode"));
-    m_Sizer_Buttons->Add(this->m_Button_ViewMode, 0, wxALL, 5);
+    Sizer_Buttons->Add(this->m_Button_ViewMode, 0, wxALL, 5);
+    Sizer_Inputs->Add(Sizer_Buttons, 1, wxEXPAND, 5);
 
+    // Add the search bar and hide it by default
+    this->m_TextCtrl_Search = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+    this->m_TextCtrl_Search->Hide();
+    Sizer_Inputs->Add(this->m_TextCtrl_Search, 0, wxALL|wxEXPAND, 5);
+    Sizer_Search->Add(Sizer_Inputs, 1, wxEXPAND, 5);
 
-    m_Sizer_Inputs->Add( m_Sizer_Buttons, 1, wxEXPAND, 5 );
-
-    m_TextCtrl_Search = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-    m_TextCtrl_Search->Hide();
-
-    m_Sizer_Inputs->Add(m_TextCtrl_Search, 0, wxALL|wxEXPAND, 5);
-
-    m_Sizer_Search->Add(m_Sizer_Inputs, 1, wxEXPAND, 5);
-
+    // Create the asset display panels and add them to the search sizer
     this->m_Display_List = new Panel_AssetDisplay_List(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    m_Sizer_Search->Add(this->m_Display_List, 1, wxEXPAND | wxALL, 5);
+    Sizer_Search->Add(this->m_Display_List, 1, wxEXPAND | wxALL, 5);
     this->m_Display_Grid = new Panel_AssetDisplay_Grid(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    m_Sizer_Search->Add(this->m_Display_Grid, 1, wxEXPAND | wxALL, 5);
+    Sizer_Search->Add(this->m_Display_Grid, 1, wxEXPAND | wxALL, 5);
     this->m_Display_Grid->Hide();
     this->m_Display_Current = this->m_Display_List;
 
-    this->SetSizer( m_Sizer_Search );
+    // Finalize the layout
+    this->SetSizer(Sizer_Search);
     this->Layout();
 
-    // Connect Events
-    m_Button_Back->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Panel_Search::m_Button_Back_OnButtonClick ), NULL, this );
-    m_Button_NewAsset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Panel_Search::m_Button_NewAsset_OnButtonClick ), NULL, this );
-    m_Button_NewFolder->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Panel_Search::m_Button_NewFolder_OnButtonClick ), NULL, this );
-    m_ToggleButton_Search->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( Panel_Search::m_ToggleButton_Search_OnToggleButton ), NULL, this );
-    m_Button_ViewMode->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Panel_Search::m_Button_ViewMode_OnButtonClick ), NULL, this );
-    m_TextCtrl_Search->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( Panel_Search::m_TextCtrl_Search_OnText ), NULL, this );
+    // Connect events
+    m_Button_Back->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_Back_OnButtonClick), NULL, this);
+    m_Button_NewAsset->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_NewAsset_OnButtonClick), NULL, this);
+    m_Button_NewFolder->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_NewFolder_OnButtonClick), NULL, this);
+    m_ToggleButton_Search->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_ToggleButton_Search_OnToggleButton), NULL, this);
+    m_Button_ViewMode->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(Panel_Search::m_Button_ViewMode_OnButtonClick), NULL, this);
+    m_TextCtrl_Search->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(Panel_Search::m_TextCtrl_Search_OnText), NULL, this);
 }
+
+
+/*==============================
+    Panel_Search (Destructor)
+    Cleans up the class before deletion
+==============================*/
 
 Panel_Search::~Panel_Search()
 {
-
+    // Nothing to clean up
 }
+
+
+/*==============================
+    Panel_Search::m_Button_Back_OnButtonClick
+    Handles pressing the back button
+    @param The command event
+==============================*/
 
 void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
 {
@@ -114,17 +138,38 @@ void Panel_Search::m_Button_Back_OnButtonClick(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Panel_Search::m_Button_NewAsset_OnButtonClick
+    Handles pressing the new asset button
+    @param The command event
+==============================*/
+
 void Panel_Search::m_Button_NewAsset_OnButtonClick(wxCommandEvent& event)
 {
     this->CreateNewAsset();
     event.Skip();
 }
 
+
+/*==============================
+    Panel_Search::m_Button_NewFolder_OnButtonClick
+    Handles pressing the new asset folder
+    @param The command event
+==============================*/
+
 void Panel_Search::m_Button_NewFolder_OnButtonClick(wxCommandEvent& event)
 {
     this->CreateNewFolder();
     event.Skip();
 }
+
+
+/*==============================
+    Panel_Search::m_ToggleButton_Search_OnToggleButton
+    Handles pressing the search bar toggle button
+    @param The command event
+==============================*/
 
 void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
 {
@@ -141,9 +186,15 @@ void Panel_Search::m_ToggleButton_Search_OnToggleButton(wxCommandEvent& event)
             this->m_Display_Current->LoadDirectory(this->m_CurrFolder, this->m_TextCtrl_Search->GetValue());
     }
     this->Layout();
-
     event.Skip();
 }
+
+
+/*==============================
+    Panel_Search::m_Button_ViewMode_OnButtonClick
+    Handles pressing the view mode button
+    @param The command event
+==============================*/
 
 void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
 {
@@ -164,11 +215,25 @@ void Panel_Search::m_Button_ViewMode_OnButtonClick(wxCommandEvent& event)
     event.Skip(false); // False is needed because for some reason SetBitmap causes OnButtonClick to fire twice on the first click
 }
 
+
+/*==============================
+    Panel_Search::m_TextCtrl_Search_OnText
+    Handles inputting text into the search bar
+    @param The command event
+==============================*/
+
 void Panel_Search::m_TextCtrl_Search_OnText(wxCommandEvent& event)
 {
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder, event.GetString());
     event.Skip();
 }
+
+
+/*==============================
+    Panel_Search::SetMainFolder
+    Sets the base folder for the search panel
+    @param The base folder where all the assets are stored
+==============================*/
 
 void Panel_Search::SetMainFolder(wxFileName path)
 {
@@ -177,6 +242,14 @@ void Panel_Search::SetMainFolder(wxFileName path)
     this->m_Display_Current->LoadDirectory(path);
 }
 
+
+/*==============================
+    Panel_Search::SetAssetType
+    Sets the asset's descriptive name and extension
+    @param The descriptive name for the asset type
+    @param The asset's extension (in "*.name" format)
+==============================*/
+
 void Panel_Search::SetAssetType(wxString type, wxString ext)
 {
     this->m_AssetType = type;
@@ -184,31 +257,75 @@ void Panel_Search::SetAssetType(wxString type, wxString ext)
     this->m_AssetExt_NoAsterisk = ext.SubString(1, ext.Length() - 1);
 }
 
+
+/*==============================
+    Panel_Search::SetIconGenerator
+    Sets the icon generation function
+    @param A function pointer to the icon generator
+==============================*/
+
 void Panel_Search::SetIconGenerator(wxIcon (*function)(bool, wxFileName))
 {
     this->m_Display_List->SetIconGenerator(function);
     this->m_Display_Grid->SetIconGenerator(function);
 }
 
+
+/*==============================
+    Panel_Search::SetAssetGenerator
+    Sets the asset generation function
+    @param A function pointer to the asset generator
+==============================*/
+
 void Panel_Search::SetAssetGenerator(void (*function)(wxFrame*, wxFileName))
 {
     this->m_NewAssetFunc = function;
 }
+
+
+/*==============================
+    Panel_Search::SetLoadAssetFunc
+    Sets the asset loading function. This should handle the
+    loading of the asset and initialization of the panel.
+    @param A function pointer to the asset loader
+==============================*/
 
 void Panel_Search::SetLoadAssetFunc(void (*function)(wxFrame*, wxFileName))
 {
     this->m_LoadAssetFunc = function;
 }
 
+
+/*==============================
+    Panel_Search::SetRenameAssetFunc
+    Sets the asset rename function. This should handle changing
+    the titlebar of the program.
+    @param A function pointer to the asset renamer
+==============================*/
+
 void Panel_Search::SetRenameAssetFunc(void (*function)(wxFrame*, wxFileName, wxFileName))
 {
     this->m_RenameAssetFunc = function;
 }
 
+
+/*==============================
+    Panel_Search::SetTargetFrame
+    Sets the target frame which loading assets will affect
+    @param A pointer to the target frame
+==============================*/
+
 void Panel_Search::SetTargetFrame(wxFrame* target)
 {
     this->m_TargetFrame = target;
 }
+
+
+/*==============================
+    Panel_Search::SetCurrentFolder
+    Sets the current folder that the search panel is viewing
+    @param A path to the folder to view
+==============================*/
 
 void Panel_Search::SetCurrentFolder(wxFileName path)
 {
@@ -216,35 +333,84 @@ void Panel_Search::SetCurrentFolder(wxFileName path)
     this->m_Button_Back->Enable(this->m_CurrFolder.GetPathWithSep().Cmp(this->m_MainFolder.GetPathWithSep()));
 }
 
+
+/*==============================
+    Panel_Search::ClearSearchbox
+    Clears the search bar's contents
+==============================*/
+
 void Panel_Search::ClearSearchbox()
 {
     this->m_TextCtrl_Search->SetValue(wxEmptyString);
 }
+
+
+/*==============================
+    Panel_Search::GetMainFolder
+    Gets the path to base folder where all the assets are stored
+    @return The path to the base folder
+==============================*/
 
 wxFileName Panel_Search::GetMainFolder()
 {
     return this->m_MainFolder;
 }
 
+
+/*==============================
+    Panel_Search::GetCurrentFolder
+    Gets the path to the current directory that is being viewed
+    @return The path to the currently viewed folder
+==============================*/
+
 wxFileName Panel_Search::GetCurrentFolder()
 {
     return this->m_CurrFolder;
 }
+
+
+/*==============================
+    Panel_Search::GetAssetType
+    Gets the descriptive asset name
+    @return The descriptive asset name
+==============================*/
 
 wxString Panel_Search::GetAssetType()
 {
     return this->m_AssetType;
 }
 
+
+/*==============================
+    Panel_Search::GetAssetExtension
+    Gets the asset's extension
+    @param  Whether or not to include the asterisk at the start
+            of the string (default false)
+    @return The asset's extension
+==============================*/
+
 wxString Panel_Search::GetAssetExtension(bool asterisk)
 {
     return asterisk ? this->m_AssetExt : this->m_AssetExt_NoAsterisk;
 }
 
+
+/*==============================
+    Panel_Search::GetTargetFrame
+    Gets the target frame which loading assets will affect
+    @return A pointer to the target frame
+==============================*/
+
 wxFrame* Panel_Search::GetTargetFrame()
 {
     return this->m_TargetFrame;
 }
+
+
+/*==============================
+    Panel_Search::CreateNewAsset
+    Handles the creation of a new asset
+==============================*/
 
 void Panel_Search::CreateNewAsset()
 {
@@ -268,6 +434,12 @@ void Panel_Search::CreateNewAsset()
     this->m_Display_Current->SelectItem(name, false, true);
 }
 
+
+/*==============================
+    Panel_Search::CreateNewFolder
+    Handles the creation of a new folder
+==============================*/
+
 void Panel_Search::CreateNewFolder()
 {
     wxString name = "New folder";
@@ -288,10 +460,25 @@ void Panel_Search::CreateNewFolder()
     this->m_Display_Current->SelectItem(name, true, true);
 }
 
+
+/*==============================
+    Panel_Search::LoadAsset
+    Loads an asset and executes the asset loading function
+    @param The path to the asset file
+==============================*/
+
 void Panel_Search::LoadAsset(wxFileName path)
 {
     this->m_LoadAssetFunc(this->m_TargetFrame, path);
 }
+
+
+/*==============================
+    Panel_Search::RenameAsset
+    Renames an asset and executes the asset renaming function
+    @param The old path to the asset file
+    @param The new path to the asset file
+==============================*/
 
 void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
 {
@@ -300,6 +487,13 @@ void Panel_Search::RenameAsset(wxFileName oldpath, wxFileName newpath)
     this->m_Display_Grid->RenameIconInCache(oldpath.GetFullPath(), newpath.GetFullPath());
 }
 
+
+/*==============================
+    Panel_Search::ReloadThumbnail
+    Reloads the thumbnail of an asset and updates the cache.
+    @param The path to the asset file
+==============================*/
+
 void Panel_Search::ReloadThumbnail(wxFileName path)
 {
     if (this->m_Display_List->IsIconInCache(path.GetFullPath()))
@@ -307,6 +501,12 @@ void Panel_Search::ReloadThumbnail(wxFileName path)
     if (this->m_Display_Grid->IsIconInCache(path.GetFullPath()))
         this->m_Display_Grid->GetThreadQueue()->Post(new ThreadWork{path, true});
 }
+
+
+/*==============================
+    Panel_Search::ReloadDirectory
+    Reloads the view of the currently active directory.
+==============================*/
 
 void Panel_Search::ReloadDirectory()
 {
@@ -318,6 +518,11 @@ void Panel_Search::ReloadDirectory()
                    Asset Display Base Class
 =============================================================*/
 
+/*==============================
+    Panel_AssetDisplay (Constructor)
+    Initializes the class
+==============================*/
+
 Panel_AssetDisplay::Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
     this->m_IconGenFunc = NULL;
@@ -325,11 +530,50 @@ Panel_AssetDisplay::Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wx
     this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay::ThreadEvent));
 }
 
+
+/*==============================
+    Panel_AssetDisplay (Destructor)
+    Cleans up the class before deletion
+==============================*/
+
 Panel_AssetDisplay::~Panel_AssetDisplay()
 {
     this->StopThread_IconGenerator();
     this->Disconnect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay::ThreadEvent));
 }
+
+
+/*==============================
+    Panel_AssetDisplay::ThreadEvent
+    Handles results from the icon generator thread
+    @param The thread event
+==============================*/
+
+void Panel_AssetDisplay::ThreadEvent(wxThreadEvent& event)
+{
+    // This method should be overwritten by other classes, so it's blank
+    event.Skip();
+}
+
+
+/*==============================
+    Panel_AssetDisplay::SetIconGenerator
+    Set the icon generation function
+    @param A function pointer to the icon generation function
+==============================*/
+
+void Panel_AssetDisplay::SetIconGenerator(wxIcon(*function)(bool, wxFileName))
+{
+    this->m_IconGenFunc = function;
+}
+
+
+/*==============================
+    Panel_AssetDisplay::LoadDirectory
+    Loads the contents in a specific path
+    @param The path to load folders and assets of
+    @param A filter to apply (default "")
+==============================*/
 
 bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
 {
@@ -343,6 +587,7 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
     dir.Open(path.GetPathWithSep());
     if (!dir.IsOpened())
         return false;
+    parent->SetCurrentFolder(path);
 
     // Clear the lists
     this->m_Assets.clear();
@@ -380,6 +625,15 @@ bool Panel_AssetDisplay::LoadDirectory(wxFileName path, wxString filter)
     return true;
 }
 
+
+/*==============================
+    Panel_AssetDisplay::SelectItem
+    Highlights an item (and optionally enables renaming)
+    @param The name of the item
+    @param Whether the item is a folder
+    @param Enable renaming (default false)
+==============================*/
+
 void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
     // This method should be overwritten by other classes, so it's blank
@@ -390,13 +644,24 @@ void Panel_AssetDisplay::SelectItem(wxString itemname, bool isfolder, bool renam
 }
 
 
-wxFileName Panel_AssetDisplay::ItemAtPos(wxPoint mousepos)
+/*==============================
+    Panel_AssetDisplay::ItemAtMouse
+    Gets the item at the mouse's position
+    @return The filename of the item at the mouse's position
+==============================*/
+
+wxFileName Panel_AssetDisplay::ItemAtMouse()
 {
     // This method should be overwritten by other classes, so it's blank
-    // Still need to void out arguments to prevent "Unused arguments" compiler warning
-    (void)mousepos;
     return wxFileName();
 }
+
+
+/*==============================
+    Panel_AssetDisplay::DeleteItem
+    Deletes an item with a given path
+    @param The path to the item
+==============================*/
 
 void Panel_AssetDisplay::DeleteItem(wxFileName itempath)
 {
@@ -405,11 +670,31 @@ void Panel_AssetDisplay::DeleteItem(wxFileName itempath)
     (void)itempath;
 }
 
+
+/*==============================
+    Panel_AssetDisplay::IsIconInCache
+    Checks whether the icon for a specific file is stored in
+    the icon cache
+    @param  The path to the item to check the icon of
+    @return Whether or not the icon is in the cache
+==============================*/
+
 bool Panel_AssetDisplay::IsIconInCache(wxString filepath)
 {
     std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(filepath);
     return it != this->m_IconCache_Map.end();
 }
+
+
+/*==============================
+    Panel_AssetDisplay::GetIconFromCache
+    Gets the icon from the cache, or generates it in a 
+    different thread
+    @param  The path to the item to get the icon of
+    @param  Whether to fetch a large icon (64x64) or small
+            icon (16x16)
+    @return The icon, or wxNullIcon if it needs to be generated
+==============================*/
 
 wxIcon Panel_AssetDisplay::GetIconFromCache(wxString filepath, bool islarge)
 {
@@ -424,6 +709,15 @@ wxIcon Panel_AssetDisplay::GetIconFromCache(wxString filepath, bool islarge)
         this->GetThreadQueue()->Post(new ThreadWork{wxFileName(filepath), islarge});
     return icon;
 }
+
+
+/*==============================
+    Panel_AssetDisplay::InsertOrUpdateCachedIcon
+    Inserts the icon to the cache if it doesn't exist yet, or
+    updates it if it does
+    @param  The path to the item to update the icon of
+    @param  The icon to replace with
+==============================*/
 
 void Panel_AssetDisplay::InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon)
 {
@@ -445,6 +739,15 @@ void Panel_AssetDisplay::InsertOrUpdateCachedIcon(wxString filepath, wxIcon icon
     }
 }
 
+
+/*==============================
+    Panel_AssetDisplay::RenameIconInCache
+    Renames an icon in the cache. Exists so that renamed items
+    don't need to regenerate their icon
+    @param  The old path of the item
+    @param  The new path of the item
+==============================*/
+
 void Panel_AssetDisplay::RenameIconInCache(wxString oldpath, wxString newpath)
 {
     std::unordered_map<wxString, std::list<std::tuple<wxString, wxIcon>>::iterator>::iterator it = this->m_IconCache_Map.find(oldpath);
@@ -459,10 +762,15 @@ void Panel_AssetDisplay::RenameIconInCache(wxString oldpath, wxString newpath)
 }
 
 
+/*==============================
+    Panel_AssetDisplay::ContextMenu
+    Pops open a context menu
+==============================*/
+
 void Panel_AssetDisplay::ContextMenu()
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
-    wxFileName item = this->ItemAtPos(wxGetMousePosition());
+    wxFileName item = this->ItemAtMouse();
     if (item.IsOk())
     {
         bool isfolder = item.IsDir();
@@ -546,15 +854,13 @@ void Panel_AssetDisplay::StopThread_IconGenerator()
     }
 }
 
-void Panel_AssetDisplay::ThreadEvent(wxThreadEvent& event)
-{
-    event.Skip();
-}
 
-void Panel_AssetDisplay::SetIconGenerator(wxIcon(*function)(bool, wxFileName))
-{
-    this->m_IconGenFunc = function;
-}
+/*==============================
+    Panel_AssetDisplay::GetThreadQueue
+    Gets the thread queue. Should only be used by the icon 
+    thread
+    @return A pointer to the thread message queue
+==============================*/
 
 wxMessageQueue<ThreadWork*>* Panel_AssetDisplay::GetThreadQueue()
 {
@@ -566,34 +872,56 @@ wxMessageQueue<ThreadWork*>* Panel_AssetDisplay::GetThreadQueue()
                       Asset Display List
 =============================================================*/
 
+
+/*==============================
+    Panel_AssetDisplay_List (Constructor)
+    Initializes the class
+==============================*/
+
 Panel_AssetDisplay_List::Panel_AssetDisplay_List(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
 {
-    wxFlexGridSizer* m_Sizer_Main;
-    m_Sizer_Main = new wxFlexGridSizer(1, 1, 0, 0);
-    m_Sizer_Main->AddGrowableCol(0);
-    m_Sizer_Main->AddGrowableRow(0);
-    m_Sizer_Main->SetFlexibleDirection(wxBOTH);
-    m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    // Initialize the main sizer
+    wxFlexGridSizer* Sizer_Main;
+    Sizer_Main = new wxFlexGridSizer(1, 1, 0, 0);
+    Sizer_Main->AddGrowableCol(0);
+    Sizer_Main->AddGrowableRow(0);
+    Sizer_Main->SetFlexibleDirection(wxBOTH);
+    Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-    m_DataViewListCtrl_ObjectList = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER | wxDV_ROW_LINES);
-    m_DataViewListColumn_Assets = m_DataViewListCtrl_ObjectList->AppendIconTextColumn(_("Assets"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
-    m_DataViewListColumn_IsFolder = m_DataViewListCtrl_ObjectList->AppendToggleColumn(_("Assets"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN);
-    m_Sizer_Main->Add(m_DataViewListCtrl_ObjectList, 0, wxALL | wxEXPAND, 5);
+    // Initialize the DataViewListCtrl
+    this->m_DataViewListCtrl_ObjectList = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER | wxDV_ROW_LINES);
+    this->m_DataViewListColumn_Assets = this->m_DataViewListCtrl_ObjectList->AppendIconTextColumn(_("Assets"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
+    this->m_DataViewListColumn_IsFolder = this->m_DataViewListCtrl_ObjectList->AppendToggleColumn(_("Assets"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN);
+    Sizer_Main->Add(this->m_DataViewListCtrl_ObjectList, 0, wxALL | wxEXPAND, 5);
 
-    this->SetSizer(m_Sizer_Main);
+    // Finalize the layout
+    this->SetSizer(Sizer_Main);
     this->Layout();
 
-    // Connect Events
-    m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated), NULL, this);
-    m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu), NULL, this);
-    m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone), NULL, this);
+    // Connect events
+    this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated), NULL, this);
+    this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu), NULL, this);
+    this->m_DataViewListCtrl_ObjectList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler(Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone), NULL, this);
     this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_List::ThreadEvent));
 }
 
+
+/*==============================
+    Panel_AssetDisplay_List (Destructor)
+    Cleans up the class before deletion
+==============================*/
+
 Panel_AssetDisplay_List::~Panel_AssetDisplay_List()
 {
-
+    // Nothing to clean up
 }
+
+
+/*==============================
+    Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated
+    Handles clicking on a list item
+    @param The DataView event
+==============================*/
 
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDataViewEvent& event)
 {
@@ -615,8 +943,7 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
     if (isfolder)
     {
         wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + icontext.GetText() + wxFileName::GetPathSeparator();
-        if (this->LoadDirectory(newpath))
-            parent->SetCurrentFolder(newpath);
+        this->LoadDirectory(newpath);
     }
     else
         parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + icontext.GetText() + parent->GetAssetExtension());
@@ -626,11 +953,25 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_OnItemActivated(wxDa
     event.Skip();
 }
 
+
+/*==============================
+    Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu
+    Handles popping open the context menu
+    @param The DataView event
+==============================*/
+
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ContextMenu(wxDataViewEvent& event)
 {
     this->ContextMenu();
     event.Skip(false);
 }
+
+
+/*==============================
+    Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone
+    Handles finishing writing an item's name
+    @param The DataView event
+==============================*/
 
 void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDataViewEvent& event)
 {
@@ -680,11 +1021,19 @@ void Panel_AssetDisplay_List::m_DataViewListCtrl_ObjectList_ItemEditingDone(wxDa
     event.Skip();
 }
 
+
+/*==============================
+    Panel_AssetDisplay_List::LoadDirectory
+    Loads the contents in a specific path
+    @param The path to load folders and assets of
+    @param A filter to apply (default "")
+==============================*/
+
 bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
     
-    // Call the base class's load directory function
+    // Call the base class's load directory function to populate the folder and asset list
     this->m_DataViewListCtrl_ObjectList->DeleteAllItems();
     if (Panel_AssetDisplay::LoadDirectory(path, filter) == false)
         return false;
@@ -711,6 +1060,15 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
     return true;
 }
 
+
+/*==============================
+    Panel_AssetDisplay_List::SelectItem
+    Highlights an item (and optionally enables renaming)
+    @param The name of the item
+    @param Whether the item is a folder
+    @param Enable renaming (default false)
+==============================*/
+
 void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
@@ -734,13 +1092,22 @@ void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool 
     }
 }
 
-wxFileName Panel_AssetDisplay_List::ItemAtPos(wxPoint mousepos)
+
+/*==============================
+    Panel_AssetDisplay_List::ItemAtMouse
+    Gets the item at the mouse's position
+    @return The filename of the item at the mouse's position
+==============================*/
+
+wxFileName Panel_AssetDisplay_List::ItemAtMouse()
 {
+
     int row;
     bool isfolder;
     wxVariant v;
     wxDataViewItem item;
     wxDataViewIconText it;
+    wxPoint mousepos = wxGetMousePosition();
     Panel_Search* parent = (Panel_Search*)this->GetParent();
     wxDataViewColumn col = wxDataViewColumn("", new wxDataViewIconTextRenderer(), 0);
     wxDataViewColumn* colptr = &col;
@@ -764,6 +1131,13 @@ wxFileName Panel_AssetDisplay_List::ItemAtPos(wxPoint mousepos)
     else
         return parent->GetCurrentFolder().GetPathWithSep() + it.GetText() + parent->GetAssetExtension();
 }
+
+
+/*==============================
+    Panel_AssetDisplay_List::DeleteItem
+    Deletes an item with a given path
+    @param The path to the item
+==============================*/
 
 void Panel_AssetDisplay_List::DeleteItem(wxFileName itempath)
 {
@@ -805,6 +1179,13 @@ void Panel_AssetDisplay_List::DeleteItem(wxFileName itempath)
     }
 }
 
+
+/*==============================
+    Panel_AssetDisplay_List::ThreadEvent
+    Handles results from the icon generator thread
+    @param The thread event
+==============================*/
+
 void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 {
     Panel_Search* parent = (Panel_Search*)this->GetParent();
@@ -839,33 +1220,56 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
                       Asset Display Grid
 =============================================================*/
 
+/*==============================
+    Panel_AssetDisplay_Grid (Constructor)
+    Initializes the class
+==============================*/
+
 Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
 {
-    wxFlexGridSizer* m_Sizer_Main;
-    m_Sizer_Main = new wxFlexGridSizer(0, 0, 0, 0);
-    m_Sizer_Main->AddGrowableCol(0);
-    m_Sizer_Main->AddGrowableRow(0);
-    m_Sizer_Main->SetFlexibleDirection(wxBOTH);
-    m_Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
-
-    this->m_ListCtrl_ObjectGrid = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_EDIT_LABELS | wxLC_ICON | wxLC_SINGLE_SEL);
-    m_Sizer_Main->Add(this->m_ListCtrl_ObjectGrid, 0, wxALL | wxEXPAND, 5);
-
+    // Initialize member objects
     this->m_ImgList = new wxImageList(64, 64, true);
 
-    this->SetSizer(m_Sizer_Main);
-    this->Layout();
-    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_END_LABEL_EDIT, wxListEventHandler( Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit), NULL, this );
-    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated), NULL, this);
-    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler( Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown ), NULL, this);
-    this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
+    // Initialize the main sizer
+    wxFlexGridSizer* Sizer_Main;
+    Sizer_Main = new wxFlexGridSizer(0, 0, 0, 0);
+    Sizer_Main->AddGrowableCol(0);
+    Sizer_Main->AddGrowableRow(0);
+    Sizer_Main->SetFlexibleDirection(wxBOTH);
+    Sizer_Main->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
+    // Initialize the ListCtrl
+    this->m_ListCtrl_ObjectGrid = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_EDIT_LABELS | wxLC_ICON | wxLC_SINGLE_SEL);
+    Sizer_Main->Add(this->m_ListCtrl_ObjectGrid, 0, wxALL | wxEXPAND, 5);
+
+    // Finalize layout
+    this->SetSizer(Sizer_Main);
+    this->Layout();
+
+    // Connect events
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_END_LABEL_EDIT, wxListEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit), NULL, this);
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated), NULL, this);
+    this->m_ListCtrl_ObjectGrid->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown), NULL, this);
+    this->Connect(wxID_ANY, wxEVT_THREAD, wxThreadEventHandler(Panel_AssetDisplay_Grid::ThreadEvent));
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid (Destructor)
+    Cleans up the class before deletion
+==============================*/
 
 Panel_AssetDisplay_Grid::~Panel_AssetDisplay_Grid()
 {
-
+    // Nothing to clean up
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated
+    Handles clicking on a grid item
+    @param The list event
+==============================*/
 
 void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEvent& event)
 {
@@ -877,8 +1281,7 @@ void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEv
     if (isfolder)
     {
         wxFileName newpath = parent->GetCurrentFolder().GetPathWithSep() + item + wxFileName::GetPathSeparator();
-        if (this->LoadDirectory(newpath))
-            parent->SetCurrentFolder(newpath);
+        this->LoadDirectory(newpath);
     }
     else
         parent->LoadAsset(parent->GetCurrentFolder().GetPathWithSep() + item + parent->GetAssetExtension());
@@ -887,6 +1290,13 @@ void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListItemActivated(wxListEv
     parent->ClearSearchbox();
     event.Skip(false);
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit
+    Handles finishing writing an item's name
+    @param The list event
+==============================*/
 
 void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit(wxListEvent& event)
 {
@@ -919,18 +1329,33 @@ void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnListEndLabelEdit(wxListEve
     event.Skip();
 }
 
+
+/*==============================
+    Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown
+    Handles popping open the context menu
+    @param The mouse event
+==============================*/
+
 void Panel_AssetDisplay_Grid::m_ListCtrl_ObjectGrid_OnRightDown(wxMouseEvent& event)
 {
     this->ContextMenu();
     event.Skip(false);
 }
 
+
+/*==============================
+    Panel_AssetDisplay_Grid::LoadDirectory
+    Loads the contents in a specific path
+    @param The path to load folders and assets of
+    @param A filter to apply (default "")
+==============================*/
+
 bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
 {
     int id = 0;
     Panel_Search* parent = (Panel_Search*)this->GetParent();
 
-    // Call the base class's load directory function
+    // Call the base class's load directory function to populate the folder and asset list
     this->m_ListCtrl_ObjectGrid->DeleteAllItems();
     if (Panel_AssetDisplay::LoadDirectory(path, filter) == false)
         return false;
@@ -970,13 +1395,22 @@ bool Panel_AssetDisplay_Grid::LoadDirectory(wxFileName path, wxString filter)
         item.SetId(id);
         item.SetColumn(0);
         item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
-        item.SetText(file);
+        item.SetText(file); // No word wrapping on Linux. I tried word wrapping manually but that causes a ton of visual bugs
         item.SetImage(1 + (id - this->m_Folders.size()));
         this->m_ListCtrl_ObjectGrid->InsertItem(item);
         id++;
     }
     return true;
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid::SelectItem
+    Highlights an item (and optionally enables renaming)
+    @param The name of the item
+    @param Whether the item is a folder
+    @param Enable renaming (default false)
+==============================*/
 
 void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
@@ -991,9 +1425,17 @@ void Panel_AssetDisplay_Grid::SelectItem(wxString itemname, bool isfolder, bool 
     }
 }
 
-wxFileName Panel_AssetDisplay_Grid::ItemAtPos(wxPoint mousepos)
+
+/*==============================
+    Panel_AssetDisplay_Grid::ItemAtMouse
+    Gets the item at the mouse's position
+    @return The filename of the item at the mouse's position
+==============================*/
+
+wxFileName Panel_AssetDisplay_Grid::ItemAtMouse()
 {
     int flags = wxLIST_HITTEST_ONITEM;
+    wxPoint mousepos = wxGetMousePosition();
     Panel_Search* parent = (Panel_Search*)this->GetParent();
     wxPoint hit = this->m_ListCtrl_ObjectGrid->ScreenToClient(mousepos);
     long id = this->m_ListCtrl_ObjectGrid->HitTest(hit, flags, NULL);
@@ -1007,6 +1449,13 @@ wxFileName Panel_AssetDisplay_Grid::ItemAtPos(wxPoint mousepos)
     else
         return parent->GetCurrentFolder().GetPathWithSep() + this->m_ListCtrl_ObjectGrid->GetItemText(id) + parent->GetAssetExtension();
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid::DeleteItem
+    Deletes an item with a given path
+    @param The path to the item
+==============================*/
 
 void Panel_AssetDisplay_Grid::DeleteItem(wxFileName itempath)
 {
@@ -1034,6 +1483,13 @@ void Panel_AssetDisplay_Grid::DeleteItem(wxFileName itempath)
         }
     }
 }
+
+
+/*==============================
+    Panel_AssetDisplay_Grid::ThreadEvent
+    Handles results from the icon generator thread
+    @param The thread event
+==============================*/
 
 void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
 {
@@ -1074,7 +1530,7 @@ IconGeneratorThread::IconGeneratorThread(Panel_AssetDisplay* parent, wxIcon(*fun
 
 IconGeneratorThread::~IconGeneratorThread()
 {
-
+    // Nothing to clean up
 }
 
 
