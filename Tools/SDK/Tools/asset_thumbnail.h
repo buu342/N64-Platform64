@@ -4,6 +4,12 @@
 #include <wx/bitmap.h>
 #include <wx/icon.h>
 
+
+/******************************
+            Classes
+******************************/
+
+// A class representing small/large thumbnails for the search panel
 class P64Asset_Thumbnail
 {
     private:
