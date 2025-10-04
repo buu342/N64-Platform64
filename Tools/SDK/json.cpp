@@ -69,7 +69,9 @@ JSONFile json_createproject(wxString filepath)
 
 /*==============================
     json_load
-    TODO
+    Load a json file from a given file path
+    @param  The path to the JSON file to load
+    @return The loaded JSON file
 ==============================*/
 
 JSONFile json_load(wxString filepath)
@@ -81,7 +83,9 @@ JSONFile json_load(wxString filepath)
 
 /*==============================
     json_save
-    TODO
+    Saves a json file to a given file path
+    @param The JSON file to save
+    @param The path to save the JSON file to
 ==============================*/
 
 void json_save(JSONFile file, wxString filepath)

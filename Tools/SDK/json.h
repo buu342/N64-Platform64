@@ -2,13 +2,18 @@
 
 typedef struct IUnknown IUnknown;
 
-typedef void* JSONFile;
-
 #include "main.h"
 
 
+/******************************
+            Structs
+******************************/
+
+typedef void* JSONFile;
+
+
 /*********************************
-        Function Prototypes
+       Function Prototypes
 *********************************/
 
 JSONFile  json_createproject(wxString filepath);
