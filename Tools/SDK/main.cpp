@@ -1,7 +1,8 @@
 /***************************************************************
                             main.cpp
 
-TODO
+The main window that allows the user to launch all the other 
+tools in the game's SDK.
 ***************************************************************/
 
 #include "app.h"
@@ -37,9 +38,13 @@ void StartTool_Image(wxWindow* parent, wxString title);
 static std::vector<Tools> g_tools;
 
 
+/*********************************
+         Helper Functions
+*********************************/
+
 /*==============================
-    Frame_Main (Constructor)
-    Initializes the class
+    Initialize_Tools
+    Initializes the list of tools
 ==============================*/
 
 static void Initialize_Tools()
@@ -48,6 +53,25 @@ static void Initialize_Tools()
     g_tools.push_back({wxString("Material Browser"), Icon_Material, NULL});
 }
 
+
+/*==============================
+    StartTool_Image
+    Starts the Image Browser tool
+    @param The main window to attach this tool to
+    @param The name of this tool
+==============================*/
+
+void StartTool_Image(wxWindow* parent, wxString title)
+{
+    Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
+    w->Show();
+}
+
+
+/*********************************
+    Main Class Implementation
+*********************************/
+
 /*==============================
     Frame_Main (Constructor)
     Initializes the class
@@ -55,16 +79,17 @@ static void Initialize_Tools()
 
 Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDefaultPosition, wxSize(300, 400), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL)
 {
+    // Initialize the list of tools
     Initialize_Tools();
 
     // Create the main sizer
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
-    wxGridSizer* m_Sizer_Main;
-    m_Sizer_Main = new wxGridSizer(0, 1, 0, 0);
+    wxGridSizer* Sizer_Main;
+    Sizer_Main = new wxGridSizer(0, 1, 0, 0);
 
     // Create the data view list and populate it
-    m_DataViewListCtrl_Main = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
-    m_Sizer_Main->Add(m_DataViewListCtrl_Main, 0, wxALL|wxEXPAND, 5);
+    this->m_DataViewListCtrl_Main = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER);
+    Sizer_Main->Add(this->m_DataViewListCtrl_Main, 0, wxALL|wxEXPAND, 5);
     this->m_DataViewListCtrl_Main->AppendIconTextColumn(wxString(), wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     for (Tools t : g_tools)
     {
@@ -75,12 +100,12 @@ Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDef
     }
 
     // Finalize the layout
-    this->SetSizer(m_Sizer_Main);
+    this->SetSizer(Sizer_Main);
     this->Layout();
     this->Centre(wxBOTH);
 
-    // Connect Events
-    m_DataViewListCtrl_Main->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated), NULL, this);
+    // Connect events
+    this->m_DataViewListCtrl_Main->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated), NULL, this);
 }
 
 
@@ -97,8 +122,9 @@ Frame_Main::~Frame_Main()
 
 /*==============================
     Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated
-    Called when a selected item is double clicked
-    @param The generated event
+    Called when a selected item is double clicked.
+    Used to launch the selected tool.
+    @param The DataView event
 ==============================*/
 
 void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event)
@@ -106,27 +132,14 @@ void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewE
     int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
     if (row >= 0 && row < (int)g_tools.size() && g_tools[row].function != NULL)
         g_tools[row].function(this, g_tools[row].name);
-
-    // Prevent unused parameter warning
-    (void)event;
-}
-
-
-/*==============================
-    StartTool_Image
-    TODO
-==============================*/
-
-void StartTool_Image(wxWindow* parent, wxString title)
-{
-    Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
-    w->Show();
+    event.Skip();
 }
 
 
 /*==============================
     Frame_Main::OpenProject
-    TODO
+    Opens the project by attempting to open a .p64 file in the
+    same directory that the program is running from.
 ==============================*/
 
 void Frame_Main::OpenProject()
@@ -154,7 +167,10 @@ void Frame_Main::OpenProject()
 
 /*==============================
     Frame_Main::Dialog_CreateOpenProject
-    TODO
+    Creates a dialog to create or open a new P64 project
+    @param The message to display in the dialog
+    @param The title of the dialog
+    @param The default path for the file to create/load
 ==============================*/
 
 void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath)
@@ -212,7 +228,9 @@ void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxSt
 
 /*==============================
     Frame_Main::InitializeProject
-    TODO
+    Initializes a project from a given .p64 file by creating
+    the asset directory
+    @param The path to the project file
 ==============================*/
 
 void Frame_Main::InitializeProject(wxString filepath)
@@ -229,7 +247,8 @@ void Frame_Main::InitializeProject(wxString filepath)
 
 /*==============================
     Frame_Main::GetAssetsPath
-    TODO
+    Gets the folder that contains the project's assets
+    @return The path to the project's assets
 ==============================*/
 
 wxString Frame_Main::GetAssetsPath()

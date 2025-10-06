@@ -64,7 +64,7 @@
         <property name="cols">1</property>
         <property name="hgap">0</property>
         <property name="minimum_size"></property>
-        <property name="name">m_Sizer_Main</property>
+        <property name="name">Sizer_Main</property>
         <property name="permission">none</property>
         <property name="rows">0</property>
         <property name="vgap">0</property>
