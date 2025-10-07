@@ -13,9 +13,9 @@ tools in the game's SDK.
 #include <wx/stdpaths.h>
 
 
-/*********************************
-              Types
-*********************************/
+/*=============================================================
+                            Types
+=============================================================*/
 
 typedef struct {
     wxString name;
@@ -24,23 +24,23 @@ typedef struct {
 } Tools;
 
 
-/*********************************
-       Function Prototypes
-*********************************/
+/*=============================================================
+                      Function Prototypes
+=============================================================*/
 
 void StartTool_Image(wxWindow* parent, wxString title);
 
 
-/*********************************
-             Globals
-*********************************/
+/*=============================================================
+                            Globals
+=============================================================*/
 
 static std::vector<Tools> g_tools;
 
 
-/*********************************
-         Helper Functions
-*********************************/
+/*=============================================================
+                       Helper Functions
+=============================================================*/
 
 /*==============================
     Initialize_Tools
@@ -68,9 +68,9 @@ void StartTool_Image(wxWindow* parent, wxString title)
 }
 
 
-/*********************************
-    Main Class Implementation
-*********************************/
+/*=============================================================
+                   Main Class Implementation
+=============================================================*/
 
 /*==============================
     Frame_Main (Constructor)
@@ -154,14 +154,14 @@ void Frame_Main::OpenProject()
     {
         // If the project failed to load, ask in a loop to open another
         if (json_load(files[0]) == 0)
-            Dialog_CreateOpenProject("Unable to open the P64 project file in this folder.\nPlease choose what action to take next:", "Error loading project", exepath);
+            this->Dialog_CreateOpenProject("Unable to open the P64 project file in this folder.\nPlease choose what action to take next:", "Error loading project", exepath);
         else // Project opened successfully, so store the filepath
             this->InitializeProject(files[0]);
     }
     else if (filecount == 0) // If there are no projects in the executable's folder, then ask if one should be opened or if it should be created
-        Dialog_CreateOpenProject("No P64 projects were found in this folder.\nPlease choose what action to take:", "No project found", exepath);
+        this->Dialog_CreateOpenProject("No P64 projects were found in this folder.\nPlease choose what action to take:", "No project found", exepath);
     else // If there is multiple projects in the executable's folder, ask to open one of them
-        Dialog_CreateOpenProject("There are multiple P64 projects in this folder.\nPlease choose what action to take:", "Multiple projects found", exepath);
+        this->Dialog_CreateOpenProject("There are multiple P64 projects in this folder.\nPlease choose what action to take:", "Multiple projects found", exepath);
 }
 
 

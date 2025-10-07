@@ -16,9 +16,9 @@ typedef struct IUnknown IUnknown;
 #include <wx/dir.h>
 
 
-/*********************************
-             Classes
-*********************************/
+/*=============================================================
+                            Classes
+=============================================================*/
 
 class Frame_Main : public wxFrame
 {
@@ -26,15 +26,17 @@ class Frame_Main : public wxFrame
         wxDataViewListCtrl* m_DataViewListCtrl_Main;
         wxFileName m_ProjectPath;
         wxFileName m_AssetsPath;
+
         void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
+        void Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath);
 
     protected:
 
     public:
-        Frame_Main();
-        ~Frame_Main();
         void OpenProject();
-        void Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath);
         void InitializeProject(wxString filepath);
         wxString GetAssetsPath();
+
+        Frame_Main();
+        ~Frame_Main();
 };

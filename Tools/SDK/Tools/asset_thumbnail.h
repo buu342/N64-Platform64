@@ -5,9 +5,9 @@
 #include <wx/icon.h>
 
 
-/******************************
-            Classes
-******************************/
+/*=============================================================
+                            Classes
+=============================================================*/
 
 // A class representing small/large thumbnails for the search panel
 class P64Asset_Thumbnail

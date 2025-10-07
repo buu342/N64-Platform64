@@ -5,16 +5,16 @@ typedef struct IUnknown IUnknown;
 #include "main.h"
 
 
-/******************************
-            Structs
-******************************/
+/*=============================================================
+                            Structs
+=============================================================*/
 
 typedef void* JSONFile;
 
 
-/*********************************
-       Function Prototypes
-*********************************/
+/*=============================================================
+                      Function Prototypes
+=============================================================*/
 
 JSONFile  json_createproject(wxString filepath);
 JSONFile  json_load(wxString filepath);

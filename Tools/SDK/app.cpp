@@ -10,9 +10,9 @@ This file handles the wxWidgets initialization.
 wxIMPLEMENT_APP(App);
 
 
-/*********************************
-             Globals
-*********************************/
+/*=============================================================
+                            Globals
+=============================================================*/
 
 wxIcon   Icon_Main = wxNullIcon;
 wxIcon   Icon_Texture = wxNullIcon;
