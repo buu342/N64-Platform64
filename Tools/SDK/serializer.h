@@ -2,6 +2,11 @@
 #include <stdint.h>
 #include <wx/string.h>
 
+
+/*=============================================================
+                      Function Prototypes
+=============================================================*/
+
 void serialize_header(std::vector<uint8_t>* buff, const char* header, uint32_t version);
 void serialize_u8(std::vector<uint8_t>* buff, uint8_t val);
 void serialize_u32(std::vector<uint8_t>* buff, uint32_t val);
