@@ -34,11 +34,20 @@ typedef struct IUnknown IUnknown;
 #include "panel_imgview.h"
 #include "asset_image.h"
 
+
+/*=============================================================
+                            Classes
+=============================================================*/
+
 class Frame_ImageBrowser : public wxFrame
 {
 	private:
+        wxString m_Title;
+        wxFileName m_AssetFilePath;
+        P64Asset_Image* m_LoadedAsset;
+        bool m_AssetModified;
+        bool m_UsingPipette;
 
-	protected:
         wxSplitterWindow* m_Splitter_Vertical;
         Panel_Search* m_Panel_Search;
         wxSplitterWindow* m_Splitter_Horizontal;
@@ -113,18 +122,13 @@ class Frame_ImageBrowser : public wxFrame
         void MarkAssetModified();
         void SaveChanges();
 
-	public:
-        wxString m_Title;
-        wxFileName m_AssetFilePath;
-        P64Asset_Image* m_LoadedAsset;
-        bool m_AssetModified;
-        bool m_UsingPipette;
+    protected:
 
+	public:
         wxPanel* m_Panel_Edit;
         wxToolBar* m_ToolBar_Preview;
         wxNotebook* m_Notebook_Config;
         Panel_ImgView* m_ScrolledWin_Preview;
-
         wxFilePickerCtrl* m_FilePicker_Image;
         wxRadioButton* m_RadioBtn_ResizeNone;
         wxRadioButton* m_RadioBtn_ResizeTwo;
@@ -147,6 +151,14 @@ class Frame_ImageBrowser : public wxFrame
         wxBitmapButton* m_BitmapButton_Pipette;
         wxRadioButton* m_RadioBtn_AlphaExternal;
         wxFilePickerCtrl* m_FilePicker_Alpha;
+
+        void UpdateTitle();
+        void UpdateFilePath(wxFileName newpath);
+        P64Asset_Image* LoadAsset(wxFileName path);
+        
+        bool IsAssetModified();
+        P64Asset_Image* GetLoadedAsset();
+        wxFileName GetLoadedAssetPath();
 
 		Frame_ImageBrowser( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 640,480 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		~Frame_ImageBrowser();

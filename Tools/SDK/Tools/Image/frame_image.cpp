@@ -8,11 +8,21 @@ TODO
 #include "../../resource.h"
 #include "../../main.h"
 
+
+/*=============================================================
+                            Macros
+=============================================================*/
+
 #define VERSION_P64TEX 1
 
 #define CONTENT_FOLDER     wxString("Images")
 #define CONTENT_NAME       wxString("Image")
 #define CONTENT_EXTENSION  wxString("*.p64_img")
+
+
+/*=============================================================
+                      External Functions
+=============================================================*/
 
 static wxIcon IconGenerator(bool large, wxFileName path)
 {
@@ -64,39 +74,13 @@ static void AssetGenerator(wxFrame* frame, wxFileName path)
 
 static void AssetLoad(wxFrame* frame, wxFileName path)
 {
-    wxFile file;
     Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
-    std::vector<uint8_t> data;
-    P64Asset_Image* oldasset = realframe->m_LoadedAsset;
     P64Asset_Image* curasset;
 
-    if (realframe->m_AssetModified)
-    {
-        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
-        if (dialog.ShowModal() == wxID_NO)
-            return;
-    }
-
     // Open the file and get its bytes
-    realframe->m_AssetFilePath = path;
-    data.resize(path.GetSize().ToULong());
-    file.Open(path.GetFullPath(), wxFile::read);
-    if (!file.IsOpened())
-    {
-        wxMessageDialog dialog(realframe, "Unable to open file for reading", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return;
-    }
-    file.Read(&data[0], data.capacity());
-    file.Close();
-
-    // Create the asset object by deserializing the bytes
-    curasset = P64Asset_Image::Deserialize(data);
+    curasset = realframe->LoadAsset(path);
     if (curasset == NULL)
         return;
-    if (oldasset != NULL)
-        delete oldasset;
-    realframe->m_LoadedAsset = curasset;
 
     // Set asset content
     realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
@@ -202,23 +186,21 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     }
 
     // Finalize
-    realframe->SetTitle(path.GetName() + " - " + realframe->m_Title);
-    realframe->m_AssetModified = false;
+    realframe->UpdateTitle();
     realframe->m_ScrolledWin_Preview->ZoomReset();
 }
 
-static void AssetRename(wxFrame* frame, wxFileName oldname, wxFileName newname)
+static void AssetRename(wxFrame* frame, wxFileName oldpath, wxFileName newpath)
 {
     Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
-    if (realframe->m_AssetFilePath == oldname)
-    {
-        realframe->m_AssetFilePath = newname;
-        if (realframe->m_AssetModified)
-            realframe->SetTitle(realframe->m_AssetFilePath.GetName() + "* - " + realframe->m_Title);
-        else
-            realframe->SetTitle(realframe->m_AssetFilePath.GetName() + " - " + realframe->m_Title);
-    }
+    if (realframe->GetLoadedAssetPath() == oldpath)
+        realframe->UpdateFilePath(newpath);
 }
+
+
+/*=============================================================
+               Image Editor Frame Implementation
+=============================================================*/
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
@@ -230,8 +212,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
-    wxBoxSizer* m_Sizer_Main;
-    m_Sizer_Main = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* Sizer_Main;
+    Sizer_Main = new wxBoxSizer(wxVERTICAL);
 
     m_Splitter_Vertical = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE);
     m_Splitter_Vertical->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_ImageBrowser::m_Splitter_VerticalOnIdle), NULL, this);
@@ -247,8 +229,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Search->SetMainFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
 
     m_Panel_Edit = new wxPanel(m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
-    wxBoxSizer* m_Sizer_Edit;
-    m_Sizer_Edit = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* Sizer_Edit;
+    Sizer_Edit = new wxBoxSizer(wxVERTICAL);
 
     m_Splitter_Horizontal = new wxSplitterWindow(m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE);
     m_Splitter_Horizontal->SetSashGravity(1);
@@ -258,8 +240,8 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Panel_Preview = new wxPanel(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_Panel_Preview->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWFRAME));
 
-    wxBoxSizer* m_Sizer_Preview;
-    m_Sizer_Preview = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* Sizer_Preview;
+    Sizer_Preview = new wxBoxSizer(wxVERTICAL);
 
     m_ToolBar_Preview = new wxToolBar(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL);
     m_ToolBar_Preview->Enable(false);
@@ -278,89 +260,89 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Tool_FlashcartUpload = m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload texture to flashcart"), wxEmptyString, NULL);
     m_ToolBar_Preview->Realize();
 
-    m_Sizer_Preview->Add(m_ToolBar_Preview, 0, wxEXPAND, 5);
+    Sizer_Preview->Add(m_ToolBar_Preview, 0, wxEXPAND, 5);
 
     m_ScrolledWin_Preview = new Panel_ImgView(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxVSCROLL);
     m_ScrolledWin_Preview->SetScrollRate(5, 5);
-    m_Sizer_Preview->Add(m_ScrolledWin_Preview, 1, wxEXPAND, 5);
+    Sizer_Preview->Add(m_ScrolledWin_Preview, 1, wxEXPAND, 5);
 
 
-    m_Panel_Preview->SetSizer(m_Sizer_Preview);
+    m_Panel_Preview->SetSizer(Sizer_Preview);
     m_Panel_Preview->Layout();
-    m_Sizer_Preview->Fit(m_Panel_Preview);
+    Sizer_Preview->Fit(m_Panel_Preview);
     m_Panel_Config = new wxPanel(m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    wxBoxSizer* m_Sizer_Config;
-    m_Sizer_Config = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* Sizer_Config;
+    Sizer_Config = new wxBoxSizer(wxVERTICAL);
 
     m_Notebook_Config = new wxNotebook(m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
     m_Notebook_Config->Enable(false);
     m_Panel_ImageData = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    wxFlexGridSizer* m_Sizer_ImageData;
-    m_Sizer_ImageData = new wxFlexGridSizer(0, 2, 0, 0);
-    m_Sizer_ImageData->AddGrowableCol(1);
-    m_Sizer_ImageData->SetFlexibleDirection(wxBOTH);
-    m_Sizer_ImageData->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    wxFlexGridSizer* Sizer_ImageData;
+    Sizer_ImageData = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_ImageData->AddGrowableCol(1);
+    Sizer_ImageData->SetFlexibleDirection(wxBOTH);
+    Sizer_ImageData->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     m_StaticText_Image = new wxStaticText(m_Panel_ImageData, wxID_ANY, _("Image path:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_Image->Wrap(-1);
-    m_Sizer_ImageData->Add(m_StaticText_Image, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_StaticText_Image, 0, wxALL, 5);
 
     m_FilePicker_Image = new wxFilePickerCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files|*.bmp;*.gif;*.jpg;*.png"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     m_FilePicker_Image->SetToolTip(_("The path for the texture image to load"));
     //m_FilePicker_Image->SetDirectory(this->m_Panel_Search->GetMainFolder());
 
-    m_Sizer_ImageData->Add(m_FilePicker_Image, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageData->Add(m_FilePicker_Image, 0, wxALL|wxEXPAND, 5);
 
     m_StaticText_Resize = new wxStaticText(m_Panel_ImageData, wxID_ANY, _("Resize:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_Resize->Wrap(-1);
-    m_Sizer_ImageData->Add(m_StaticText_Resize, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_StaticText_Resize, 0, wxALL, 5);
 
 
-    m_Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_ResizeNone = new wxRadioButton(m_Panel_ImageData, wxID_ANY, _("No change"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_ResizeNone->SetValue(true);
     m_RadioBtn_ResizeNone->SetToolTip(_("Do not resize the image"));
 
-    m_Sizer_ImageData->Add(m_RadioBtn_ResizeNone, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_RadioBtn_ResizeNone, 0, wxALL, 5);
 
 
-    m_Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_ResizeTwo = new wxRadioButton(m_Panel_ImageData, wxID_ANY, _("Nearest power of two"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_ResizeTwo->SetToolTip(_("Resize the image so that its size goes to the nearest power of two (16, 32, 64, etc...)"));
 
-    m_Sizer_ImageData->Add(m_RadioBtn_ResizeTwo, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_RadioBtn_ResizeTwo, 0, wxALL, 5);
 
 
-    m_Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageData->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_ResizeCustom = new wxRadioButton(m_Panel_ImageData, wxID_ANY, _("Custom size:"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_ResizeCustom->SetToolTip(_("Set a custom resize size for the image"));
 
-    m_Sizer_ImageData->Add(m_RadioBtn_ResizeCustom, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_RadioBtn_ResizeCustom, 0, wxALL, 5);
 
-    wxGridSizer* m_Sizer_ResizeCustom;
-    m_Sizer_ResizeCustom = new wxGridSizer(0, 2, 0, 0);
+    wxGridSizer* Sizer_ResizeCustom;
+    Sizer_ResizeCustom = new wxGridSizer(0, 2, 0, 0);
 
     m_TextCtrl_ResizeW = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_ResizeW->Enable(false);
     m_TextCtrl_ResizeW->SetToolTip(_("Size of image width (in pixels)"));
 
-    m_Sizer_ResizeCustom->Add(m_TextCtrl_ResizeW, 0, wxALL, 5);
+    Sizer_ResizeCustom->Add(m_TextCtrl_ResizeW, 0, wxALL, 5);
 
     m_TextCtrl_ResizeH = new wxTextCtrl(m_Panel_ImageData, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     m_TextCtrl_ResizeH->Enable(false);
     m_TextCtrl_ResizeH->SetToolTip(_("Size of image height (in pixels)"));
 
-    m_Sizer_ResizeCustom->Add(m_TextCtrl_ResizeH, 0, wxALL, 5);
+    Sizer_ResizeCustom->Add(m_TextCtrl_ResizeH, 0, wxALL, 5);
 
 
-    m_Sizer_ImageData->Add(m_Sizer_ResizeCustom, 1, wxEXPAND, 5);
+    Sizer_ImageData->Add(Sizer_ResizeCustom, 1, wxEXPAND, 5);
 
     m_StaticText_Align = new wxStaticText(m_Panel_ImageData, wxID_ANY, _("Resize alignment:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_Align->Wrap(-1);
-    m_Sizer_ImageData->Add(m_StaticText_Align, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_StaticText_Align, 0, wxALL, 5);
 
     wxString m_Choice_AlignChoices[] = { _("Top left"), _("Top middle"), _("Top right"), _("Middle left"), _("Center"), _("Middle right"), _("Bottom left"), _("Bottom middle"), _("Bottom right") };
     int m_Choice_AlignNChoices = sizeof(m_Choice_AlignChoices) / sizeof(wxString);
@@ -369,11 +351,11 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_Align->Enable(false);
     m_Choice_Align->SetToolTip(_("Set where to align the image to when resizing"));
 
-    m_Sizer_ImageData->Add(m_Choice_Align, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageData->Add(m_Choice_Align, 0, wxALL|wxEXPAND, 5);
 
     m_StaticText_ResizeFill = new wxStaticText(m_Panel_ImageData, wxID_ANY, _("Fill space with:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_ResizeFill->Wrap(-1);
-    m_Sizer_ImageData->Add(m_StaticText_ResizeFill, 0, wxALL, 5);
+    Sizer_ImageData->Add(m_StaticText_ResizeFill, 0, wxALL, 5);
 
     wxString m_Choice_ResizeFillChoices[] = {_("Invisible color"), _("Edge colors"), _("Repeated texture"), _("Mirrored texture")};
     int m_Choice_ResizeFillNChoices = sizeof(m_Choice_ResizeFillChoices) / sizeof(wxString);
@@ -382,23 +364,23 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_ResizeFill->Enable(false);
     m_Choice_ResizeFill->SetToolTip(_("When resizing larger than the base size, what color should be used to fill the new space?"));
 
-    m_Sizer_ImageData->Add(m_Choice_ResizeFill, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageData->Add(m_Choice_ResizeFill, 0, wxALL|wxEXPAND, 5);
 
 
-    m_Panel_ImageData->SetSizer(m_Sizer_ImageData);
+    m_Panel_ImageData->SetSizer(Sizer_ImageData);
     m_Panel_ImageData->Layout();
-    m_Sizer_ImageData->Fit(m_Panel_ImageData);
+    Sizer_ImageData->Fit(m_Panel_ImageData);
     m_Notebook_Config->AddPage(m_Panel_ImageData, _("Image"), true);
     m_Panel_ImageLoading = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    wxFlexGridSizer* m_Sizer_ImageLoading;
-    m_Sizer_ImageLoading = new wxFlexGridSizer(0, 2, 0, 0);
-    m_Sizer_ImageLoading->AddGrowableCol(1);
-    m_Sizer_ImageLoading->SetFlexibleDirection(wxBOTH);
-    m_Sizer_ImageLoading->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    wxFlexGridSizer* Sizer_ImageLoading;
+    Sizer_ImageLoading = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_ImageLoading->AddGrowableCol(1);
+    Sizer_ImageLoading->SetFlexibleDirection(wxBOTH);
+    Sizer_ImageLoading->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     m_StaticText_Format = new wxStaticText(m_Panel_ImageLoading, wxID_ANY, _("Format:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_Format->Wrap(-1);
-    m_Sizer_ImageLoading->Add(m_StaticText_Format, 0, wxALL, 5);
+    Sizer_ImageLoading->Add(m_StaticText_Format, 0, wxALL, 5);
 
     wxString m_Choice_FormatChoices[] = { _("32-Bit RGBA"), _("16-Bit RGBA"), _("16-Bit IA"), _("8-Bit IA"), _("4-Bit IA"), _("8-Bit I"), _("4-Bit I")/*, _("8-Bit CI"), _("4-Bit CI")*/ };
     int m_Choice_FormatNChoices = sizeof(m_Choice_FormatChoices) / sizeof(wxString);
@@ -406,14 +388,14 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_Format->SetSelection(1);
     m_Choice_Format->SetToolTip(_("Image loading format. Different formats allow for larger image sizes at the expense of color."));
 
-    m_Sizer_ImageLoading->Add(m_Choice_Format, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageLoading->Add(m_Choice_Format, 0, wxALL|wxEXPAND, 5);
 
     m_StaticText_TilingMode = new wxStaticText(m_Panel_ImageLoading, wxID_ANY, _("Tiling mode:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_TilingMode->Wrap(-1);
-    m_Sizer_ImageLoading->Add(m_StaticText_TilingMode, 0, wxALL, 5);
+    Sizer_ImageLoading->Add(m_StaticText_TilingMode, 0, wxALL, 5);
 
-    wxGridSizer* m_Sizer_TilingMode;
-    m_Sizer_TilingMode = new wxGridSizer(0, 2, 0, 0);
+    wxGridSizer* Sizer_TilingMode;
+    Sizer_TilingMode = new wxGridSizer(0, 2, 0, 0);
 
     wxString m_Choice_TilingXChoices[] = { _("Mirror"), _("Wrap"), _("Clamp") };
     int m_Choice_TilingXNChoices = sizeof(m_Choice_TilingXChoices) / sizeof(wxString);
@@ -421,49 +403,49 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_TilingX->SetSelection(0);
     m_Choice_TilingX->SetToolTip(_("Horizontal tiling mode"));
 
-    m_Sizer_TilingMode->Add(m_Choice_TilingX, 0, wxALL|wxEXPAND, 5);
+    Sizer_TilingMode->Add(m_Choice_TilingX, 0, wxALL|wxEXPAND, 5);
 
     wxString m_Choice_TilingYChoices[] = { _("Mirror"), _("Wrap"), _("Clamp") };
     int m_Choice_TilingYNChoices = sizeof(m_Choice_TilingYChoices) / sizeof(wxString);
     m_Choice_TilingY = new wxChoice(m_Panel_ImageLoading, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_Choice_TilingYNChoices, m_Choice_TilingYChoices, 0);
     m_Choice_TilingY->SetSelection(0);
     m_Choice_TilingY->SetToolTip(_("Vertical tiling mode"));
-    m_Sizer_TilingMode->Add(m_Choice_TilingY, 0, wxALL|wxEXPAND, 5);
-    m_Sizer_ImageLoading->Add(m_Sizer_TilingMode, 1, wxEXPAND, 5);
+    Sizer_TilingMode->Add(m_Choice_TilingY, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageLoading->Add(Sizer_TilingMode, 1, wxEXPAND, 5);
 
     this->m_StaticText_MaskPos = new wxStaticText(this->m_Panel_ImageLoading, wxID_ANY, _("Mask start:"), wxDefaultPosition, wxDefaultSize, 0);
     this->m_StaticText_MaskPos->Wrap(-1);
-    m_Sizer_ImageLoading->Add(this->m_StaticText_MaskPos, 0, wxALL, 5);
-    wxGridSizer* m_Sizer_MaskPos;
-    m_Sizer_MaskPos = new wxGridSizer(0, 2, 0, 0);
+    Sizer_ImageLoading->Add(this->m_StaticText_MaskPos, 0, wxALL, 5);
+    wxGridSizer* Sizer_MaskPos;
+    Sizer_MaskPos = new wxGridSizer(0, 2, 0, 0);
     this->m_TextCtrl_MaskPosW = new wxTextCtrl(this->m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     this->m_TextCtrl_MaskPosW->SetToolTip(_("X coordinate start of the image mask"));
-    m_Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosW, 0, wxALL, 5);
+    Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosW, 0, wxALL, 5);
     this->m_TextCtrl_MaskPosH = new wxTextCtrl(this->m_Panel_ImageLoading, wxID_ANY, _("0"), wxDefaultPosition, wxSize(-1,-1), wxEXPAND, wxTextValidator(wxFILTER_NUMERIC));
     this->m_TextCtrl_MaskPosH->SetToolTip(_("Y coordinate start of the image mask"));
-    m_Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosH, 0, wxALL, 5);
-    m_Sizer_ImageLoading->Add(m_Sizer_MaskPos, 1, wxEXPAND, 5);
+    Sizer_MaskPos->Add(this->m_TextCtrl_MaskPosH, 0, wxALL, 5);
+    Sizer_ImageLoading->Add(Sizer_MaskPos, 1, wxEXPAND, 5);
 
     m_Checkbox_Mipmaps = new wxCheckBox(m_Panel_ImageLoading, wxID_ANY, _("Generate mipmaps"), wxDefaultPosition, wxDefaultSize, 0);
     m_Checkbox_Mipmaps->SetToolTip(_("Generate mipmaps for this texture (requires the image to only take up half of TMEM!)"));
 
-    m_Sizer_ImageLoading->Add(m_Checkbox_Mipmaps, 0, wxALL, 5);
+    Sizer_ImageLoading->Add(m_Checkbox_Mipmaps, 0, wxALL, 5);
 
 
-    m_Panel_ImageLoading->SetSizer(m_Sizer_ImageLoading);
+    m_Panel_ImageLoading->SetSizer(Sizer_ImageLoading);
     m_Panel_ImageLoading->Layout();
-    m_Sizer_ImageLoading->Fit(m_Panel_ImageLoading);
+    Sizer_ImageLoading->Fit(m_Panel_ImageLoading);
     m_Notebook_Config->AddPage(m_Panel_ImageLoading, _("Loading"), false);
     m_Panel_ImageColors = new wxPanel(m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    wxFlexGridSizer* m_Sizer_ImageColors;
-    m_Sizer_ImageColors = new wxFlexGridSizer(0, 2, 0, 0);
-    m_Sizer_ImageColors->AddGrowableCol(1);
-    m_Sizer_ImageColors->SetFlexibleDirection(wxBOTH);
-    m_Sizer_ImageColors->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    wxFlexGridSizer* Sizer_ImageColors;
+    Sizer_ImageColors = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_ImageColors->AddGrowableCol(1);
+    Sizer_ImageColors->SetFlexibleDirection(wxBOTH);
+    Sizer_ImageColors->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     m_StaticText_Dithering = new wxStaticText(m_Panel_ImageColors, wxID_ANY, _("Dithering:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_Dithering->Wrap(-1);
-    m_Sizer_ImageColors->Add(m_StaticText_Dithering, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_StaticText_Dithering, 0, wxALL, 5);
 
     wxString m_Choice_DitheringChoices[] = { _("None"), _("Ordered Dithering"), _("Floyd-Steinberg") };
     int m_Choice_DitheringNChoices = sizeof(m_Choice_DitheringChoices) / sizeof(wxString);
@@ -471,96 +453,96 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     m_Choice_Dithering->SetSelection(1);
     m_Choice_Dithering->SetToolTip(_("What algorithm to use to reduce the colors"));
 
-    m_Sizer_ImageColors->Add(m_Choice_Dithering, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageColors->Add(m_Choice_Dithering, 0, wxALL|wxEXPAND, 5);
 
     m_StaticText_AlphaChoice = new wxStaticText(m_Panel_ImageColors, wxID_ANY, _("Alpha:"), wxDefaultPosition, wxDefaultSize, 0);
     m_StaticText_AlphaChoice->Wrap(-1);
-    m_Sizer_ImageColors->Add(m_StaticText_AlphaChoice, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_StaticText_AlphaChoice, 0, wxALL, 5);
 
 
-    m_Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_AlphaNone = new wxRadioButton(m_Panel_ImageColors, wxID_ANY, _("No Alpha"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_AlphaNone->SetToolTip(_("Do not use any alpha"));
 
-    m_Sizer_ImageColors->Add(m_RadioBtn_AlphaNone, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_RadioBtn_AlphaNone, 0, wxALL, 5);
 
 
-    m_Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_AlphaMask = new wxRadioButton(m_Panel_ImageColors, wxID_ANY, _("Alpha mask"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_AlphaMask->SetValue(true);
     m_RadioBtn_AlphaMask->SetToolTip(_("Use the image's built-in alpha mask (such as PNG transparency)"));
 
-    m_Sizer_ImageColors->Add(m_RadioBtn_AlphaMask, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_RadioBtn_AlphaMask, 0, wxALL, 5);
 
 
-    m_Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
+    Sizer_ImageColors->Add(0, 0, 1, wxEXPAND, 5);
 
     m_RadioBtn_AlphaColor = new wxRadioButton(m_Panel_ImageColors, wxID_ANY, _("Remove color:"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_AlphaColor->SetToolTip(_("Treat a specific color in the unmodified image as the alpha color"));
 
-    m_Sizer_ImageColors->Add(m_RadioBtn_AlphaColor, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_RadioBtn_AlphaColor, 0, wxALL, 5);
 
-    wxFlexGridSizer* m_Sizer_AlphaColor;
-    m_Sizer_AlphaColor = new wxFlexGridSizer(0, 2, 0, 0);
-    m_Sizer_AlphaColor->AddGrowableCol(0);
-    m_Sizer_AlphaColor->SetFlexibleDirection(wxBOTH);
-    m_Sizer_AlphaColor->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    wxFlexGridSizer* Sizer_AlphaColor;
+    Sizer_AlphaColor = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_AlphaColor->AddGrowableCol(0);
+    Sizer_AlphaColor->SetFlexibleDirection(wxBOTH);
+    Sizer_AlphaColor->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     m_ColourPicker_AlphaColor = new wxColourPickerCtrl(m_Panel_ImageColors, wxID_ANY, *wxBLACK, wxDefaultPosition, wxDefaultSize, wxCLRP_DEFAULT_STYLE);
     m_ColourPicker_AlphaColor->Enable(false);
     m_ColourPicker_AlphaColor->SetToolTip(_("Color picker for the alpha color"));
 
-    m_Sizer_AlphaColor->Add(m_ColourPicker_AlphaColor, 0, wxALL|wxEXPAND, 5);
+    Sizer_AlphaColor->Add(m_ColourPicker_AlphaColor, 0, wxALL|wxEXPAND, 5);
 
     m_BitmapButton_Pipette = new wxBitmapButton(m_Panel_ImageColors, wxID_ANY, Icon_Pipette, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0);
     m_BitmapButton_Pipette->Enable(false);
     m_BitmapButton_Pipette->SetToolTip(_("Pick the color by clicking on the image"));
 
-    m_Sizer_AlphaColor->Add(m_BitmapButton_Pipette, 0, wxALL, 5);
+    Sizer_AlphaColor->Add(m_BitmapButton_Pipette, 0, wxALL, 5);
 
 
-    m_Sizer_ImageColors->Add(m_Sizer_AlphaColor, 1, wxEXPAND, 5);
+    Sizer_ImageColors->Add(Sizer_AlphaColor, 1, wxEXPAND, 5);
 
     m_RadioBtn_AlphaExternal = new wxRadioButton(m_Panel_ImageColors, wxID_ANY, _("External mask:"), wxDefaultPosition, wxDefaultSize, 0);
     m_RadioBtn_AlphaExternal->SetToolTip(_("Use an external image for the alpha mask (requires the mask be the same size as the source image)"));
 
-    m_Sizer_ImageColors->Add(m_RadioBtn_AlphaExternal, 0, wxALL, 5);
+    Sizer_ImageColors->Add(m_RadioBtn_AlphaExternal, 0, wxALL, 5);
 
     m_FilePicker_Alpha = new wxFilePickerCtrl(m_Panel_ImageColors, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     m_FilePicker_Alpha->Enable(false);
     m_FilePicker_Alpha->SetToolTip(_("Filepath for the external alpha mask"));
 
-    m_Sizer_ImageColors->Add(m_FilePicker_Alpha, 0, wxALL|wxEXPAND, 5);
+    Sizer_ImageColors->Add(m_FilePicker_Alpha, 0, wxALL|wxEXPAND, 5);
 
     this->m_Button_Palette = new wxButton(this->m_Panel_ImageColors, wxID_ANY, _("Configure Palette"), wxDefaultPosition, wxDefaultSize, 0);
     this->m_Button_Palette->Enable(false);
     this->m_Button_Palette->SetToolTip(_("Configure Color Index palette"));
-    m_Sizer_ImageColors->Add(this->m_Button_Palette, 0, wxALL, 5);
+    Sizer_ImageColors->Add(this->m_Button_Palette, 0, wxALL, 5);
 
-    m_Panel_ImageColors->SetSizer(m_Sizer_ImageColors);
+    m_Panel_ImageColors->SetSizer(Sizer_ImageColors);
     m_Panel_ImageColors->Layout();
-    m_Sizer_ImageColors->Fit(m_Panel_ImageColors);
+    Sizer_ImageColors->Fit(m_Panel_ImageColors);
     m_Notebook_Config->AddPage(m_Panel_ImageColors, _("Colors"), false);
 
-    m_Sizer_Config->Add(m_Notebook_Config, 1, wxEXPAND | wxALL, 5);
+    Sizer_Config->Add(m_Notebook_Config, 1, wxEXPAND | wxALL, 5);
 
 
-    m_Panel_Config->SetSizer(m_Sizer_Config);
+    m_Panel_Config->SetSizer(Sizer_Config);
     m_Panel_Config->Layout();
-    m_Sizer_Config->Fit(m_Panel_Config);
+    Sizer_Config->Fit(m_Panel_Config);
     m_Splitter_Horizontal->SplitHorizontally(m_Panel_Preview, m_Panel_Config, 0);
-    m_Sizer_Edit->Add(m_Splitter_Horizontal, 1, wxEXPAND, 5);
+    Sizer_Edit->Add(m_Splitter_Horizontal, 1, wxEXPAND, 5);
 
-    m_Panel_Edit->SetSizer(m_Sizer_Edit);
+    m_Panel_Edit->SetSizer(Sizer_Edit);
     m_Panel_Edit->Layout();
-    m_Sizer_Edit->Fit(m_Panel_Edit);
+    Sizer_Edit->Fit(m_Panel_Edit);
     m_Splitter_Vertical->SplitVertically(m_Panel_Search, m_Panel_Edit, 0);
-    m_Sizer_Main->Add(m_Splitter_Vertical, 1, wxEXPAND, 5);
+    Sizer_Main->Add(m_Splitter_Vertical, 1, wxEXPAND, 5);
 
 
-    this->SetSizer(m_Sizer_Main);
+    this->SetSizer(Sizer_Main);
     this->Layout();
 
     this->Centre(wxBOTH);
@@ -623,7 +605,7 @@ Frame_ImageBrowser::~Frame_ImageBrowser()
 void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
-    this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
+    this->UpdateTitle();
     if (this->m_LoadedAsset != NULL)
         this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
@@ -661,7 +643,7 @@ void Frame_ImageBrowser::SaveChanges()
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)
 {
-    if (event.CanVeto() && m_AssetModified)
+    if (event.CanVeto() && this->m_AssetModified)
     {
         if (wxMessageBox("Unsaved changes will be lost. Continue?", "Warning", wxICON_QUESTION | wxYES_NO) != wxYES)
         {
@@ -1055,4 +1037,70 @@ void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
     wxMessageDialog dialog(this, "This feature is not yet available.", "Whoops", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_WARNING);
     dialog.ShowModal();
     event.Skip();
+}
+
+void Frame_ImageBrowser::UpdateTitle()
+{
+    if (this->m_AssetModified)
+        this->SetTitle(this->m_AssetFilePath.GetName() + "* - " + this->m_Title);
+    else
+        this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
+}
+
+void Frame_ImageBrowser::UpdateFilePath(wxFileName path)
+{
+    this->m_AssetFilePath = path;
+    this->UpdateTitle();
+}
+
+P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
+{
+    wxFile file;
+    std::vector<uint8_t> data;
+    P64Asset_Image* ret;
+
+    if (this->IsAssetModified())
+    {
+        wxMessageDialog dialog(this, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
+        if (dialog.ShowModal() == wxID_NO)
+            return NULL;
+    }
+
+    this->m_AssetFilePath = path;
+    data.resize(path.GetSize().ToULong());
+
+    file.Open(path.GetFullPath(), wxFile::read);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(this, "Unable to open file for reading", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return NULL;
+    }
+    file.Read(&data[0], data.capacity());
+    file.Close();
+
+    // Create the asset object by deserializing the bytes
+    ret = P64Asset_Image::Deserialize(data);
+    if (ret == NULL)
+        return NULL;
+    if (this->m_LoadedAsset != NULL)
+        delete this->m_LoadedAsset;
+    this->m_LoadedAsset = ret;
+    this->m_AssetModified = false;
+    return ret;
+}
+
+bool Frame_ImageBrowser::IsAssetModified()
+{
+    return this->m_AssetModified;
+}
+
+P64Asset_Image* Frame_ImageBrowser::GetLoadedAsset()
+{
+    return this->m_LoadedAsset;
+}
+
+wxFileName Frame_ImageBrowser::GetLoadedAssetPath()
+{
+    return this->m_AssetFilePath;
 }

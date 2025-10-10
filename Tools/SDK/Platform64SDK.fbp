@@ -900,7 +900,7 @@
       <event name="OnClose">OnClose</event>
       <object class="wxBoxSizer" expanded="false">
         <property name="minimum_size"></property>
-        <property name="name">m_Sizer_Main</property>
+        <property name="name">Sizer_Main</property>
         <property name="orient">wxVERTICAL</property>
         <property name="permission">none</property>
         <object class="sizeritem" expanded="false">
@@ -1077,7 +1077,7 @@
                 <event name="OnCharHook">m_Panel_Edit_OnChar</event>
                 <object class="wxBoxSizer" expanded="false">
                   <property name="minimum_size"></property>
-                  <property name="name">m_Sizer_Edit</property>
+                  <property name="name">Sizer_Edit</property>
                   <property name="orient">wxVERTICAL</property>
                   <property name="permission">none</property>
                   <object class="sizeritem" expanded="false">
@@ -1198,7 +1198,7 @@
                           <property name="window_style">wxTAB_TRAVERSAL</property>
                           <object class="wxBoxSizer" expanded="false">
                             <property name="minimum_size"></property>
-                            <property name="name">m_Sizer_Preview</property>
+                            <property name="name">Sizer_Preview</property>
                             <property name="orient">wxVERTICAL</property>
                             <property name="permission">none</property>
                             <object class="sizeritem" expanded="false">
@@ -1512,7 +1512,7 @@
                           <property name="window_style">wxTAB_TRAVERSAL</property>
                           <object class="wxBoxSizer" expanded="false">
                             <property name="minimum_size"></property>
-                            <property name="name">m_Sizer_Config</property>
+                            <property name="name">Sizer_Config</property>
                             <property name="orient">wxVERTICAL</property>
                             <property name="permission">none</property>
                             <object class="sizeritem" expanded="false">
@@ -1636,7 +1636,7 @@
                                       <property name="growablerows"></property>
                                       <property name="hgap">0</property>
                                       <property name="minimum_size"></property>
-                                      <property name="name">m_Sizer_ImageData</property>
+                                      <property name="name">Sizer_ImageData</property>
                                       <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                                       <property name="permission">none</property>
                                       <property name="rows">0</property>
@@ -2068,7 +2068,7 @@
                                           <property name="cols">2</property>
                                           <property name="hgap">0</property>
                                           <property name="minimum_size"></property>
-                                          <property name="name">m_Sizer_ResizeCustom</property>
+                                          <property name="name">Sizer_ResizeCustom</property>
                                           <property name="permission">none</property>
                                           <property name="rows">0</property>
                                           <property name="vgap">0</property>
@@ -2528,7 +2528,7 @@
                                       <property name="growablerows"></property>
                                       <property name="hgap">0</property>
                                       <property name="minimum_size"></property>
-                                      <property name="name">m_Sizer_ImageLoading</property>
+                                      <property name="name">Sizer_ImageLoading</property>
                                       <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                                       <property name="permission">none</property>
                                       <property name="rows">0</property>
@@ -2731,7 +2731,7 @@
                                           <property name="cols">2</property>
                                           <property name="hgap">0</property>
                                           <property name="minimum_size"></property>
-                                          <property name="name">m_Sizer_TilingMode</property>
+                                          <property name="name">Sizer_TilingMode</property>
                                           <property name="permission">none</property>
                                           <property name="rows">0</property>
                                           <property name="vgap">0</property>
@@ -2939,7 +2939,7 @@
                                           <property name="cols">2</property>
                                           <property name="hgap">0</property>
                                           <property name="minimum_size"></property>
-                                          <property name="name">m_Sizer_MaskPos</property>
+                                          <property name="name">Sizer_MaskPos</property>
                                           <property name="permission">none</property>
                                           <property name="rows">0</property>
                                           <property name="vgap">0</property>
@@ -3209,7 +3209,7 @@
                                       <property name="growablerows"></property>
                                       <property name="hgap">0</property>
                                       <property name="minimum_size"></property>
-                                      <property name="name">m_Sizer_ImageColors</property>
+                                      <property name="name">Sizer_ImageColors</property>
                                       <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                                       <property name="permission">none</property>
                                       <property name="rows">0</property>
@@ -3643,7 +3643,7 @@
                                           <property name="growablerows"></property>
                                           <property name="hgap">0</property>
                                           <property name="minimum_size"></property>
-                                          <property name="name">m_Sizer_AlphaColor</property>
+                                          <property name="name">Sizer_AlphaColor</property>
                                           <property name="non_flexible_grow_mode">wxFLEX_GROWMODE_SPECIFIED</property>
                                           <property name="permission">none</property>
                                           <property name="rows">0</property>
