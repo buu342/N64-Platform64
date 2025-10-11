@@ -176,10 +176,13 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
         }
         for (int i=0; i<asset->m_IconLargeSize.x*asset->m_IconLargeSize.y; i++)
         {
+            #pragma warning(push)
+            #pragma warning(disable:6385) // False positive
             rgb[(i*3) + 0] = asset->m_IconLargeData[(i*4) + 0];
             rgb[(i*3) + 1] = asset->m_IconLargeData[(i*4) + 1];
             rgb[(i*3) + 2] = asset->m_IconLargeData[(i*4) + 2];
             a[i]           = asset->m_IconLargeData[(i*4) + 3];
+            #pragma warning(pop)
         }
         img = wxImage(asset->m_IconLargeSize.x, asset->m_IconLargeSize.y, rgb, a, false);
         asset->m_IconLarge.CopyFromBitmap(img);
@@ -224,10 +227,13 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
         }
         for (int i=0; i<asset->m_IconSmallSize.x*asset->m_IconSmallSize.y; i++)
         {
+            #pragma warning(push)
+            #pragma warning(disable:6385) // False positive
             rgb[(i*3) + 0] = asset->m_IconSmallData[(i*4) + 0];
             rgb[(i*3) + 1] = asset->m_IconSmallData[(i*4) + 1];
             rgb[(i*3) + 2] = asset->m_IconSmallData[(i*4) + 2];
             a[i]           = asset->m_IconSmallData[(i*4) + 3];
+            #pragma warning(pop)
         }
         img = wxImage(asset->m_IconSmallSize.x, asset->m_IconSmallSize.y, rgb, a, false);
         asset->m_IconSmall.CopyFromBitmap(img);
