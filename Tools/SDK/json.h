@@ -2,7 +2,7 @@
 
 typedef struct IUnknown IUnknown;
 
-#include "main.h"
+#include <wx/wx.h>
 
 
 /*=============================================================

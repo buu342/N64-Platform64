@@ -14,6 +14,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/dir.h>
+#include "json.h"
 
 
 /*=============================================================
@@ -23,6 +24,7 @@ typedef struct IUnknown IUnknown;
 class Frame_Main : public wxFrame
 {
     private:
+        JSONFile m_Project;
         wxDataViewListCtrl* m_DataViewListCtrl_Main;
         wxFileName m_ProjectPath;
         wxFileName m_AssetsPath;

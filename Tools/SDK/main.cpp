@@ -8,7 +8,6 @@ tools in the game's SDK.
 #include "app.h"
 #include "main.h"
 #include "resource.h"
-#include "json.h"
 #include "Tools/Image/frame_image.h"
 #include <wx/stdpaths.h>
 
@@ -79,6 +78,9 @@ void StartTool_Image(wxWindow* parent, wxString title)
 
 Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDefaultPosition, wxSize(300, 400), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL)
 {
+    // Initialize attributes
+    this->m_Project = NULL;
+
     // Initialize the list of tools
     Initialize_Tools();
 
@@ -116,7 +118,8 @@ Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDef
 
 Frame_Main::~Frame_Main()
 {
-    
+    if (this->m_Project != NULL)
+        delete this->m_Project;
 }
 
 
@@ -152,8 +155,9 @@ void Frame_Main::OpenProject()
     // Check if there is a project in the executable's folder, if so, open it
     if (filecount == 1)
     {
+        this->m_Project = json_load(files[0]);
         // If the project failed to load, ask in a loop to open another
-        if (json_load(files[0]) == 0)
+        if (this->m_Project == NULL)
             this->Dialog_CreateOpenProject("Unable to open the P64 project file in this folder.\nPlease choose what action to take next:", "Error loading project", exepath);
         else // Project opened successfully, so store the filepath
             this->InitializeProject(files[0]);
@@ -187,7 +191,8 @@ void Frame_Main::Dialog_CreateOpenProject(wxString message, wxString title, wxSt
             ret = fd.ShowModal();
             if (ret == wxID_OK)
             {
-                if (json_createproject(fd.GetPath()))
+                this->m_Project = json_createproject(fd.GetPath());
+                if (this->m_Project != NULL)
                 {
                     this->InitializeProject(fd.GetPath());
                     return;
