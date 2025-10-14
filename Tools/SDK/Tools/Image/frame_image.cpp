@@ -24,6 +24,15 @@ This class implements the image editor panel
                       External Functions
 =============================================================*/
 
+/*==============================
+    IconGenerator
+    Thumbnail Generator function to handle thumbnail requests
+    from the search panel
+    @param  Whether to generate a large thumbnail or not
+    @param  The path to the file to generate the thumbnail of
+    @return The generated thumbnail
+==============================*/
+
 static wxIcon IconGenerator(bool large, wxFileName path)
 {
     wxFile file;
@@ -55,6 +64,15 @@ static wxIcon IconGenerator(bool large, wxFileName path)
     return ret;
 }
 
+
+/*==============================
+    AssetGenerator
+    Asset generator function to handle when a new file is 
+    created by the search panel
+    @param The parent frame to attach error dialogs to
+    @param The path to the file to create
+==============================*/
+
 static void AssetGenerator(wxFrame* frame, wxFileName path)
 {
     wxFile file;
@@ -64,13 +82,22 @@ static void AssetGenerator(wxFrame* frame, wxFileName path)
     file.Open(path.GetFullPath(), wxFile::write);
     if (!file.IsOpened())
     {
-        wxMessageDialog dialog((Frame_ImageBrowser*)frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        wxMessageDialog dialog(frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
         dialog.ShowModal();
         return;
     }
     file.Write(data.data(), data.size());
     file.Close();
 }
+
+
+/*==============================
+    AssetLoad
+    Asset loading function to handle when a new file is loaded
+    by the search panel
+    @param The parent frame to attach error dialogs to
+    @param The path to the file to load
+==============================*/
 
 static void AssetLoad(wxFrame* frame, wxFileName path)
 {
@@ -190,6 +217,16 @@ static void AssetLoad(wxFrame* frame, wxFileName path)
     realframe->m_ScrolledWin_Preview->ZoomReset();
 }
 
+
+/*==============================
+    AssetRename
+    Asset renaming function to handle when a file is renamed
+    by the search panel
+    @param The parent frame that has the asset editor
+    @param The old path to the file
+    @param The new path to the file
+==============================*/
+
 static void AssetRename(wxFrame* frame, wxFileName oldpath, wxFileName newpath)
 {
     Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
@@ -201,6 +238,11 @@ static void AssetRename(wxFrame* frame, wxFileName oldpath, wxFileName newpath)
 /*=============================================================
                Image Editor Frame Implementation
 =============================================================*/
+
+/*==============================
+    Frame_ImageBrowser (Constructor)
+    Initializes the class
+==============================*/
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
@@ -558,8 +600,13 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_TextCtrl_MaskPosW->Hide();
     this->m_TextCtrl_MaskPosH->Hide();
     //this->m_Tool_PalettePreview->Hide();
-
 }
+
+
+/*==============================
+    Frame_ImageBrowser (Destructor)
+    Cleans up the class before deletion
+==============================*/
 
 Frame_ImageBrowser::~Frame_ImageBrowser()
 {
@@ -567,44 +614,12 @@ Frame_ImageBrowser::~Frame_ImageBrowser()
         delete this->m_LoadedAsset;
 }
 
-void Frame_ImageBrowser::MarkAssetModified()
-{
-    this->m_AssetModified = true;
-    this->UpdateTitle();
-    if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
-    this->m_ScrolledWin_Preview->ReloadAsset();
-}
 
-void Frame_ImageBrowser::SaveChanges()
-{
-    wxFile file;
-    bool refresh = false;
-    std::vector<uint8_t> data;
-    if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
-    {
-        if (!wxDirExists(this->m_AssetFilePath.GetPath()))
-            wxFileName::Mkdir(this->m_AssetFilePath.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
-        file.Create(this->m_AssetFilePath.GetFullPath());
-        refresh = true;
-    }
-    file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
-    if (!file.IsOpened())
-    {
-        wxMessageDialog dialog(this, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return;
-    }
-    data = this->m_LoadedAsset->Serialize();
-    file.Write(data.data(), data.size());
-    file.Close();
-    this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
-    this->m_AssetModified = false;
-    this->m_Panel_Search->ReloadThumbnail(this->m_AssetFilePath);
-    if (refresh)
-        this->m_Panel_Search->ReloadDirectory();
-
-}
+/*==============================
+    Frame_ImageBrowser::OnClose
+    Handles the user closing the window
+    @param The Close event
+==============================*/
 
 void Frame_ImageBrowser::OnClose(wxCloseEvent& event)
 {
@@ -618,6 +633,13 @@ void Frame_ImageBrowser::OnClose(wxCloseEvent& event)
     }
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Panel_Edit_OnChar
+    Handles the user inputting keys
+    @param The Key event
+==============================*/
 
 void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
 {
@@ -642,14 +664,25 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
         switch (event.GetKeyCode())
         {
             case WXK_ESCAPE:
-                wxWindow::SetCursor(wxNullCursor);
-                wxSetCursor(wxNullCursor);
-                this->m_UsingPipette = false;
+                if (this->m_UsingPipette)
+                {
+                    wxWindow::SetCursor(wxNullCursor);
+                    wxSetCursor(wxNullCursor);
+                    this->m_UsingPipette = false;
+                }
                 break;
         }
     }
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Splitter_VerticalOnIdle
+    Handles the splitter's idle event.
+    Used to set its initial position properly.
+    @param The Idle event
+==============================*/
 
 void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
 {
@@ -658,6 +691,14 @@ void Frame_ImageBrowser::m_Splitter_VerticalOnIdle(wxIdleEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Splitter_HorizontalOnIdle
+    Handles the splitter's idle event.
+    Used to set its initial position properly.
+    @param The Idle event
+==============================*/
+
 void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
 {
     this->m_Splitter_Horizontal->SetSashPosition(this->m_Panel_Edit->GetSize().y - this->m_Panel_Config->GetBestSize().y);
@@ -665,15 +706,36 @@ void Frame_ImageBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Splitter_Vertical_DClick
+    Handles double clicking the splitter
+    @param The splitter event
+==============================*/
+
 void Frame_ImageBrowser::m_Splitter_Vertical_DClick(wxSplitterEvent& event)
 {
     event.Veto();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Splitter_Horizontal_DClick
+    Handles double clicking the splitter
+    @param The splitter event
+==============================*/
+
 void Frame_ImageBrowser::m_Splitter_Horizontal_DClick(wxSplitterEvent& event)
 {
     event.Veto();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel
+    Handles using the mousewheel in the preview window
+    @param The mouse event
+==============================*/
 
 void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event)
 {
@@ -686,6 +748,13 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event)
     }
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown
+    Handles using the left mouse button in the preview window
+    @param The mouse event
+==============================*/
 
 void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown(wxMouseEvent& event)
 {
@@ -706,11 +775,25 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown(wxMouseEvent& eve
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_Save_OnToolClicked
+    Handles pressing the save toolbar button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 {
     this->SaveChanges();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked
+    Handles pressing the alpha display toolbar button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
@@ -721,10 +804,24 @@ void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked
+    Handles pressing the tiling display toolbar button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked(wxCommandEvent& event)
 {
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked
+    Handles pressing the filtering preview toolbar button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
@@ -735,10 +832,24 @@ void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked
+    Handles pressing the palette preview toolbar button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked(wxCommandEvent& event)
 {
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked
+    Handles pressing the statistics display toolbar button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
 {
@@ -747,11 +858,25 @@ void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_ZoomIn_OnToolClicked
+    Handles pressing the zoom in toolbar button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Tool_ZoomIn_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ZoomIn();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked
+    Handles pressing the zoom out toolbar button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event)
 {
@@ -759,11 +884,25 @@ void Frame_ImageBrowser::m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked
+    Handles pressing the zoom reset toolbar button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ZoomReset();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked
+    Handles pressing the flashcart upload toolbar button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event)
 {
@@ -771,6 +910,13 @@ void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& ev
     dialog.ShowModal();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged
+    Handles changing the image file path
+    @param The FileDirPicker event
+==============================*/
 
 void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& event)
 {
@@ -826,6 +972,13 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton
+    Handles changing the resize radio button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_NONE;
@@ -836,6 +989,13 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& eve
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton
+    Handles changing the resize radio button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& event)
 {
@@ -848,6 +1008,13 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& even
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton
+    Handles changing the resize radio button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_CUSTOM;
@@ -859,12 +1026,26 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText
+    Handles input into the image width text control
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.x);
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText
+    Handles input into the image height text control
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
 {
@@ -873,12 +1054,26 @@ void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_Align_OnChoice
+    Handles changing the alignment choice box
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Choice_Align_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_Alignment = (P64Img_Alignment)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice
+    Handles changing the resize fill choice box
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
 {
@@ -887,12 +1082,26 @@ void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_Format_OnChoice
+    Handles changing the image format choice box
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Choice_Format_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_ImageFormat = (P64Img_Format)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_TilingX_OnChoice
+    Handles changing the horizontal tiling choice box
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
 {
@@ -901,12 +1110,26 @@ void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_TilingY_OnChoice
+    Handles changing the vertical tiling choice box
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Choice_TilingY_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_TilingY = (P64Img_Tiling)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText
+    Handles changing the mask X position text input
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
 {
@@ -915,12 +1138,26 @@ void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText
+    Handles changing the mask Y position text input
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event)
 {
     event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.y);
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox
+    Handles pressing the mipmaps checkbox
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
 {
@@ -930,12 +1167,26 @@ void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_Choice_Dithering_OnChoice
+    Handles changing the dithering choice box
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_Choice_Dithering_OnChoice(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_Dithering = (P64Img_DitheringMode)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton
+    Handles changing the alpha radio button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event)
 {
@@ -947,6 +1198,13 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& even
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton
+    Handles changing the alpha radio button
+    @param The command event
+==============================*/
+
 void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event)
 {
     this->m_LoadedAsset->m_AlphaMode = ALPHA_MASK;
@@ -956,6 +1214,13 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& even
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton
+    Handles changing the alpha radio button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event)
 {
@@ -967,12 +1232,26 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& eve
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged
+    Handles changing the alpha color in the color picker
+    @param The ColourPicker event
+==============================*/
+
 void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPickerEvent& event)
 {
     this->m_LoadedAsset->m_AlphaColor = event.GetColour();
     this->MarkAssetModified();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick
+    Handles pressing the pipette button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& event)
 {
@@ -981,6 +1260,13 @@ void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& ev
     this->m_UsingPipette = true;
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton
+    Handles changing the alpha radio button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event)
 {
@@ -992,10 +1278,24 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& 
     event.Skip();
 }
 
+
+/*==============================
+    Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged
+    Handles changing the alpha image file path
+    @param The FileDirPicker event
+==============================*/
+
 void Frame_ImageBrowser::m_FilePicker_Alpha_OnFileChanged(wxFileDirPickerEvent& event)
 {
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::m_Button_Palette_OnButtonClick
+    Handles pressing the palette button
+    @param The command event
+==============================*/
 
 void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 {
@@ -1003,6 +1303,71 @@ void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
     dialog.ShowModal();
     event.Skip();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::MarkAssetModified
+    Mark the asset as modified and regenerate its preview
+==============================*/
+
+void Frame_ImageBrowser::MarkAssetModified()
+{
+    this->m_AssetModified = true;
+    this->UpdateTitle();
+    if (this->m_LoadedAsset != NULL)
+        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    this->m_ScrolledWin_Preview->ReloadAsset();
+}
+
+
+/*==============================
+    Frame_ImageBrowser::SaveChanges
+    Save changes made to the file
+==============================*/
+
+void Frame_ImageBrowser::SaveChanges()
+{
+    wxFile file;
+    bool refresh = false;
+    std::vector<uint8_t> data;
+
+    // Create the path to the file if it doesn't exist anymore
+    if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
+    {
+        if (!wxDirExists(this->m_AssetFilePath.GetPath()))
+            wxFileName::Mkdir(this->m_AssetFilePath.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+        file.Create(this->m_AssetFilePath.GetFullPath());
+        refresh = true;
+    }
+
+    // Open the file for writing
+    file.Open(this->m_AssetFilePath.GetFullPath(), wxFile::write);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(this, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
+
+    // Serialize the asset and write it
+    data = this->m_LoadedAsset->Serialize();
+    file.Write(data.data(), data.size());
+    file.Close();
+    this->m_AssetModified = false;
+
+    // Update the title and the previews 
+    this->UpdateTitle();
+    this->m_Panel_Search->ReloadThumbnail(this->m_AssetFilePath);
+    if (refresh)
+        this->m_Panel_Search->ReloadDirectory();
+}
+
+
+/*==============================
+    Frame_ImageBrowser::SaveChanges
+    Updates the frame title to reflect the file's name and its
+    modification status
+==============================*/
 
 void Frame_ImageBrowser::UpdateTitle()
 {
@@ -1012,11 +1377,28 @@ void Frame_ImageBrowser::UpdateTitle()
         this->SetTitle(this->m_AssetFilePath.GetName() + " - " + this->m_Title);
 }
 
+
+/*==============================
+    Frame_ImageBrowser::UpdateFilePath
+    Updates the current asset's file path.
+    Should only be used if the file file was renamed and thus
+    it needs to point to a new path.
+    @param The new path of the asset
+==============================*/
+
 void Frame_ImageBrowser::UpdateFilePath(wxFileName path)
 {
     this->m_AssetFilePath = path;
     this->UpdateTitle();
 }
+
+
+/*==============================
+    Frame_ImageBrowser::LoadAsset
+    Loads an image asset from a given path
+    @param  The path of the asset
+    @return The loaded asset, or NULL
+==============================*/
 
 P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
 {
@@ -1024,6 +1406,7 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
     std::vector<uint8_t> data;
     P64Asset_Image* ret;
 
+    // Warn the user that the file was changed before doing anything potentially destructive
     if (this->IsAssetModified())
     {
         wxMessageDialog dialog(this, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
@@ -1031,9 +1414,8 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
             return NULL;
     }
 
+    // Set the path and open the file so we can extract its data
     this->m_AssetFilePath = path;
-    data.resize(path.GetSize().ToULong());
-
     file.Open(path.GetFullPath(), wxFile::read);
     if (!file.IsOpened())
     {
@@ -1041,6 +1423,7 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
         dialog.ShowModal();
         return NULL;
     }
+    data.resize(path.GetSize().ToULong());
     file.Read(&data[0], data.capacity());
     file.Close();
 
@@ -1055,15 +1438,36 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
     return ret;
 }
 
+
+/*==============================
+    Frame_ImageBrowser::IsAssetModified
+    Check the asset's modification status
+    @return Whether the asset was recently modified
+==============================*/
+
 bool Frame_ImageBrowser::IsAssetModified()
 {
     return this->m_AssetModified;
 }
 
+
+/*==============================
+    Frame_ImageBrowser::GetLoadedAsset
+    Get the currently loaded asset
+    @return The loaded asset, or NULL
+==============================*/
+
 P64Asset_Image* Frame_ImageBrowser::GetLoadedAsset()
 {
     return this->m_LoadedAsset;
 }
+
+
+/*==============================
+    Frame_ImageBrowser::GetLoadedAssetPath
+    Get the currently loaded asset's path
+    @return The loaded asset's path
+==============================*/
 
 wxFileName Frame_ImageBrowser::GetLoadedAssetPath()
 {
