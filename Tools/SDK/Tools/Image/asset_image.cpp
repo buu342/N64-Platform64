@@ -2,11 +2,133 @@
 #include "../../serializer.h"
 #include <wx/msgdlg.h>
 #include <wx/rawbmp.h>
-#include <algorithm> 
+#include <algorithm>
+
+
+/*=============================================================
+                            Macros
+=============================================================*/
 
 #define P64ASSET_HEADER "P64RAWIMG"
 #define P64ASSET_VERSION 1
 
+
+/*=============================================================
+                       Helper Functions
+=============================================================*/
+
+/*==============================
+    bitreduce
+    Reduce the bits in a value
+    @param  The value to reduce
+    @param  The number of bits we want to keep
+    @return The reduced value
+==============================*/
+
+static inline uint8_t bitreduce(uint8_t v, uint8_t nbits)
+{
+    int shift = 8 - nbits;
+    return ((float)(v >> shift))*(255.0f/((float)(255 >> shift)));
+}
+
+
+/*==============================
+    nearestpow2
+    Pads a number to the nearest power of 2
+    @param  The number to pad
+    @return The padded number
+==============================*/
+
+static uint32_t nearestpow2(uint32_t num)
+{
+    // Taken from https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
+    num--;
+    num |= num >> 1;
+    num |= num >> 2;
+    num |= num >> 4;
+    num |= num >> 8;
+    num |= num >> 16;
+    num++;
+    return num;
+}
+
+
+/*==============================
+    SamplePoint_Clamp
+    Sample a point using the clamp mode
+    @param  The starting point of the source
+    @param  The ending point of the source
+    @param  The point we're trying to sample
+    @return The clamped point
+==============================*/
+
+static wxPoint SamplePoint_Clamp(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    return wxPoint(
+        std::min(srcend.x - 1, std::max(srcstart.x, samplepoint.x)),
+        std::min(srcend.y - 1, std::max(srcstart.y, samplepoint.y))
+    );
+}
+
+
+/*==============================
+    SamplePoint_Repeat
+    Sample a point using the repeat mode
+    @param  The starting point of the source
+    @param  The ending point of the source
+    @param  The point we're trying to sample
+    @return The repeated point
+==============================*/
+
+static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    int32_t rx = samplepoint.x - srcstart.x;
+    int32_t ry = samplepoint.y - srcstart.y;
+    int32_t w = (srcend.x - srcstart.x);
+    int32_t h = (srcend.y - srcstart.y);
+    return wxPoint(
+        srcstart.x + ((rx % w + w) % w),
+        srcstart.y + ((ry % h + h) % h)
+    );
+}
+
+
+/*==============================
+    SamplePoint_Mirror
+    Sample a point using the mirror mode
+    @param  The starting point of the source
+    @param  The ending point of the source
+    @param  The point we're trying to sample
+    @return The mirrored point
+==============================*/
+
+static wxPoint SamplePoint_Mirror(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
+{
+    int32_t rx = samplepoint.x - srcstart.x;
+    int32_t ry = samplepoint.y - srcstart.y;
+    int32_t w = (srcend.x - srcstart.x);
+    int32_t h = (srcend.y - srcstart.y);
+    wxPoint ret = wxPoint(
+        ((rx % w + w) % w),
+        ((ry % h + h) % h)
+    );
+    if (((int)abs(floorf((float)rx / w))) % 2 == 1)
+        ret.x = w - ret.x - 1;
+    if (((int)abs(floorf((float)ry / h))) % 2 == 1)
+        ret.y = h - ret.y - 1;
+    return srcstart + ret;
+}
+
+
+
+/*=============================================================
+               Image Asset Class Implementation
+=============================================================*/
+
+/*==============================
+    P64Asset_Image (Constructor)
+    Initializes the class
+==============================*/
 
 P64Asset_Image::P64Asset_Image()
 {
@@ -36,17 +158,31 @@ P64Asset_Image::P64Asset_Image()
     this->m_ImageFinalRaw = wxImage();
 }
 
+
+/*==============================
+    P64Asset_Image (Destructor)
+    Cleans up the class before deletion
+==============================*/
+
 P64Asset_Image::~P64Asset_Image()
 {
     if (this->m_FinalTexels != NULL)
         free(this->m_FinalTexels);
 }
 
+
+/*==============================
+    P64Asset_Image::Serialize
+    Serializes the object
+    @return The serialized data
+==============================*/
+
 std::vector<uint8_t> P64Asset_Image::Serialize()
 {
     std::vector<uint8_t> data;
     std::vector<uint8_t> tdata;
 
+    // Image configuration
     serialize_header(&data, P64ASSET_HEADER, P64ASSET_VERSION);
     serialize_wxstring(&data, this->m_SourcePath.GetFullPath());
     serialize_u8(&data, this->m_ResizeMode);
@@ -83,6 +219,14 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     return data;
 }
 
+
+/*==============================
+    P64Asset_Image::Deserialize
+    Serializes the object
+    @param  The serialized data
+    @return The deserialized object
+==============================*/
+
 P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
 {
     P64Asset_Image* asset;
@@ -94,6 +238,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     uint8_t* bytesptr = &bytes[0];
     uint32_t pos = 0;
 
+    // Check if the file at least contains a header
     if (bytes.size() < 16)
     {
         wxMessageDialog dialog(NULL, "File is not a P64 image", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
@@ -101,6 +246,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
         return NULL;
     }
 
+    // Validate the header
     pos = deserialize_header(bytesptr, pos, header, &temp_32);
     if (strcmp(header, P64ASSET_HEADER) != 0)
     {
@@ -115,6 +261,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
         return NULL;
     }
 
+    // Read the image configuration data
     asset = new P64Asset_Image();
     pos = deserialize_wxstring(bytesptr, pos, &temp_str);
     asset->m_SourcePath = wxFileName(temp_str);
@@ -138,6 +285,7 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     pos = deserialize_wxstring(bytesptr, pos, &temp_str);
     asset->m_AlphaPath = wxFileName(temp_str);
 
+    // Read the texel data
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.x);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.y);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalTexelCount);
@@ -155,33 +303,35 @@ P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
     }
     else
         asset->m_FinalTexels = NULL;
+
+    // Read the embedded thumbnail 
     thumb = P64Asset_Thumbnail::Deserialize(&bytesptr[pos]);
     if (thumb != NULL)
         asset->m_Thumbnail = *thumb;
     else
         asset->m_Thumbnail = P64Asset_Thumbnail();
+
+    // Done
     return asset;
 }
 
-static uint32_t nearestpow2(uint32_t num)
-{
-    // Taken from https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
-    num--;
-    num |= num >> 1;
-    num |= num >> 2;
-    num |= num >> 4;
-    num |= num >> 8;
-    num |= num >> 16;
-    num++;
-    return num;
-}
+
+/*==============================
+    P64Asset_Image::CalculateImageSize
+    Calculate a size for the image based on its color format
+    and the user's input
+    @return The new image size, or wxSize(1, 1) on failure
+==============================*/
 
 wxSize P64Asset_Image::CalculateImageSize()
 {
     uint32_t w, h;
+
+    // Check we have a valid image
     if (!this->m_Image.IsOk())
         return wxSize(1, 1);
 
+    // Resize the image
     w = this->m_Image.GetWidth();
     h = this->m_Image.GetHeight();
     switch (this->m_ResizeMode)
@@ -208,6 +358,13 @@ wxSize P64Asset_Image::CalculateImageSize()
     return wxSize(w, h);
 }
 
+
+/*==============================
+    P64Asset_Image::CalculateTexelCount
+    Calculate the number of texels in the image
+    @return The number of texels in the image, or 0 on failure
+==============================*/
+
 uint32_t P64Asset_Image::CalculateTexelCount()
 {
     wxSize size = this->CalculateImageSize();
@@ -226,42 +383,17 @@ uint32_t P64Asset_Image::CalculateTexelCount()
     return 0; // Shouldn't happen
 }
 
-static wxPoint SamplePoint_Clamp(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
-{
-    return wxPoint(
-        std::min(srcend.x-1, std::max(srcstart.x, samplepoint.x)), 
-        std::min(srcend.y-1, std::max(srcstart.y, samplepoint.y))
-    );
-}
 
-static wxPoint SamplePoint_Repeat(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
-{
-    int32_t rx = samplepoint.x - srcstart.x;
-    int32_t ry = samplepoint.y - srcstart.y;
-    int32_t w = (srcend.x - srcstart.x);
-    int32_t h = (srcend.y - srcstart.y);
-    return wxPoint(
-        srcstart.x + ((rx % w + w) % w),
-        srcstart.y + ((ry % h + h) % h)
-    );
-}
-
-static wxPoint SamplePoint_Mirror(wxPoint srcstart, wxPoint srcend, wxPoint samplepoint)
-{
-    int32_t rx = samplepoint.x - srcstart.x;
-    int32_t ry = samplepoint.y - srcstart.y;
-    int32_t w = (srcend.x - srcstart.x);
-    int32_t h = (srcend.y - srcstart.y);
-    wxPoint ret = wxPoint(
-        ((rx % w + w) % w),
-        ((ry % h + h) % h)
-    );
-    if (((int)abs(floorf((float)rx/w))) % 2 == 1)
-        ret.x = w - ret.x - 1;
-    if (((int)abs(floorf((float)ry/h))) % 2 == 1)
-        ret.y = h - ret.y - 1;
-    return srcstart + ret;
-}
+/*==============================
+    P64Asset_Image::ResizeAndMask
+    Reize the image and apply the mask
+    TODO: Implement image mask
+    @param  The source data of the image
+    @param  The byte depth of the source depth
+    @param  The width of the source image
+    @param  The height of the source image
+    @return The number of texels in the image, or 0 on failure
+==============================*/
 
 void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h)
 {
@@ -337,11 +469,12 @@ void P64Asset_Image::ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, 
     }
 }
 
-static inline uint8_t bitreduce(uint8_t v, uint8_t nbits)
-{
-    int shift = 8 - nbits;
-    return ((float)(v >> shift))*(255.0f/((float)(255>>shift))); 
-} 
+
+/*==============================
+    P64Asset_Image::ReduceTexel
+    Reduce the texel bits based on the selected image format
+    @param The RGB value to reduce
+==============================*/
 
 void P64Asset_Image::ReduceTexel(uint8_t* rgb)
 {
@@ -382,6 +515,13 @@ void P64Asset_Image::ReduceTexel(uint8_t* rgb)
     }
 }
 
+
+/*==============================
+    P64Asset_Image::ReduceAlpha
+    Reduce the alpha bits based on the selected image format
+    @param The alpha value to reduce
+==============================*/
+
 void P64Asset_Image::ReduceAlpha(uint8_t* a)
 {
     if (a == NULL)
@@ -407,6 +547,16 @@ void P64Asset_Image::ReduceAlpha(uint8_t* a)
     }
 }
 
+
+/*==============================
+    P64Asset_Image::Dither_Ordered
+    Apply an ordered dither to the image texels
+    @param The RGB buffer to dither
+    @param The index of the current texel
+    @param The width of the image
+    @param The height of the image
+==============================*/
+
 void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h)
 {
     // Taken from https://stackoverflow.com/a/17438757
@@ -420,7 +570,7 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
       2, 6, 1, 7, 3, 5, 0, 8,
       6, 2, 7, 1, 5, 3, 8, 0
     };
-    /* // I originally accidentally left used the red threshold only (copy paste mistake), but after fixing that I found the results to be visually worse, so these will remain commented out for the time being
+    /* // I originally accidentally used the red threshold only (copy paste mistake), but after fixing that I found the results to be visually worse, so these will remain commented out for the time being
     const uint8_t dither_treshold_g[64] = {
       1, 3, 2, 2, 3, 1, 2, 2,
       2, 2, 0, 4, 2, 2, 4, 0,
@@ -449,6 +599,16 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
     rgb[(i*3)+2] = std::min(rgb[(i*3)+2] + dither_treshold_r[tresshold_id], 255);
     (void)h;
 }
+
+
+/*==============================
+    P64Asset_Image::Dither_FloydSteinberg
+    Apply an Floyd Steinberg dither to the image texels
+    @param The RGB buffer to dither
+    @param The index of the current texel
+    @param The width of the image
+    @param The height of the image
+==============================*/
 
 void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h)
 {
@@ -503,7 +663,18 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w,
     }
 }
 
-void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
+
+/*==============================
+    P64Asset_Image::Dither_FloydSteinberg
+    Apply an average blur based on the zoom value
+    @param The source data to blur
+    @param The byte depth of the source data
+    @param The width of the image
+    @param The height of the image
+    @param The amount of zoom
+==============================*/
+
+void P64Asset_Image::Blur_Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
 {
     if (*srcptr == NULL)
         return;
@@ -512,7 +683,7 @@ void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uin
     // In all other cases, the console falls back to its "bilinear" filtering
     if (((int)zoom.x) != zoom.x && ((int)zoom.y) != zoom.y && zoom.x == zoom.y)
     {
-        this->Bilinear(srcptr, depth, w_in, h_in, zoom);
+        this->Blur_Bilinear(srcptr, depth, w_in, h_in, zoom);
         return;
     }
 
@@ -557,7 +728,18 @@ void P64Asset_Image::Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uin
     (*srcptr) = out;
 }
 
-void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
+
+/*==============================
+    P64Asset_Image::Blur_Bilinear
+    Apply a 3-point bilinear blur based on the zoom value
+    @param The source data to blur
+    @param The byte depth of the source data
+    @param The width of the image
+    @param The height of the image
+    @param The amount of zoom
+==============================*/
+
+void P64Asset_Image::Blur_Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom)
 {
     if (*srcptr == NULL || (zoom.x == 1.0 && zoom.y == 1.0))
         return;
@@ -609,11 +791,23 @@ void P64Asset_Image::Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, ui
     (*srcptr) = out;
 }
 
+
+/*==============================
+    P64Asset_Image::GenerateTexels
+    Generate the final texels that will be fed to the N64's TMEM
+    @param The source data
+    @param The source alpha, or NULL
+    @param The width of the image
+    @param The height of the image
+==============================*/
+
 void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in)
 {
     uint32_t ti, si;
     uint8_t alpha1 = 0xFF;
     uint8_t alpha2 = 0xFF;
+
+    // Verify the image is valid
     this->m_FinalTexelCount = this->CalculateTexelCount();
     this->m_FinalSize = wxSize(w_in, h_in);
     if (this->m_FinalTexels != NULL)
@@ -625,6 +819,7 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
         return;
     }
 
+    // Generate the texels
     ti = 0;
     si = 0;
     while (ti< this->m_FinalTexelCount)
@@ -634,10 +829,13 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
             case FMT_RGBA32:
                 if (alphasrc != NULL)
                     alpha1 = alphasrc[si];
+                #pragma warning(push)
+                #pragma warning(disable:6386) // False positive
                 this->m_FinalTexels[ti++] = src[(si*3) + 0];
                 this->m_FinalTexels[ti++] = src[(si*3) + 1];
                 this->m_FinalTexels[ti++] = src[(si*3) + 2];
                 this->m_FinalTexels[ti++] = alpha1;
+                #pragma warning(pop)
                 si += 1;
                 break;
             case FMT_RGBA16:
@@ -682,6 +880,15 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
         }
     }
 }
+
+
+/*==============================
+    P64Asset_Image::RegenerateFinal
+    Generate the texture based on the settings in this object
+    @param Whether to preview or not
+    @param Whether to preview filtering
+    @param The preview zoom
+==============================*/
 
 void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
 {
@@ -750,6 +957,7 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     this->ResizeAndMask(&base_alpha, 1, rawsize.x, rawsize.y);
 
     // Generate Mipmaps
+    // TODO: This, lol
 
     // Perform bit reduction + dithering on the RGB values
     for (uint32_t i=0; i<(uint32_t)newsize.x*newsize.y; i++)
@@ -772,8 +980,8 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     this->m_ImageFinalRaw = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, true);
     if (bitmap_filter)
     {
-        this->Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
-        this->Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
+        this->Blur_Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
+        this->Blur_Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
         newsize.x = roundf(((float)newsize.x)*zoom.x);
         newsize.y = roundf(((float)newsize.y)*zoom.y);
     }

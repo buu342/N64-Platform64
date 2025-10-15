@@ -8,6 +8,11 @@ typedef struct IUnknown IUnknown;
 #include <stdint.h>
 #include "../asset_thumbnail.h"
 
+
+/*=============================================================
+                             Types
+=============================================================*/
+
 typedef enum {
     RESIZETYPE_NONE = 0,
     RESIZETYPE_POWER2,
@@ -65,6 +70,11 @@ typedef enum {
     ALPHA_EXTERNALMASK,
 } P64Img_AlphaMode;
 
+
+/*=============================================================
+                            Classes
+=============================================================*/
+
 class P64Asset_Image
 {
     private:
@@ -72,8 +82,8 @@ class P64Asset_Image
 
         wxSize CalculateImageSize();
         void ResizeAndMask(uint8_t** srcptr, uint8_t depth, uint32_t w, uint32_t h);
-        void Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
-        void Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
+        void Blur_Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
+        void Blur_Bilinear(uint8_t** srcptr, uint8_t depth, uint32_t w_in, uint32_t h_in, wxRealPoint zoom);
         void ReduceTexel(uint8_t* rgb);
         void ReduceAlpha(uint8_t* a);
         void Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
