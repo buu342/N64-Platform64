@@ -6,20 +6,49 @@
 #include <wx/msgdlg.h>
 #include "../resource.h"
 
+
+/*=============================================================
+                            Macros
+=============================================================*/
+
 #define ZOOM_SPEED  1.25
+
+
+/*=============================================================
+           Image Preview Panel Class Implementation
+=============================================================*/
+
+/*==============================
+    Panel_ImgView (Constructor)
+    Initializes the class
+==============================*/
 
 Panel_ImgView::Panel_ImgView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxScrolledWindowStyle) : wxScrolledWindow(parent, id, pos, size, style)
 {
     this->m_LoadedAsset = NULL;
     this->SetDefaultSettings();
     this->m_Bitmap = wxBitmap();
+
+    // Connect events
     this->Connect(wxEVT_PAINT, wxPaintEventHandler(Panel_ImgView::OnPaint), NULL, this);
 }
 
+
+/*==============================
+    Panel_ImgView (Destructor)
+    Cleans up the class before deletion
+==============================*/
+
 Panel_ImgView::~Panel_ImgView()
 {
-
+    // Nothing to cleanup
 }
+
+
+/*==============================
+    Panel_ImgView::SetDefaultSettings
+    Set the default preview settings
+==============================*/
 
 void Panel_ImgView::SetDefaultSettings()
 {
@@ -30,11 +59,24 @@ void Panel_ImgView::SetDefaultSettings()
     this->m_PreviewSettings.showstats = false;
 }
 
+
+/*==============================
+    Panel_ImgView::SetAsset
+    Set the asset to preview
+    @param The asset to preview
+==============================*/
+
 void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 {
     this->m_LoadedAsset = asset;
     this->ReloadAsset();
 }
+
+
+/*==============================
+    Panel_ImgView::ZoomIn
+    Zoom the panel in
+==============================*/
 
 void Panel_ImgView::ZoomIn()
 {
@@ -48,6 +90,12 @@ void Panel_ImgView::ZoomIn()
         this->RefreshDrawing();
 }
 
+
+/*==============================
+    Panel_ImgView::ZoomOut
+    Zoom the panel out
+==============================*/
+
 void Panel_ImgView::ZoomOut()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
@@ -60,6 +108,12 @@ void Panel_ImgView::ZoomOut()
         this->RefreshDrawing();
 }
 
+
+/*==============================
+    Panel_ImgView::ZoomReset
+    Reset the panel zoom
+==============================*/
+
 void Panel_ImgView::ZoomReset()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
@@ -71,35 +125,81 @@ void Panel_ImgView::ZoomReset()
     else
         this->RefreshDrawing();
 }
+
+
+/*==============================
+    Panel_ImgView::GetZoom
+    Get the panel's zoom
+    @return The Zoom value
+==============================*/
+
 wxRealPoint Panel_ImgView::GetZoom()
 {
     return this->m_PreviewSettings.zoom;
 }
+
+
+/*==============================
+    Panel_ImgView::ToggleAlphaDisplay
+    Toggle the panel's alpha preview mode
+==============================*/
 
 void Panel_ImgView::ToggleAlphaDisplay()
 {
     this->m_PreviewSettings.showalpha = !this->m_PreviewSettings.showalpha;
 }
 
+
+/*==============================
+    Panel_ImgView::GetAlphaDisplay
+    Get the panel's alpha display setting
+    @return Whether to show alpha or not
+==============================*/
+
 bool Panel_ImgView::GetAlphaDisplay()
 {
     return this->m_PreviewSettings.showalpha;
 }
+
+
+/*==============================
+    Panel_ImgView::ToggleFilterDisplay
+    Toggle the panel's filter preview
+==============================*/
 
 void Panel_ImgView::ToggleFilterDisplay()
 {
     this->m_PreviewSettings.showfilter = !this->m_PreviewSettings.showfilter;
 }
 
+
+/*==============================
+    Panel_ImgView::GetFilterDisplay
+    Get the panel's filter preview status
+    @return Whether to enable image filtering or not
+==============================*/
+
 bool Panel_ImgView::GetFilterDisplay()
 {
     return this->m_PreviewSettings.showfilter;
 }
 
+
+/*==============================
+    Panel_ImgView::ToggleStatisticsDisplay
+    Toggle the panel's filter preview
+==============================*/
+
 void Panel_ImgView::ToggleStatisticsDisplay()
 {
     this->m_PreviewSettings.showstats = !this->m_PreviewSettings.showstats;
 }
+
+
+/*==============================
+    Panel_ImgView::ReloadAsset
+    Reload the asset's preview bitmap
+==============================*/
 
 void Panel_ImgView::ReloadAsset()
 {
@@ -109,6 +209,12 @@ void Panel_ImgView::ReloadAsset()
         this->m_Bitmap = wxBitmap(this->m_LoadedAsset->m_ImageFinal);
     this->RefreshDrawing();
 }
+
+
+/*==============================
+    Panel_ImgView::RefreshDrawing
+    Force the preview panel to be redrawn
+==============================*/
 
 void Panel_ImgView::RefreshDrawing()
 {
@@ -126,6 +232,13 @@ void Panel_ImgView::RefreshDrawing()
     this->Layout();
     this->Refresh();
 }
+
+
+/*==============================
+    Panel_ImgView::OnPaint
+    Draw onto the panel a preview of the image
+    @param The paint event
+==============================*/
 
 void Panel_ImgView::OnPaint(wxPaintEvent& event)
 {

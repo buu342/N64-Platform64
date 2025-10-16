@@ -6,6 +6,11 @@ typedef struct IUnknown IUnknown;
 #include <wx/bitmap.h>
 #include "asset_image.h"
 
+
+/*=============================================================
+                             Types
+=============================================================*/
+
 struct PreviewSettings {
     bool showalpha;
     bool showfilter;
@@ -14,19 +19,23 @@ struct PreviewSettings {
     wxRealPoint zoom;
 };
 
+
+/*=============================================================
+                            Classes
+=============================================================*/
+
 class Panel_ImgView : public wxScrolledWindow
 {
     private:
-
-    protected:
         wxBitmap m_Bitmap;
         P64Asset_Image* m_LoadedAsset;
         PreviewSettings m_PreviewSettings;
+
         void OnPaint(wxPaintEvent& event);
+    
+    protected:
 
     public:
-        Panel_ImgView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
-        ~Panel_ImgView();
         void ZoomIn();
         void ZoomOut();
         void ZoomReset();
@@ -40,4 +49,7 @@ class Panel_ImgView : public wxScrolledWindow
         void SetAsset(P64Asset_Image* asset);
         void ReloadAsset();
         void RefreshDrawing();
+        
+        ~Panel_ImgView();
+        Panel_ImgView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style);
 };
