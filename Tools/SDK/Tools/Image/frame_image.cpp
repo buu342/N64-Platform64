@@ -242,6 +242,12 @@ static void AssetRename(wxFrame* frame, wxFileName oldpath, wxFileName newpath)
 /*==============================
     Frame_ImageBrowser (Constructor)
     Initializes the class
+    @param The parent window
+    @param The frame's ID (default wxID_ANY)
+    @param The frame's title (default wxEmptyString)
+    @param The frame's position (default wxDefaultPosition)
+    @param The frame's size (default 640x480)
+    @param The frame's style (default wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL)
 ==============================*/
 
 Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)

@@ -90,6 +90,8 @@ class P64Asset_Image
         void Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w, uint32_t h);
         void GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in);
 
+    protected:
+
     public:
         // File data
         wxFileName            m_SourcePath;
@@ -118,10 +120,11 @@ class P64Asset_Image
         // Preview image
         wxImage               m_ImageFinal;
 
-        P64Asset_Image();
-        ~P64Asset_Image();
         void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
         std::vector<uint8_t> Serialize();
         static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
         uint32_t CalculateTexelCount();
+
+        P64Asset_Image();
+        ~P64Asset_Image();
 };

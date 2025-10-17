@@ -18,6 +18,8 @@ class P64Asset_Thumbnail
         wxSize    m_IconSmallSize;
         uint8_t*  m_IconSmallData;
 
+    protected:
+
     public:
         wxIcon  m_IconLarge;
         wxIcon  m_IconSmall;

@@ -160,6 +160,6 @@ class Frame_ImageBrowser : public wxFrame
         P64Asset_Image* GetLoadedAsset();
         wxFileName GetLoadedAssetPath();
 
-		Frame_ImageBrowser( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 640,480 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		Frame_ImageBrowser(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(640, 480), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL);
 		~Frame_ImageBrowser();
 };

@@ -29,6 +29,12 @@ and cached for the best possible user experience.
 /*==============================
     Panel_Search (Constructor)
     Initializes the class
+    @param The parent window
+    @param The panel's ID (default wxID_ANY)
+    @param The panel's position (default wxDefaultPosition)
+    @param The panel's size (default wxDefaultSize)
+    @param The panel's style (default wxTAB_TRAVERSAL)
+    @param The panel's name (default wxEmptyString)
 ==============================*/
 
 Panel_Search::Panel_Search(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name) : wxPanel(parent, id, pos, size, style, name)
@@ -521,6 +527,11 @@ void Panel_Search::ReloadDirectory()
 /*==============================
     Panel_AssetDisplay (Constructor)
     Initializes the class
+    @param The panel's parent window
+    @param The panel's ID (default inherited from base class)
+    @param The panel's position (default inherited from base class)
+    @param The panel's size (default inherited from base class)
+    @param The panel's style (default inherited from base class)
 ==============================*/
 
 Panel_AssetDisplay::Panel_AssetDisplay(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
@@ -876,6 +887,11 @@ wxMessageQueue<ThreadWork*>* Panel_AssetDisplay::GetThreadQueue()
 /*==============================
     Panel_AssetDisplay_List (Constructor)
     Initializes the class
+    @param The panel's parent window
+    @param The panel's ID (default inherited from base class)
+    @param The panel's position (default inherited from base class)
+    @param The panel's size (default inherited from base class)
+    @param The panel's style (default inherited from base class)
 ==============================*/
 
 Panel_AssetDisplay_List::Panel_AssetDisplay_List(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
@@ -1223,6 +1239,11 @@ void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 /*==============================
     Panel_AssetDisplay_Grid (Constructor)
     Initializes the class
+    @param The panel's parent window
+    @param The panel's ID (default inherited from base class)
+    @param The panel's position (default inherited from base class)
+    @param The panel's size (default inherited from base class)
+    @param The panel's style (default inherited from base class)
 ==============================*/
 
 Panel_AssetDisplay_Grid::Panel_AssetDisplay_Grid(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : Panel_AssetDisplay(parent, id, pos, size, style)
@@ -1514,6 +1535,8 @@ void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
 /*==============================
     IconGeneratorThread (Constructor)
     Initializes the class
+    @param The parent panel that this thread is assigned to
+    @param The icon generator function to call
 ==============================*/
 
 IconGeneratorThread::IconGeneratorThread(Panel_AssetDisplay* parent, wxIcon(*func)(bool, wxFileName)) : wxThread(wxTHREAD_JOINABLE)

@@ -26,7 +26,8 @@ class App : public wxApp
     protected:
     
     public:
+        virtual bool OnInit();
+		
         App();
         ~App();
-        virtual bool OnInit();
 };

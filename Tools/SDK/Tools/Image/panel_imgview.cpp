@@ -21,6 +21,11 @@
 /*==============================
     Panel_ImgView (Constructor)
     Initializes the class
+    @param The parent window
+    @param The panel's ID (default wxID_ANY)
+    @param The panel's position (default wxDefaultPosition)
+    @param The panel's size (default wxDefaultSize)
+    @param The panel's style (default wxScrolledWindowStyle)
 ==============================*/
 
 Panel_ImgView::Panel_ImgView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxScrolledWindowStyle) : wxScrolledWindow(parent, id, pos, size, style)
