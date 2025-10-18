@@ -102,119 +102,9 @@ static void AssetGenerator(wxFrame* frame, wxFileName path)
 static void AssetLoad(wxFrame* frame, wxFileName path)
 {
     Frame_ImageBrowser* realframe = (Frame_ImageBrowser*)frame;
-    P64Asset_Image* curasset;
 
-    // Open the file and get its bytes
-    curasset = realframe->LoadAsset(path);
-    if (curasset == NULL)
-        return;
-
-    // Set asset content
-    realframe->m_FilePicker_Image->SetPath(curasset->m_SourcePath.GetFullPath());
-    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt()))
-        curasset->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + curasset->m_SourcePath.GetName() + "." + curasset->m_SourcePath.GetExt());
-    curasset->RegenerateFinal(realframe->m_ScrolledWin_Preview->GetAlphaDisplay(), realframe->m_ScrolledWin_Preview->GetFilterDisplay(), realframe->m_ScrolledWin_Preview->GetZoom());
-    realframe->m_ScrolledWin_Preview->SetAsset(curasset);
-
-    // Activate the window
-    realframe->m_ToolBar_Preview->Enable(true);
-    realframe->m_Notebook_Config->Enable(true);
-
-    // Set panel item values based on asset data
-    switch (curasset->m_ResizeMode)
-    {
-        case RESIZETYPE_NONE: 
-            realframe->m_RadioBtn_ResizeNone->SetValue(true);
-            if (curasset->m_Image.IsOk())
-            {
-                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
-            }
-            else
-            {
-                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
-                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
-            }
-            realframe->m_TextCtrl_ResizeW->Enable(false);
-            realframe->m_TextCtrl_ResizeH->Enable(false);
-            realframe->m_Choice_Align->Enable(false);
-            realframe->m_Choice_ResizeFill->Enable(false);
-            break;
-        case RESIZETYPE_POWER2: 
-            realframe->m_RadioBtn_ResizeTwo->SetValue(true);
-            if (curasset->m_Image.IsOk())
-            {
-                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_Image.GetWidth()));
-                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_Image.GetHeight()));
-            }
-            else
-            {
-                realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
-                realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
-            }
-            realframe->m_TextCtrl_ResizeW->Enable(false);
-            realframe->m_TextCtrl_ResizeH->Enable(false);
-            realframe->m_Choice_Align->Enable(true);
-            realframe->m_Choice_ResizeFill->Enable(true);
-            break;
-        case RESIZETYPE_CUSTOM: 
-            realframe->m_RadioBtn_ResizeCustom->SetValue(true);
-            realframe->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", curasset->m_CustomSize.x));
-            realframe->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", curasset->m_CustomSize.y));
-            realframe->m_TextCtrl_ResizeW->Enable(true);
-            realframe->m_TextCtrl_ResizeH->Enable(true);
-            realframe->m_Choice_Align->Enable(true);
-            realframe->m_Choice_ResizeFill->Enable(true);
-            break;
-    }
-    realframe->m_Choice_Align->SetSelection(curasset->m_Alignment);
-    realframe->m_Choice_ResizeFill->SetSelection(curasset->m_ResizeFill);
-    realframe->m_Choice_TilingX->SetSelection(curasset->m_TilingX);
-    realframe->m_Choice_TilingY->SetSelection(curasset->m_TilingY);
-    realframe->m_Choice_Format->SetSelection(curasset->m_ImageFormat);
-    realframe->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.x));
-    realframe->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", curasset->m_MaskStart.y));
-    realframe->m_Checkbox_Mipmaps->SetValue(curasset->m_UseMipmaps);
-    realframe->m_Choice_Dithering->SetSelection(curasset->m_Dithering);
-    switch (curasset->m_AlphaMode)
-    {
-        case ALPHA_NONE:
-            realframe->m_RadioBtn_AlphaNone->SetValue(true);
-            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            realframe->m_FilePicker_Alpha->SetPath("");
-            realframe->m_ColourPicker_AlphaColor->Enable(false);
-            realframe->m_BitmapButton_Pipette->Enable(false);
-            realframe->m_FilePicker_Alpha->Enable(false);
-            break;
-        case ALPHA_MASK:
-            realframe->m_RadioBtn_AlphaMask->SetValue(true);
-            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            realframe->m_FilePicker_Alpha->SetPath("");
-            realframe->m_ColourPicker_AlphaColor->Enable(false);
-            realframe->m_BitmapButton_Pipette->Enable(false);
-            realframe->m_FilePicker_Alpha->Enable(false);
-            break;
-        case ALPHA_CUSTOM:
-            realframe->m_RadioBtn_AlphaColor->SetValue(true);
-            realframe->m_ColourPicker_AlphaColor->SetColour(curasset->m_AlphaColor);
-            realframe->m_FilePicker_Alpha->SetPath("");
-            realframe->m_ColourPicker_AlphaColor->Enable(true);
-            realframe->m_BitmapButton_Pipette->Enable(true);
-            realframe->m_FilePicker_Alpha->Enable(false);
-            break;
-        case ALPHA_EXTERNALMASK:
-            realframe->m_RadioBtn_AlphaColor->SetValue(true);
-            realframe->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            realframe->m_FilePicker_Alpha->SetPath(curasset->m_AlphaPath.GetFullPath());
-            realframe->m_ColourPicker_AlphaColor->Enable(false);
-            realframe->m_BitmapButton_Pipette->Enable(false);
-            realframe->m_FilePicker_Alpha->Enable(true);
-            break;
-    }
-
-    // Finalize
-    realframe->UpdateTitle();
-    realframe->m_ScrolledWin_Preview->ZoomReset();
+    // Load the asset from the path
+    realframe->LoadAsset(path);
 }
 
 
@@ -1441,6 +1331,113 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
         delete this->m_LoadedAsset;
     this->m_LoadedAsset = ret;
     this->m_AssetModified = false;
+
+    // Set asset content
+    this->m_FilePicker_Image->SetPath(ret->m_SourcePath.GetFullPath());
+    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt()))
+        ret->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt());
+    ret->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    this->m_ScrolledWin_Preview->SetAsset(ret);
+
+    // Activate the window
+    this->m_ToolBar_Preview->Enable(true);
+    this->m_Notebook_Config->Enable(true);
+
+    // Set panel item values based on asset data
+    switch (ret->m_ResizeMode)
+    {
+        case RESIZETYPE_NONE:
+            this->m_RadioBtn_ResizeNone->SetValue(true);
+            if (ret->m_Image.IsOk())
+            {
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_Image.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_Image.GetHeight()));
+            }
+            else
+            {
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
+            }
+            this->m_TextCtrl_ResizeW->Enable(false);
+            this->m_TextCtrl_ResizeH->Enable(false);
+            this->m_Choice_Align->Enable(false);
+            this->m_Choice_ResizeFill->Enable(false);
+            break;
+        case RESIZETYPE_POWER2:
+            this->m_RadioBtn_ResizeTwo->SetValue(true);
+            if (ret->m_Image.IsOk())
+            {
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_Image.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_Image.GetHeight()));
+            }
+            else
+            {
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", 0));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", 0));
+            }
+            this->m_TextCtrl_ResizeW->Enable(false);
+            this->m_TextCtrl_ResizeH->Enable(false);
+            this->m_Choice_Align->Enable(true);
+            this->m_Choice_ResizeFill->Enable(true);
+            break;
+        case RESIZETYPE_CUSTOM:
+            this->m_RadioBtn_ResizeCustom->SetValue(true);
+            this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_CustomSize.x));
+            this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_CustomSize.y));
+            this->m_TextCtrl_ResizeW->Enable(true);
+            this->m_TextCtrl_ResizeH->Enable(true);
+            this->m_Choice_Align->Enable(true);
+            this->m_Choice_ResizeFill->Enable(true);
+            break;
+    }
+    this->m_Choice_Align->SetSelection(ret->m_Alignment);
+    this->m_Choice_ResizeFill->SetSelection(ret->m_ResizeFill);
+    this->m_Choice_TilingX->SetSelection(ret->m_TilingX);
+    this->m_Choice_TilingY->SetSelection(ret->m_TilingY);
+    this->m_Choice_Format->SetSelection(ret->m_ImageFormat);
+    this->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", ret->m_MaskStart.x));
+    this->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", ret->m_MaskStart.y));
+    this->m_Checkbox_Mipmaps->SetValue(ret->m_UseMipmaps);
+    this->m_Choice_Dithering->SetSelection(ret->m_Dithering);
+    switch (ret->m_AlphaMode)
+    {
+        case ALPHA_NONE:
+            this->m_RadioBtn_AlphaNone->SetValue(true);
+            this->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            this->m_FilePicker_Alpha->SetPath("");
+            this->m_ColourPicker_AlphaColor->Enable(false);
+            this->m_BitmapButton_Pipette->Enable(false);
+            this->m_FilePicker_Alpha->Enable(false);
+            break;
+        case ALPHA_MASK:
+            this->m_RadioBtn_AlphaMask->SetValue(true);
+            this->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            this->m_FilePicker_Alpha->SetPath("");
+            this->m_ColourPicker_AlphaColor->Enable(false);
+            this->m_BitmapButton_Pipette->Enable(false);
+            this->m_FilePicker_Alpha->Enable(false);
+            break;
+        case ALPHA_CUSTOM:
+            this->m_RadioBtn_AlphaColor->SetValue(true);
+            this->m_ColourPicker_AlphaColor->SetColour(ret->m_AlphaColor);
+            this->m_FilePicker_Alpha->SetPath("");
+            this->m_ColourPicker_AlphaColor->Enable(true);
+            this->m_BitmapButton_Pipette->Enable(true);
+            this->m_FilePicker_Alpha->Enable(false);
+            break;
+        case ALPHA_EXTERNALMASK:
+            this->m_RadioBtn_AlphaColor->SetValue(true);
+            this->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
+            this->m_FilePicker_Alpha->SetPath(ret->m_AlphaPath.GetFullPath());
+            this->m_ColourPicker_AlphaColor->Enable(false);
+            this->m_BitmapButton_Pipette->Enable(false);
+            this->m_FilePicker_Alpha->Enable(true);
+            break;
+    }
+
+    // Finalize
+    this->UpdateTitle();
+    this->m_ScrolledWin_Preview->ZoomReset();
     return ret;
 }
 

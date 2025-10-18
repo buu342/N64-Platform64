@@ -76,6 +76,32 @@ class Frame_ImageBrowser : public wxFrame
         wxStaticText* m_StaticText_Dithering;
         wxStaticText* m_StaticText_AlphaChoice;
         wxButton* m_Button_Palette;
+        wxPanel* m_Panel_Edit;
+        wxToolBar* m_ToolBar_Preview;
+        wxNotebook* m_Notebook_Config;
+        Panel_ImgView* m_ScrolledWin_Preview;
+        wxFilePickerCtrl* m_FilePicker_Image;
+        wxRadioButton* m_RadioBtn_ResizeNone;
+        wxRadioButton* m_RadioBtn_ResizeTwo;
+        wxRadioButton* m_RadioBtn_ResizeCustom;
+        wxTextCtrl* m_TextCtrl_ResizeW;
+        wxTextCtrl* m_TextCtrl_ResizeH;
+        wxChoice* m_Choice_Align;
+        wxChoice* m_Choice_ResizeFill;
+        wxChoice* m_Choice_Format;
+        wxChoice* m_Choice_TilingX;
+        wxChoice* m_Choice_TilingY;
+        wxTextCtrl* m_TextCtrl_MaskPosW;
+        wxTextCtrl* m_TextCtrl_MaskPosH;
+        wxCheckBox* m_Checkbox_Mipmaps;
+        wxChoice* m_Choice_Dithering;
+        wxRadioButton* m_RadioBtn_AlphaNone;
+        wxRadioButton* m_RadioBtn_AlphaMask;
+        wxRadioButton* m_RadioBtn_AlphaColor;
+        wxColourPickerCtrl* m_ColourPicker_AlphaColor;
+        wxBitmapButton* m_BitmapButton_Pipette;
+        wxRadioButton* m_RadioBtn_AlphaExternal;
+        wxFilePickerCtrl* m_FilePicker_Alpha;
 
         void OnClose(wxCloseEvent& event);
         void m_Panel_Edit_OnChar(wxKeyEvent& event);
@@ -125,33 +151,6 @@ class Frame_ImageBrowser : public wxFrame
     protected:
 
 	public:
-        wxPanel* m_Panel_Edit;
-        wxToolBar* m_ToolBar_Preview;
-        wxNotebook* m_Notebook_Config;
-        Panel_ImgView* m_ScrolledWin_Preview;
-        wxFilePickerCtrl* m_FilePicker_Image;
-        wxRadioButton* m_RadioBtn_ResizeNone;
-        wxRadioButton* m_RadioBtn_ResizeTwo;
-        wxRadioButton* m_RadioBtn_ResizeCustom;
-        wxTextCtrl* m_TextCtrl_ResizeW;
-        wxTextCtrl* m_TextCtrl_ResizeH;
-        wxChoice* m_Choice_Align;
-        wxChoice* m_Choice_ResizeFill;
-        wxChoice* m_Choice_Format;
-        wxChoice* m_Choice_TilingX;
-        wxChoice* m_Choice_TilingY;
-        wxTextCtrl* m_TextCtrl_MaskPosW;
-        wxTextCtrl* m_TextCtrl_MaskPosH;
-        wxCheckBox* m_Checkbox_Mipmaps;
-        wxChoice* m_Choice_Dithering;
-        wxRadioButton* m_RadioBtn_AlphaNone;
-        wxRadioButton* m_RadioBtn_AlphaMask;
-        wxRadioButton* m_RadioBtn_AlphaColor;
-        wxColourPickerCtrl* m_ColourPicker_AlphaColor;
-        wxBitmapButton* m_BitmapButton_Pipette;
-        wxRadioButton* m_RadioBtn_AlphaExternal;
-        wxFilePickerCtrl* m_FilePicker_Alpha;
-
         void UpdateTitle();
         void UpdateFilePath(wxFileName newpath);
         P64Asset_Image* LoadAsset(wxFileName path);

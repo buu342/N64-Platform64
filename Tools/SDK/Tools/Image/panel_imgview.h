@@ -11,7 +11,7 @@ typedef struct IUnknown IUnknown;
                              Types
 =============================================================*/
 
-struct PreviewSettings {
+typedef struct PreviewSettings {
     bool showalpha;
     bool showfilter;
     bool showtiling;
