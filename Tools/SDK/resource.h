@@ -22,10 +22,12 @@
     #include "Resources/Icons/Icon_Folder.h"
     #include "Resources/Icons/Icon_Folder_Large.h"
     #include "Resources/Icons/Icon_Save.h"
+    #include "Resources/Icons/Icon_Sound.h"
     #include "Resources/Icons/Icon_Palette.h"
     #include "Resources/Icons/Icon_Pipette.h"
     #include "Resources/Icons/Icon_ToggleAlpha.h"
     #include "Resources/Icons/Icon_ToggleFilter.h"
+    #include "Resources/Icons/Icon_ToggleMask.h"
     #include "Resources/Icons/Icon_ToggleStatistics.h"
     #include "Resources/Icons/Icon_ToggleTiling.h"
     #include "Resources/Icons/Icon_USBUpload.h"
@@ -47,13 +49,15 @@
     extern wxIcon   Icon_ViewGrid;
     extern wxIcon   Icon_ViewList;
     extern wxIcon   Icon_Save;
+    extern wxIcon   Icon_Sound;
     extern wxIcon   Icon_Folder;
     extern wxIcon   Icon_Folder_Large;
     extern wxIcon   Icon_Palette;
     extern wxIcon   Icon_Pipette;
     extern wxIcon   Icon_ToggleAlpha;
-    extern wxIcon   Icon_ToggleStatistics;
     extern wxIcon   Icon_ToggleFilter;
+    extern wxIcon   Icon_ToggleMask;
+    extern wxIcon   Icon_ToggleStatistics;
     extern wxIcon   Icon_ToggleTiling;
     extern wxIcon   Icon_USBUpload;
     extern wxIcon   Icon_ZoomFit;

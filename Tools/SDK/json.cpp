@@ -98,3 +98,15 @@ void json_save(JSONFile file, wxString filepath)
     out_proj.Write();
     out_proj.Close();
 }
+
+
+/*==============================
+    json_free
+    Free the memory of a JSON file object
+    @param The JSON file to free
+==============================*/
+
+void json_free(JSONFile file)
+{
+    delete (nlohmann::json*)file;
+}

@@ -14,35 +14,37 @@ wxIMPLEMENT_APP(App);
                             Globals
 =============================================================*/
 
-wxIcon   Icon_Main = wxNullIcon;
-wxIcon   Icon_Texture = wxNullIcon;
-wxIcon   Icon_Material = wxNullIcon;
 wxCursor Cursor_Blank = wxNullCursor;
 wxCursor Cursor_Pipette = wxNullCursor;
 wxIcon   Icon_Back = wxNullIcon;
 wxIcon   Icon_Blank = wxNullIcon;
 wxIcon   Icon_BlankLarge = wxNullIcon;
-wxIcon   Icon_NewAsset = wxNullIcon;
-wxIcon   Icon_NewFolder = wxNullIcon;
-wxIcon   Icon_Search = wxNullIcon;
-wxIcon   Icon_ViewGrid = wxNullIcon;
-wxIcon   Icon_ViewList = wxNullIcon;
-wxIcon   Icon_Save = wxNullIcon;
 wxIcon   Icon_Folder = wxNullIcon;
 wxIcon   Icon_Folder_Large = wxNullIcon;
+wxIcon   Icon_Main = wxNullIcon;
+wxIcon   Icon_Material = wxNullIcon;
+wxIcon   Icon_MissingSmall = wxNullIcon;
+wxIcon   Icon_MissingLarge = wxNullIcon;
+wxIcon   Icon_NewAsset = wxNullIcon;
+wxIcon   Icon_NewFolder = wxNullIcon;
 wxIcon   Icon_Palette = wxNullIcon;
 wxIcon   Icon_Pipette = wxNullIcon;
+wxIcon   Icon_Save = wxNullIcon;
+wxIcon   Icon_Search = wxNullIcon;
+wxIcon   Icon_Sound = wxNullIcon;
+wxIcon   Icon_Texture = wxNullIcon;
 wxIcon   Icon_ToggleAlpha = wxNullIcon;
 wxIcon   Icon_ToggleFilter = wxNullIcon;
+wxIcon   Icon_ToggleMask = wxNullIcon;
 wxIcon   Icon_ToggleStatistics = wxNullIcon;
 wxIcon   Icon_ToggleTiling = wxNullIcon;
 wxIcon   Icon_USBUpload = wxNullIcon;
+wxIcon   Icon_ViewGrid = wxNullIcon;
+wxIcon   Icon_ViewList = wxNullIcon;
 wxIcon   Icon_ZoomFit = wxNullIcon;
 wxIcon   Icon_ZoomIn = wxNullIcon;
 wxIcon   Icon_ZoomOut = wxNullIcon;
 wxBitmap Tex_Missing = wxNullBitmap;
-wxIcon   Icon_MissingSmall = wxNullIcon;
-wxIcon   Icon_MissingLarge = wxNullIcon;
 
 
 /*==============================
@@ -90,25 +92,27 @@ bool App::OnInit()
     Cursor_Pipette = wxCursor(tempimg);
 
     // Initialize icons
-    Icon_Main.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Main));
-    Icon_Texture.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Texture));
-    Icon_Material.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Material));
     Icon_Back.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Back));
-    Icon_NewAsset.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewAsset));
-    Icon_NewFolder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewFolder));
-    Icon_Search.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Search));
-    Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
-    Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
-    Icon_Save.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Save));
+    Icon_Main.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Main));
     Icon_Folder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder));
     Icon_Folder_Large.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Folder_Large));
+    Icon_Material.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Material));
+    Icon_NewAsset.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewAsset));
+    Icon_NewFolder.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_NewFolder));
     Icon_Palette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Palette));
     Icon_Pipette.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Pipette));
+    Icon_Save.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Save));
+    Icon_Search.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Search));
+    Icon_Sound.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Sound));
+    Icon_Texture.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Texture));
     Icon_ToggleAlpha.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleAlpha));
     Icon_ToggleFilter.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleFilter));
+    Icon_ToggleMask.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleMask));
     Icon_ToggleStatistics.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleStatistics));
     Icon_ToggleTiling.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ToggleTiling));
     Icon_USBUpload.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_USBUpload));
+    Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
+    Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
     Icon_ZoomFit.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomFit));
     Icon_ZoomIn.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomIn));
     Icon_ZoomOut.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomOut));

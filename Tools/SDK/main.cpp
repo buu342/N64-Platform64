@@ -9,6 +9,7 @@ tools in the game's SDK.
 #include "main.h"
 #include "resource.h"
 #include "Tools/Image/frame_image.h"
+#include "Tools/Sound/frame_sound.h"
 #include <wx/stdpaths.h>
 
 
@@ -28,6 +29,7 @@ typedef struct {
 =============================================================*/
 
 void StartTool_Image(wxWindow* parent, wxString title);
+void StartTool_Sound(wxWindow* parent, wxString title);
 
 
 /*=============================================================
@@ -50,6 +52,7 @@ static void Initialize_Tools()
 {
     g_tools.push_back({wxString("Image Browser"), Icon_Texture, StartTool_Image});
     g_tools.push_back({wxString("Material Browser"), Icon_Material, NULL});
+    g_tools.push_back({wxString("Sound Browser"), Icon_Sound, StartTool_Sound});
 }
 
 
@@ -63,6 +66,20 @@ static void Initialize_Tools()
 void StartTool_Image(wxWindow* parent, wxString title)
 {
     Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
+    w->Show();
+}
+
+
+/*==============================
+    StartTool_Sound
+    Starts the Sound Browser tool
+    @param The main window to attach this tool to
+    @param The name of this tool
+==============================*/
+
+void StartTool_Sound(wxWindow* parent, wxString title)
+{
+    Frame_SoundBrowser* w = new Frame_SoundBrowser(parent, -1, title);
     w->Show();
 }
 
@@ -119,7 +136,7 @@ Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDef
 Frame_Main::~Frame_Main()
 {
     if (this->m_Project != NULL)
-        delete this->m_Project;
+        json_free(this->m_Project);
 }
 
 

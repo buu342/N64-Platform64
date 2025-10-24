@@ -4682,7 +4682,7 @@
                                           <property name="gripper">0</property>
                                           <property name="hidden">0</property>
                                           <property name="id">wxID_ANY</property>
-                                          <property name="label">Check Me!</property>
+                                          <property name="label">Detail texture</property>
                                           <property name="max_size"></property>
                                           <property name="maximize_button">0</property>
                                           <property name="maximum_size"></property>
@@ -4690,7 +4690,7 @@
                                           <property name="minimize_button">0</property>
                                           <property name="minimum_size"></property>
                                           <property name="moveable">1</property>
-                                          <property name="name">https://imagesds.com/yp0aIP4/1.jpg</property>
+                                          <property name="name">m_CheckBox_Detail</property>
                                           <property name="pane_border">1</property>
                                           <property name="pane_position"></property>
                                           <property name="pane_size"></property>
@@ -9853,7 +9853,7 @@
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">1</property>
     </object>
-    <object class="Frame" expanded="false">
+    <object class="Frame" expanded="true">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -9882,16 +9882,16 @@
       <property name="window_name"></property>
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">1</property>
-      <object class="wxBoxSizer" expanded="false">
+      <object class="wxBoxSizer" expanded="true">
         <property name="minimum_size"></property>
         <property name="name">Sizer_Main</property>
         <property name="orient">wxVERTICAL</property>
         <property name="permission">none</property>
-        <object class="sizeritem" expanded="false">
+        <object class="sizeritem" expanded="true">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxSplitterWindow" expanded="false">
+          <object class="wxSplitterWindow" expanded="true">
             <property name="BottomDockable">1</property>
             <property name="LeftDockable">1</property>
             <property name="RightDockable">1</property>
@@ -10004,8 +10004,8 @@
                 <property name="window_style">wxTAB_TRAVERSAL</property>
               </object>
             </object>
-            <object class="splitteritem" expanded="false">
-              <object class="wxPanel" expanded="false">
+            <object class="splitteritem" expanded="true">
+              <object class="wxPanel" expanded="true">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -10057,16 +10057,16 @@
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
                 <property name="window_style">wxTAB_TRAVERSAL</property>
-                <object class="wxBoxSizer" expanded="false">
+                <object class="wxBoxSizer" expanded="true">
                   <property name="minimum_size"></property>
                   <property name="name">Sizer_Edit</property>
                   <property name="orient">wxVERTICAL</property>
                   <property name="permission">none</property>
-                  <object class="sizeritem" expanded="false">
+                  <object class="sizeritem" expanded="true">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">1</property>
-                    <object class="wxSplitterWindow" expanded="false">
+                    <object class="wxSplitterWindow" expanded="true">
                       <property name="BottomDockable">1</property>
                       <property name="LeftDockable">1</property>
                       <property name="RightDockable">1</property>
@@ -10179,8 +10179,8 @@
                           <property name="window_style">wxTAB_TRAVERSAL</property>
                         </object>
                       </object>
-                      <object class="splitteritem" expanded="false">
-                        <object class="wxPanel" expanded="false">
+                      <object class="splitteritem" expanded="true">
+                        <object class="wxPanel" expanded="true">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10232,7 +10232,7 @@
                           <property name="window_extra_style"></property>
                           <property name="window_name"></property>
                           <property name="window_style">wxBORDER_THEME|wxTAB_TRAVERSAL</property>
-                          <object class="wxFlexGridSizer" expanded="false">
+                          <object class="wxFlexGridSizer" expanded="true">
                             <property name="cols">2</property>
                             <property name="flexible_direction">wxBOTH</property>
                             <property name="growablecols">1</property>
@@ -10290,7 +10290,7 @@
                                 <property name="pane_border">1</property>
                                 <property name="pane_position"></property>
                                 <property name="pane_size"></property>
-                                <property name="permission">protected</property>
+                                <property name="permission">none</property>
                                 <property name="pin_button">1</property>
                                 <property name="pos"></property>
                                 <property name="resize">Resizable</property>
@@ -10357,7 +10357,7 @@
                                 <property name="resize">Resizable</property>
                                 <property name="show">1</property>
                                 <property name="size"></property>
-                                <property name="style">wxFLP_DEFAULT_STYLE</property>
+                                <property name="style">wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL</property>
                                 <property name="subclass">; ; forward_declare</property>
                                 <property name="toolbar_pane">0</property>
                                 <property name="tooltip"></property>
@@ -10418,7 +10418,7 @@
                                 <property name="pane_border">1</property>
                                 <property name="pane_position"></property>
                                 <property name="pane_size"></property>
-                                <property name="permission">protected</property>
+                                <property name="permission">none</property>
                                 <property name="pin_button">1</property>
                                 <property name="pos"></property>
                                 <property name="resize">Resizable</property>
