@@ -28,6 +28,9 @@
     <ClCompile Include="Tools\asset_thumbnail.cpp">
       <Filter>Source\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\Sound\frame_sound.cpp">
+      <Filter>Source\Tools\Sound</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -129,6 +132,21 @@
     <ClInclude Include="Tools\asset_thumbnail.h">
       <Filter>Source\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="Tools\Sound\frame_sound.h">
+      <Filter>Source\Tools\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Folder_Large.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Sound.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ToggleMask.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_ViewList.h">
+      <Filter>Resources\Icons</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">
@@ -157,6 +175,9 @@
     </Filter>
     <Filter Include="Resources\Cursors">
       <UniqueIdentifier>{224eb09d-530d-4aa4-8c9a-f93ef565daeb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Tools\Sound">
+      <UniqueIdentifier>{95210d8b-2788-4e10-ae2c-44b3fb349541}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
