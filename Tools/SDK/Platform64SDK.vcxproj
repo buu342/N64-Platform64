@@ -56,6 +56,7 @@
     <ClInclude Include="Tools\Image\frame_image.h" />
     <ClInclude Include="Tools\Image\panel_imgview.h" />
     <ClInclude Include="Tools\panel_search.h" />
+    <ClInclude Include="Tools\Sound\asset_sound.h" />
     <ClInclude Include="Tools\Sound\frame_sound.h" />
   </ItemGroup>
   <ItemGroup>
@@ -68,6 +69,7 @@
     <ClCompile Include="Tools\Image\frame_image.cpp" />
     <ClCompile Include="Tools\Image\panel_imgview.cpp" />
     <ClCompile Include="Tools\panel_search.cpp" />
+    <ClCompile Include="Tools\Sound\asset_sound.cpp" />
     <ClCompile Include="Tools\Sound\frame_sound.cpp" />
   </ItemGroup>
   <ItemGroup>

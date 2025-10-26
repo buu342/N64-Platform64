@@ -31,6 +31,9 @@
     <ClCompile Include="Tools\Sound\frame_sound.cpp">
       <Filter>Source\Tools\Sound</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\Sound\asset_sound.cpp">
+      <Filter>Source\Tools\Sound</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -146,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="Resources\Icons\Icon_ViewList.h">
       <Filter>Resources\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\Sound\asset_sound.h">
+      <Filter>Source\Tools\Sound</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

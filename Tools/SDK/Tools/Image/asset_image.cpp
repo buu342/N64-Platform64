@@ -1,8 +1,14 @@
+/***************************************************************
+                        asset_image.cpp
+
+This class implements an image asset file which can be 
+serialized and deserialized
+***************************************************************/
+
 #include "asset_image.h"
 #include "../../serializer.h"
 #include <wx/msgdlg.h>
 #include <wx/rawbmp.h>
-#include <algorithm>
 
 
 /*=============================================================
@@ -224,7 +230,7 @@ std::vector<uint8_t> P64Asset_Image::Serialize()
     P64Asset_Image::Deserialize
     Serializes the object
     @param  The serialized data
-    @return The deserialized object
+    @return The deserialized object or NULL
 ==============================*/
 
 P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)

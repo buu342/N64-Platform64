@@ -49,7 +49,19 @@ static wxIcon IconGenerator(bool large, wxFileName path)
 
 static void AssetGenerator(wxFrame* frame, wxFileName path)
 {
-
+    wxFile file;
+    P64Asset_Sound asset;
+    std::vector<uint8_t> data = asset.Serialize();
+    file.Create(path.GetFullPath());
+    file.Open(path.GetFullPath(), wxFile::write);
+    if (!file.IsOpened())
+    {
+        wxMessageDialog dialog(frame, "Unable to open file for writing", "Error serializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
+        dialog.ShowModal();
+        return;
+    }
+    file.Write(data.data(), data.size());
+    file.Close();
 }
 
 
@@ -99,6 +111,12 @@ static void AssetRename(wxFrame* frame, wxFileName oldpath, wxFileName newpath)
 
 Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : wxFrame(parent, id, title, pos, size, style)
 {
+    // Initialize attributes to their defaults
+    this->m_Title = title;
+    this->m_LoadedAsset = NULL;
+    this->m_AssetModified = false;
+    this->m_AssetFilePath = wxFileName("");
+
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
     wxBoxSizer* Sizer_Main;
@@ -108,6 +126,12 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Splitter_Vertical->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_SoundBrowser::m_Splitter_VerticalOnIdle), NULL, this);
 
     this->m_Panel_Search = new Panel_Search(this->m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    this->m_Panel_Search->SetTargetFrame(this);
+    this->m_Panel_Search->SetAssetGenerator(AssetGenerator);
+    this->m_Panel_Search->SetLoadAssetFunc(AssetLoad);
+    this->m_Panel_Search->SetRenameAssetFunc(AssetRename);
+    this->m_Panel_Search->SetIconGenerator(IconGenerator);
+    this->m_Panel_Search->SetMainFolder(((Frame_Main*)this->GetParent())->GetAssetsPath() + CONTENT_FOLDER + wxFileName::GetPathSeparator());
 
     this->m_Panel_Edit = new wxPanel(this->m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxBoxSizer* Sizer_Edit;
@@ -132,6 +156,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     Sizer_Config->Add(StaticText_Path, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
     this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
+    this->m_FilePicker_Source->Enable(false);
     Sizer_Config->Add(this->m_FilePicker_Source, 0, wxALL|wxEXPAND, 5);
 
     wxStaticText* StaticText_SampleRate;
@@ -143,8 +168,47 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     int SampleRateNChoices = sizeof(SampleRateChoices)/sizeof(wxString);
     this->m_Choice_SampleRate = new wxChoice(this->m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, SampleRateNChoices, SampleRateChoices, 0);
     this->m_Choice_SampleRate->SetSelection(0);
+    this->m_Choice_SampleRate->Enable(false);
     Sizer_Config->Add(this->m_Choice_SampleRate, 0, wxALL, 5);
 
+    this->m_CheckBox_Mono = new wxCheckBox(this->m_Panel_Config, wxID_ANY, _("Force Mono"), wxDefaultPosition, wxDefaultSize, 0);
+    this->m_CheckBox_Mono->SetValue(true);
+    this->m_CheckBox_Mono->Enable(false);
+    Sizer_Config->Add(this->m_CheckBox_Mono, 0, wxALL, 5);
+
+    Sizer_Config->Add(0, 0, 1, wxEXPAND, 5);
+    this->m_CheckBox_Loop = new wxCheckBox(this->m_Panel_Config, wxID_ANY, _("Loop"), wxDefaultPosition, wxDefaultSize, 0);
+    this->m_CheckBox_Loop->Enable(false);
+
+    Sizer_Config->Add(this->m_CheckBox_Loop, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+    wxFlexGridSizer* Sizer_LoopPoints;
+    Sizer_LoopPoints = new wxFlexGridSizer(0, 4, 0, 0);
+    Sizer_LoopPoints->AddGrowableCol(1);
+    Sizer_LoopPoints->AddGrowableCol(3);
+    Sizer_LoopPoints->SetFlexibleDirection(wxBOTH);
+    Sizer_LoopPoints->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+    wxStaticText* StaticText_LoopStart;
+    StaticText_LoopStart = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("Start:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_LoopStart->Wrap(-1);
+    Sizer_LoopPoints->Add(StaticText_LoopStart, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+    this->m_SpinCtrl_LoopStart = new wxSpinCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
+    this->m_SpinCtrl_LoopStart->Enable(false);
+
+    Sizer_LoopPoints->Add(this->m_SpinCtrl_LoopStart, 0, wxALL | wxEXPAND, 5);
+
+    wxStaticText* StaticText_LoopEnd;
+    StaticText_LoopEnd = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("End:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_LoopEnd->Wrap(-1);
+    Sizer_LoopPoints->Add(StaticText_LoopEnd, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+    this->m_SpinCtrl_LoopEnd = new wxSpinCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
+    this->m_SpinCtrl_LoopEnd->Enable(false);
+    Sizer_LoopPoints->Add(this->m_SpinCtrl_LoopEnd, 0, wxALL | wxEXPAND, 5);
+
+    Sizer_Config->Add(Sizer_LoopPoints, 1, wxEXPAND, 5);
     this->m_Panel_Config->SetSizer(Sizer_Config);
     this->m_Panel_Config->Layout();
     Sizer_Config->Fit(this->m_Panel_Config);
