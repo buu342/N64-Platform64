@@ -126,6 +126,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Splitter_Vertical->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_SoundBrowser::m_Splitter_VerticalOnIdle), NULL, this);
 
     this->m_Panel_Search = new Panel_Search(this->m_Splitter_Vertical, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    this->m_Panel_Search->SetAssetType(CONTENT_NAME, CONTENT_EXTENSION);
     this->m_Panel_Search->SetTargetFrame(this);
     this->m_Panel_Search->SetAssetGenerator(AssetGenerator);
     this->m_Panel_Search->SetLoadAssetFunc(AssetLoad);

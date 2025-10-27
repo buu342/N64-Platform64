@@ -434,6 +434,11 @@ void Panel_Search::CreateNewAsset()
         name = testname;
     }
 
+    // Create the base directory(ies) if it doesn't exist
+    if (!wxDirExists(this->m_CurrFolder.GetPath()))
+        wxFileName::Mkdir(this->m_CurrFolder.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+
+    // Create the file and select it for renaming
     this->m_NewAssetFunc(this->m_TargetFrame, this->m_CurrFolder.GetPathWithSep() + name + this->m_AssetExt_NoAsterisk);
     this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
@@ -460,6 +465,12 @@ void Panel_Search::CreateNewFolder()
         } while (wxDir::Exists(this->m_CurrFolder.GetPathWithSep() + testname));
         name = testname;
     }
+
+    // Create the base directory(ies) if it doesn't exist
+    if (!wxDirExists(this->m_CurrFolder.GetPath()))
+        wxFileName::Mkdir(this->m_CurrFolder.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+
+    // Create the folder and select it for renaming
     wxDir::Make(this->m_CurrFolder.GetPathWithSep() + name);
     this->m_TextCtrl_Search->ChangeValue(wxEmptyString);
     this->m_Display_Current->LoadDirectory(this->m_CurrFolder);
