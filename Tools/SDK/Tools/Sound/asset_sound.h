@@ -24,8 +24,8 @@ class P64Asset_Sound
         uint32_t    m_LoopStart;
         uint32_t    m_LoopEnd;
 
-        std::vector<uint8_t> Serialize();
-        P64Asset_Sound*      Deserialize(std::vector<uint8_t> bytes);
+        std::vector<uint8_t>   Serialize();
+        static P64Asset_Sound* Deserialize(std::vector<uint8_t> bytes);
 
         P64Asset_Sound();
         ~P64Asset_Sound();

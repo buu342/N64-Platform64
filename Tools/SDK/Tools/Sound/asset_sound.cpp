@@ -31,7 +31,7 @@ P64Asset_Sound::P64Asset_Sound()
 {
     this->m_SourcePath = "";
     this->m_SampleRate = 44100;
-    this->m_ForceMono = 0;
+    this->m_ForceMono = 1;
     this->m_Loop = 0;
     this->m_LoopStart = 0;
     this->m_LoopEnd = 0;
@@ -117,5 +117,5 @@ P64Asset_Sound* P64Asset_Sound::Deserialize(std::vector<uint8_t> bytes)
     pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Loop);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopStart);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopEnd);
-    return NULL;
+    return asset;
 }

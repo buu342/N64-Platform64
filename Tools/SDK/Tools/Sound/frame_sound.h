@@ -40,7 +40,11 @@ class Frame_SoundBrowser : public wxFrame
         Panel_Search* m_Panel_Search;
         wxPanel* m_Panel_Edit;
         wxSplitterWindow* m_Splitter_Horizontal;
-        wxPanel* m_Panel_Waveform;
+        wxPanel* m_Panel_Preview;
+		wxToolBar* m_ToolBar_Preview;
+		wxToolBarToolBase* m_Tool_Save;
+		wxToolBarToolBase* m_Tool_FlashcartUpload;
+        wxScrolledWindow* m_ScrolledWin_Preview;
         wxPanel* m_Panel_Config;
         wxFilePickerCtrl* m_FilePicker_Source;
         wxChoice* m_Choice_SampleRate;
@@ -49,12 +53,32 @@ class Frame_SoundBrowser : public wxFrame
         wxSpinCtrl* m_SpinCtrl_LoopStart;
         wxSpinCtrl* m_SpinCtrl_LoopEnd;
 
+        void OnClose(wxCloseEvent& event);
+        void m_Panel_Edit_OnChar(wxKeyEvent& event);
+        void m_Tool_Save_OnToolClicked(wxCommandEvent& event);
+        void m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event);
         void m_Splitter_VerticalOnIdle(wxIdleEvent&);
         void m_Splitter_HorizontalOnIdle(wxIdleEvent&);
+        void m_FilePicker_Source_OnFileChanged(wxFileDirPickerEvent& event);
+        void m_Choice_SampleRate_OnChoice(wxCommandEvent& event);
+        void m_CheckBox_Mono_OnCheckBox(wxCommandEvent& event);
+        void m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event);
+        void m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event);
+        void m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event);
+
+        void MarkAssetModified();
+        void SaveChanges();
 
     protected:
 
 	public:
+        void UpdateTitle();
+        void UpdateFilePath(wxFileName path);
+        P64Asset_Sound* LoadAsset(wxFileName path);
+
+        bool IsAssetModified();
+        wxFileName GetLoadedAssetPath();
+
 		Frame_SoundBrowser(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(640, 480), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL);
 		~Frame_SoundBrowser();
 };
