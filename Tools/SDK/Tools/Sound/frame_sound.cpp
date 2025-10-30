@@ -445,6 +445,11 @@ void Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged(wxFileDirPickerEvent&
 
 void Frame_SoundBrowser::m_Choice_SampleRate_OnChoice(wxCommandEvent& event)
 {
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
     switch (event.GetSelection())
     {
         case 0: this->m_LoadedAsset->m_SampleRate = 44100; break;
@@ -467,6 +472,11 @@ void Frame_SoundBrowser::m_Choice_SampleRate_OnChoice(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox(wxCommandEvent& event)
 {
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
     this->m_LoadedAsset->m_ForceMono = event.IsChecked();
     this->MarkAssetModified();
     event.Skip();
@@ -481,6 +491,11 @@ void Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event)
 {
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
     this->m_LoadedAsset->m_Loop = event.IsChecked();
     this->m_SpinCtrl_LoopEnd->Enable(event.IsChecked());
     this->m_SpinCtrl_LoopStart->Enable(event.IsChecked());
@@ -502,6 +517,11 @@ void Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event)
 {
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
     if ((uint32_t)event.GetValue() > this->m_LoadedAsset->m_LoopEnd)
     {
         this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset->m_LoopEnd);
@@ -522,6 +542,11 @@ void Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event)
 
 void Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event)
 {
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
     if ((uint32_t)event.GetValue() < this->m_LoadedAsset->m_LoopStart)
     {
         this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset->m_LoopStart);
@@ -541,6 +566,8 @@ void Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event)
 
 void Frame_SoundBrowser::MarkAssetModified()
 {
+    if (this->m_LoadedAsset == NULL)
+        return;
     this->m_AssetModified = true;
     this->UpdateTitle();
 }
@@ -568,6 +595,10 @@ void Frame_SoundBrowser::SaveChanges()
     wxFile file;
     bool refresh = false;
     std::vector<uint8_t> data;
+
+    // Check we have an asset loaded to begin with
+    if (this->m_LoadedAsset == NULL)
+        return;
 
     // Create the path to the file if it doesn't exist anymore
     if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
@@ -602,7 +633,7 @@ void Frame_SoundBrowser::SaveChanges()
 
 
 /*==============================
-    Frame_SoundBrowser::SaveChanges
+    Frame_SoundBrowser::UpdateTitle
     Updates the frame title to reflect the file's name and its
     modification status
 ==============================*/
