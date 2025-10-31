@@ -291,7 +291,7 @@ void Frame_SoundBrowser::OnClose(wxCloseEvent& event)
 {
     if (event.CanVeto() && this->m_AssetModified)
     {
-        if (wxMessageBox("Unsaved changes will be lost. Continue?", "Warning", wxICON_QUESTION | wxYES_NO) != wxYES)
+        if (wxMessageBox("Unsaved changes will be lost. Continue?", this->m_Title, wxICON_QUESTION | wxYES_NO) != wxYES)
         {
             event.Veto();
             return;

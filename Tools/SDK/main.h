@@ -28,7 +28,9 @@ class Frame_Main : public wxFrame
         wxDataViewListCtrl* m_DataViewListCtrl_Main;
         wxFileName m_ProjectPath;
         wxFileName m_AssetsPath;
+        std::vector<wxWindowID> m_ChildrenIDs;
 
+        void OnClose(wxCloseEvent& event);
         void m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewEvent& event);
         void Dialog_CreateOpenProject(wxString message, wxString title, wxString defaultpath);
 

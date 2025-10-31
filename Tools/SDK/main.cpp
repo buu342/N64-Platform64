@@ -20,7 +20,7 @@ tools in the game's SDK.
 typedef struct {
     wxString name;
     wxIcon icon;
-    void (*function)(wxWindow*, wxString);
+    wxWindowID (*function)(wxWindow*, wxString);
 } Tools;
 
 
@@ -28,8 +28,8 @@ typedef struct {
                       Function Prototypes
 =============================================================*/
 
-void StartTool_Image(wxWindow* parent, wxString title);
-void StartTool_Sound(wxWindow* parent, wxString title);
+wxWindowID StartTool_Image(wxWindow* parent, wxString title);
+wxWindowID StartTool_Sound(wxWindow* parent, wxString title);
 
 
 /*=============================================================
@@ -59,28 +59,32 @@ static void Initialize_Tools()
 /*==============================
     StartTool_Image
     Starts the Image Browser tool
-    @param The main window to attach this tool to
-    @param The name of this tool
+    @param  The main window to attach this tool to
+    @param  The name of this tool
+    @return The created window's ID
 ==============================*/
 
-void StartTool_Image(wxWindow* parent, wxString title)
+wxWindowID StartTool_Image(wxWindow* parent, wxString title)
 {
     Frame_ImageBrowser* w = new Frame_ImageBrowser(parent, -1, title);
     w->Show();
+    return w->GetId();
 }
 
 
 /*==============================
     StartTool_Sound
     Starts the Sound Browser tool
-    @param The main window to attach this tool to
-    @param The name of this tool
+    @param  The main window to attach this tool to
+    @param  The name of this tool
+    @return The created window's ID
 ==============================*/
 
-void StartTool_Sound(wxWindow* parent, wxString title)
+wxWindowID StartTool_Sound(wxWindow* parent, wxString title)
 {
     Frame_SoundBrowser* w = new Frame_SoundBrowser(parent, -1, title);
     w->Show();
+    return w->GetId();
 }
 
 
@@ -124,6 +128,7 @@ Frame_Main::Frame_Main() : wxFrame(nullptr, wxID_ANY, _("Platform64 SDK"), wxDef
     this->Centre(wxBOTH);
 
     // Connect events
+    this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(Frame_Main::OnClose));
     this->m_DataViewListCtrl_Main->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated), NULL, this);
 }
 
@@ -141,6 +146,27 @@ Frame_Main::~Frame_Main()
 
 
 /*==============================
+    Frame_Main::OnClose
+    Handles the user closing the window
+    @param The Close event
+==============================*/
+
+void Frame_Main::OnClose(wxCloseEvent& event)
+{
+    for (wxWindowID winid : this->m_ChildrenIDs)
+    {
+        wxWindow* child = this->GetWindowChild(winid);
+        if (child != NULL && !child->Close())
+        {
+            event.Veto();
+            return;
+        }
+    }
+    event.Skip();
+}
+
+
+/*==============================
     Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated
     Called when a selected item is double clicked.
     Used to launch the selected tool.
@@ -151,7 +177,11 @@ void Frame_Main::m_DataViewListCtrl_Main_OnDataViewCtrlItemActivated(wxDataViewE
 {
     int row = this->m_DataViewListCtrl_Main->GetSelectedRow();
     if (row >= 0 && row < (int)g_tools.size() && g_tools[row].function != NULL)
-        g_tools[row].function(this, g_tools[row].name);
+    {
+        wxWindowID winid = g_tools[row].function(this, g_tools[row].name);
+        if (std::find(this->m_ChildrenIDs.begin(), this->m_ChildrenIDs.end(), winid) == this->m_ChildrenIDs.end())
+            this->m_ChildrenIDs.push_back(winid);
+    }
     event.Skip();
 }
 
