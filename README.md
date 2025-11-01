@@ -42,4 +42,4 @@ Please consult the [UNFLoader](https://github.com/buu342/N64-UNFLoader) reposito
 
 ### Credits
 
-Special thanks to Silkicons.
+Special thanks to Silkicons and Farm Fresh Icons.

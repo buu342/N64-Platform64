@@ -35,7 +35,11 @@ This class implements the sound editor panel
 
 static wxIcon IconGenerator(bool large, wxFileName path)
 {
-    return wxNullIcon;
+    (void)path;
+    if (large)
+        return Icon_Waveform_Large;
+    else
+        return Icon_Waveform;
 }
 
 

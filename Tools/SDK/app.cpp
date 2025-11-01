@@ -41,6 +41,8 @@ wxIcon   Icon_ToggleTiling = wxNullIcon;
 wxIcon   Icon_USBUpload = wxNullIcon;
 wxIcon   Icon_ViewGrid = wxNullIcon;
 wxIcon   Icon_ViewList = wxNullIcon;
+wxIcon   Icon_Waveform = wxNullIcon;
+wxIcon   Icon_Waveform_Large = wxNullIcon;
 wxIcon   Icon_ZoomFit = wxNullIcon;
 wxIcon   Icon_ZoomIn = wxNullIcon;
 wxIcon   Icon_ZoomOut = wxNullIcon;
@@ -113,6 +115,8 @@ bool App::OnInit()
     Icon_USBUpload.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_USBUpload));
     Icon_ViewGrid.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewGrid));
     Icon_ViewList.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ViewList));
+    Icon_Waveform.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Waveform));
+    Icon_Waveform_Large.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_Waveform_Large));
     Icon_ZoomFit.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomFit));
     Icon_ZoomIn.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomIn));
     Icon_ZoomOut.CopyFromBitmap(wxBITMAP_PNG_FROM_DATA(Icon_ZoomOut));

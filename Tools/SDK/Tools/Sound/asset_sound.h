@@ -3,6 +3,7 @@
 typedef struct IUnknown IUnknown;
 
 #include <wx/filename.h>
+#include <stdint.h>
 #include <vector>
 
 

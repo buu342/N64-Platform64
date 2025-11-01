@@ -153,13 +153,16 @@ Frame_Main::~Frame_Main()
 
 void Frame_Main::OnClose(wxCloseEvent& event)
 {
-    for (wxWindowID winid : this->m_ChildrenIDs)
+    wxWindowList children = this->GetWindowChildren();
+    for (wxWindow* child : children)
     {
-        wxWindow* child = this->GetWindowChild(winid);
-        if (child != NULL && !child->Close())
+        if (std::find(this->m_ChildrenIDs.begin(), this->m_ChildrenIDs.end(), child->GetId()) != this->m_ChildrenIDs.end())
         {
-            event.Veto();
-            return;
+            if (!child->Close())
+            {
+                event.Veto();
+                return;
+            }
         }
     }
     event.Skip();

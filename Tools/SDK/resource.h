@@ -17,8 +17,6 @@
     #include "Resources/Icons/Icon_NewAsset.h"
     #include "Resources/Icons/Icon_NewFolder.h"
     #include "Resources/Icons/Icon_Search.h"
-    #include "Resources/Icons/Icon_ViewGrid.h"
-    #include "Resources/Icons/Icon_ViewList.h"
     #include "Resources/Icons/Icon_Folder.h"
     #include "Resources/Icons/Icon_Folder_Large.h"
     #include "Resources/Icons/Icon_Save.h"
@@ -31,6 +29,10 @@
     #include "Resources/Icons/Icon_ToggleStatistics.h"
     #include "Resources/Icons/Icon_ToggleTiling.h"
     #include "Resources/Icons/Icon_USBUpload.h"
+    #include "Resources/Icons/Icon_ViewGrid.h"
+    #include "Resources/Icons/Icon_ViewList.h"
+    #include "Resources/Icons/Icon_Waveform.h"
+    #include "Resources/Icons/Icon_Waveform_Large.h"
     #include "Resources/Icons/Icon_ZoomFit.h"
     #include "Resources/Icons/Icon_ZoomIn.h"
     #include "Resources/Icons/Icon_ZoomOut.h"
@@ -46,8 +48,6 @@
     extern wxIcon   Icon_NewAsset;
     extern wxIcon   Icon_NewFolder;
     extern wxIcon   Icon_Search;
-    extern wxIcon   Icon_ViewGrid;
-    extern wxIcon   Icon_ViewList;
     extern wxIcon   Icon_Save;
     extern wxIcon   Icon_Sound;
     extern wxIcon   Icon_Folder;
@@ -60,6 +60,10 @@
     extern wxIcon   Icon_ToggleStatistics;
     extern wxIcon   Icon_ToggleTiling;
     extern wxIcon   Icon_USBUpload;
+    extern wxIcon   Icon_ViewGrid;
+    extern wxIcon   Icon_ViewList;
+    extern wxIcon   Icon_Waveform;
+    extern wxIcon   Icon_Waveform_Large;
     extern wxIcon   Icon_ZoomFit;
     extern wxIcon   Icon_ZoomIn;
     extern wxIcon   Icon_ZoomOut;
