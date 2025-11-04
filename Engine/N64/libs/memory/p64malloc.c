@@ -156,6 +156,27 @@ void* p64_malloc(P64Heap heap, u32 size)
 
 
 /*==============================
+    p64_calloc
+    Same as malloc, but zero initializes the allocated area.
+    @param  The heap we want to allocate into
+    @param  The number of elements we want to allocate
+    @param  The size of each element to allocate
+    @return The allocated area, or NULL
+==============================*/
+
+void* p64_calloc(P64Heap heap, u32 num, u32 size)
+{
+    u32 i;
+    const u32 finalsize = num*size;
+    void* ret = p64_mallaligned(heap, finalsize, sizeof(PSZ));
+    if (ret != NULL)
+        for (i=0; i<finalsize; i++)
+            ((u8*)ret)[i] = 0;
+    return ret;
+}
+
+
+/*==============================
     p64_free
     Frees an allocated chunk of memory
     @param  The heap we want to free the allocated data of
