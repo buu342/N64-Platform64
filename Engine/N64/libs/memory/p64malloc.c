@@ -177,6 +177,46 @@ void* p64_calloc(P64Heap heap, u32 num, u32 size)
 
 
 /*==============================
+    p64_realloc
+    Resizes an allocated area, keeping the data.
+    @param  The heap we want to resize the allocated data of
+    @param  The allocated area we want to resize. Use NULL to
+            treat this as a normal malloc.
+    @param  The new size
+==============================*/
+
+void* p64_realloc(P64Heap heap, void* data, u32 size)
+{
+    void* ret;
+    MallocHeader* node = (MallocHeader*)(((PSZ)data) - sizeof(MallocHeader));
+    
+    // If data is NULL, then treat as a normal malloc
+    if (data == NULL)
+        return p64_mallaligned(heap, size, sizeof(PSZ));
+    
+    // Check if we have a fragment ahead of us that can fit the requested size
+    if (((PSZ)node->next) - ((PSZ)node) - sizeof(MallocHeader) >= size)
+    {
+        node->size = (size + (sizeof(PSZ)-1)) & ~(sizeof(PSZ)-1); // Align the size to the pointer size
+        return data;
+    }
+    
+    // Find a new spot in memory to fit our data
+    ret = p64_mallaligned(heap, size, sizeof(PSZ));
+    if (ret != NULL)
+    {
+        u32 i;
+        
+        // Copy the data over and free our old pointer
+        for (i=0; i<node->size; i++)
+            ((u8*)ret)[i] = ((u8*)data)[i];
+        p64_free(heap, data);
+    }
+    return ret;
+}
+
+
+/*==============================
     p64_free
     Frees an allocated chunk of memory
     @param  The heap we want to free the allocated data of
