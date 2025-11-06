@@ -19,11 +19,11 @@ freeing is O(1).
 *********************************/
 
 // Configuration for debugging
-#define VALIDATIONS 1
-#define PRINTERRORS 1
+#define VALIDATIONS  1
+#define PRINTERRORS  1
 
-#define PSZ u32 // The size of the pointer in this system
-#define MAGIC 0x12345678 // Magic value to verify the heap's state during debugging
+#define PSZ    u32 // The size of the pointer in this system
+#define MAGIC  0x12345678 // Magic value to verify the heap's state during debugging
 
 
 /*********************************
@@ -33,8 +33,8 @@ freeing is O(1).
 // Struct is 16 bytes big (on a 32-bit system)
 struct MallocHeader_s;
 typedef struct MallocHeader_s {
-    u32   magicfree;
-    u32   size;
+    u32 magicfree;
+    u32 size;
     struct MallocHeader_s* next;
     struct MallocHeader_s* previous;
 } MallocHeader;
@@ -84,14 +84,19 @@ static PSZ doalloc(MallocHeader* prev, u32 size, PSZ datastart)
 
 
 /*==============================
-    p64_malloc
-    Allocate dynamic memory
+    p64_mallaligned
+    Perform a malloc where the data is aligned to a specific
+    byte boundary.
+    For this to work, the heap's base address ALSO needs to
+    be aligned to that byte boundary.
     @param  The heap we want to allocate into
     @param  The size of the data to allocate
+    @param  The byte alignment we want (must be a multiple of
+            the size of a pointer).
     @return The allocated area, or NULL
 ==============================*/
 
-void* p64_malloc(P64Heap heap, u32 size)
+void* p64_mallaligned(P64Heap heap, u32 size, u32 alignment)
 {
     MallocHeader* head = (MallocHeader*)heap.baseaddr;
     MallocHeader* node;
@@ -111,6 +116,20 @@ void* p64_malloc(P64Heap heap, u32 size)
             #endif
             return NULL;
         }
+        if (alignment == 0)
+        {
+            #if PRINTERRORS
+                debug_printf("MALLOC ERROR: Alignment must be non-zero\n");
+            #endif
+            return NULL;
+        }
+        if ((alignment % sizeof(PSZ)) != 0)
+        {
+            #if PRINTERRORS
+                debug_printf("MALLOC ERROR: Alignment must be multiple of %d, got %d\n", (u32)sizeof(PSZ), alignment);
+            #endif
+            return NULL;
+        }
     #endif
        
     // Find the next available space to set up the header struct into
@@ -119,6 +138,9 @@ void* p64_malloc(P64Heap heap, u32 size)
     {
         PSZ nodedatastart = ((PSZ)node) + sizeof(MallocHeader);
         PSZ targetdatastart = nodedatastart + node->size + sizeof(MallocHeader);
+        u32 addrmod = targetdatastart % alignment;
+        if (addrmod != 0)
+            targetdatastart += alignment - addrmod;
             
         // If the next node isn't pointing to anything then we have reached the end of the linked list and we can just allocate at the tail
         if (node->next == NULL)
@@ -152,6 +174,20 @@ void* p64_malloc(P64Heap heap, u32 size)
             }
         #endif
     }
+}
+
+
+/*==============================
+    p64_malloc
+    Allocate dynamic memory
+    @param  The heap we want to allocate into
+    @param  The size of the data to allocate
+    @return The allocated area, or NULL
+==============================*/
+
+void* p64_malloc(P64Heap heap, u32 size)
+{
+    return p64_mallaligned(heap, size, sizeof(PSZ));
 }
 
 
