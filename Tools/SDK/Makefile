@@ -2,12 +2,8 @@ CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
 			  Tools/panel_search.cpp \
 			  Tools/asset_thumbnail.cpp \
 			  $(wildcard Tools/**/*.cpp)
-LIBFILES    = 
-#ifeq ($(DEBUG),1)
-#	LIBFILES += Include/flashcart_d.a
-#else
-#	LIBFILES += Include/flashcart.a
-#endif
+LIBFILES    = Include/libsndfile.a Include/flashcart.a
+
 BUILDDIR = build
 CODEOBJECTS = $(CODEFILES:%.cpp=${BUILDDIR}/%.o)
 DEPFILES:=$(patsubst %.cpp,%.d,$(SOURCES))

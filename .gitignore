@@ -10,3 +10,4 @@ Tools/*/build/*
 Tools/*/Debug/*
 Tools/*/Release/*
 Tools/*/.vs
+!Tools/*/Include/*.a
