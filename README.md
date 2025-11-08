@@ -39,7 +39,3 @@ Please consult the [NRDC](https://github.com/buu342/N64-NRDC) repository for com
 
 Please consult the [UNFLoader](https://github.com/buu342/N64-UNFLoader) repository for compilation instructions.
 </details>
-
-### Credits
-
-Special thanks to Silkicons and Farm Fresh Icons.
