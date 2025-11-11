@@ -153,6 +153,11 @@
     <ClInclude Include="Tools\Sound\asset_sound.h">
       <Filter>Source\Tools\Sound</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Icons\Icon_Waveform_Large.h" />
+    <ClInclude Include="Resources\Icons\Icon_Waveform.h" />
+    <ClInclude Include="Include\flashcart.h" />
+    <ClInclude Include="Include\sndfile.h" />
+    <ClInclude Include="Include\sndfile.hh" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">

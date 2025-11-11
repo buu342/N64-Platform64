@@ -7,7 +7,6 @@ TODO.
 Basically, install wxWidgets 3.1 or higher, and build.
 
 
-
 ### Credits
 
 This SDK uses the following external stuff:

@@ -19,7 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Include\flashcart.h" />
     <ClInclude Include="Include\json.hpp" />
+    <ClInclude Include="Include\sndfile.h" />
+    <ClInclude Include="Include\sndfile.hh" />
     <ClInclude Include="json.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Resources\Cursors\Cursor_Pipette.h" />
@@ -47,6 +50,8 @@
     <ClInclude Include="Resources\Icons\Icon_ToggleTiling.h" />
     <ClInclude Include="Resources\Icons\Icon_USBUpload.h" />
     <ClInclude Include="Resources\Icons\Icon_ViewList.h" />
+    <ClInclude Include="Resources\Icons\Icon_Waveform.h" />
+    <ClInclude Include="Resources\Icons\Icon_Waveform_Large.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomFit.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomIn.h" />
     <ClInclude Include="Resources\Icons\Icon_ZoomOut.h" />
