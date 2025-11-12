@@ -5,6 +5,8 @@ typedef struct IUnknown IUnknown;
 #include <wx/filename.h>
 #include <stdint.h>
 #include <vector>
+#include <wx/sound.h>
+#include "audiofmts/audio.h"
 
 
 /*=============================================================
@@ -24,6 +26,10 @@ class P64Asset_Sound
         uint8_t     m_Loop;
         uint32_t    m_LoopStart;
         uint32_t    m_LoopEnd;
+
+        AudioFile m_SndFile;
+        //VADPCM  m_N64SndFile;
+        wxSound   m_SoundPreview;
 
         std::vector<uint8_t>   Serialize();
         static P64Asset_Sound* Deserialize(std::vector<uint8_t> bytes);

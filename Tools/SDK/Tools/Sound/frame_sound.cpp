@@ -193,7 +193,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     StaticText_Path = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("Sound path:"), wxDefaultPosition, wxDefaultSize, 0);
     StaticText_Path->Wrap(-1);
     Sizer_Config->Add(StaticText_Path, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
-    this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
+    this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav;*.aiff;*.flac;*.ogg;*.mp3"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
     this->m_FilePicker_Source->Disable();
     Sizer_Config->Add(this->m_FilePicker_Source, 0, wxALL|wxEXPAND, 5);
 

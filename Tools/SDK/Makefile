@@ -1,8 +1,9 @@
 CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
 			  Tools/panel_search.cpp \
 			  Tools/asset_thumbnail.cpp \
-			  $(wildcard Tools/**/*.cpp)
-LIBFILES    = Include/libsndfile.a Include/flashcart.a
+			  $(wildcard Tools/**/*.cpp) \
+			  $(wildcard Tools/**/**/*.c)
+LIBFILES    = Include/flashcart.a
 
 BUILDDIR = build
 CODEOBJECTS = $(CODEFILES:%.cpp=${BUILDDIR}/%.o)
