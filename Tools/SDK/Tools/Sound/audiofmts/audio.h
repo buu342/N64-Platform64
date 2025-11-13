@@ -11,9 +11,10 @@
     typedef struct {
         AudioFormat fmt;
         uint32_t samplerate;
-        uint32_t length;
+        double   length;
         uint8_t  channels;
         uint8_t  depth;
+        double   totalsamples;
         uint8_t* samples;
     } AudioFile;
 
