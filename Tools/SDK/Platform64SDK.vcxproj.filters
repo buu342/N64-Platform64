@@ -34,6 +34,7 @@
     <ClCompile Include="Tools\Sound\asset_sound.cpp">
       <Filter>Source\Tools\Sound</Filter>
     </ClCompile>
+    <ClCompile Include="Tools\Sound\audiofmts\audio.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -156,8 +157,10 @@
     <ClInclude Include="Resources\Icons\Icon_Waveform_Large.h" />
     <ClInclude Include="Resources\Icons\Icon_Waveform.h" />
     <ClInclude Include="Include\flashcart.h" />
-    <ClInclude Include="Include\sndfile.h" />
-    <ClInclude Include="Include\sndfile.hh" />
+    <ClInclude Include="Tools\Sound\audiofmts\audio.h" />
+    <ClInclude Include="Tools\Sound\audiofmts\dr_flac.h" />
+    <ClInclude Include="Tools\Sound\audiofmts\dr_mp3.h" />
+    <ClInclude Include="Tools\Sound\audiofmts\dr_wav.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">

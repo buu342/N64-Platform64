@@ -14,7 +14,7 @@
         double   length;
         uint8_t  channels;
         uint8_t  depth;
-        double   totalsamples;
+        uint64_t totalsamples;
         uint8_t* samples;
     } AudioFile;
 

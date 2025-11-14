@@ -23,9 +23,10 @@ static AudioFile* decode_flac(char* path)
     af->fmt = AUDIOFMT_FLAC;
     af->channels = channels;
     af->samplerate = samplerate;
-    af->length = ((double)totalsamples)/((double)(channels*samplerate));
     af->depth = 4;
+    af->totalsamples = totalsamples;
     af->samples = (uint8_t*)samples;
+    af->length = ((double)totalsamples)/((double)(channels*samplerate));
     return af;
 }
 
@@ -42,9 +43,10 @@ static AudioFile* decode_wav(char* path)
     af->fmt = AUDIOFMT_WAV;
     af->channels = channels;
     af->samplerate = samplerate;
+    af->depth = 4;
+    af->totalsamples = totalsamples;
     af->samples = (uint8_t*)samples;
     af->length = ((double)totalsamples)/((double)(channels*samplerate));
-    af->depth = 4;
     return af;
 }
 
