@@ -2,12 +2,12 @@ CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
 			  Tools/panel_search.cpp \
 			  Tools/asset_thumbnail.cpp \
 			  $(wildcard Tools/**/*.cpp) \
-			  $(wildcard Tools/**/**/*.c)
+			  $(wildcard Tools/**/**/*.cpp) 
 LIBFILES    = Include/flashcart.a
 
 BUILDDIR = build
 CODEOBJECTS = $(CODEFILES:%.cpp=${BUILDDIR}/%.o)
-DEPFILES:=$(patsubst %.cpp,%.d,$(SOURCES))
+DEPFILES:= $(patsubst %.cpp,%.d,$(SOURCES))
 PROGNAME = Platform64SDK
 OS_NAME := $(shell uname -s)
 

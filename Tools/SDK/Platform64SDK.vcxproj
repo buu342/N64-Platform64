@@ -77,7 +77,7 @@
     <ClCompile Include="Tools\Image\panel_imgview.cpp" />
     <ClCompile Include="Tools\panel_search.cpp" />
     <ClCompile Include="Tools\Sound\asset_sound.cpp" />
-    <ClCompile Include="Tools\Sound\audiofmts\audio.c" />
+    <ClCompile Include="Tools\Sound\audiofmts\audio.cp" />
     <ClCompile Include="Tools\Sound\frame_sound.cpp" />
   </ItemGroup>
   <ItemGroup>

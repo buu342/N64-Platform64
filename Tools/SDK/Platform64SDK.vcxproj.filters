@@ -34,7 +34,9 @@
     <ClCompile Include="Tools\Sound\asset_sound.cpp">
       <Filter>Source\Tools\Sound</Filter>
     </ClCompile>
-    <ClCompile Include="Tools\Sound\audiofmts\audio.c" />
+    <ClCompile Include="Tools\Sound\audiofmts\audio.cpp">
+      <Filter>Source\Tools\Sound\audiofmts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">

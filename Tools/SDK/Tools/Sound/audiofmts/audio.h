@@ -2,6 +2,7 @@
 #define _LIB_AUDIO_FMTS_
 
     typedef enum {
+        AUDIOFMT_NONE,
         AUDIOFMT_WAV,
         AUDIOFMT_FLAC,
         AUDIOFMT_MP3,
@@ -11,15 +12,15 @@
     typedef struct {
         AudioFormat fmt;
         uint32_t samplerate;
-        double   length;
         uint8_t  channels;
         uint8_t  depth;
+        double   length;
         uint64_t totalsamples;
         uint8_t* samples;
     } AudioFile;
 
-    AudioFile* audio_decodefile(char* path);
+    AudioFile audio_decodefile(const char* path);
     uint32_t audio_getsampleindex(AudioFile* file, double time);
-    void audio_destroyfile(AudioFile* file);
+    void audio_freedata(AudioFile* file);
 
 #endif

@@ -45,7 +45,7 @@ P64Asset_Sound::P64Asset_Sound()
 
 P64Asset_Sound::~P64Asset_Sound()
 {
-
+    audio_freedata(&this->m_SndFile); 
 }
 
 
