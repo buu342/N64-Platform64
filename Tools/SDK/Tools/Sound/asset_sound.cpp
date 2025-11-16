@@ -45,7 +45,7 @@ P64Asset_Sound::P64Asset_Sound()
 
 P64Asset_Sound::~P64Asset_Sound()
 {
-    audio_freedata(&this->m_SndFile); 
+
 }
 
 
@@ -118,4 +118,15 @@ P64Asset_Sound* P64Asset_Sound::Deserialize(std::vector<uint8_t> bytes)
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopStart);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopEnd);
     return asset;
+}
+
+
+/*==============================
+    P64Asset_Image::RegenerateFinal
+    Generate the VADPCM audio
+==============================*/
+
+void P64Asset_Sound::RegenerateFinal()
+{
+    // TODO
 }

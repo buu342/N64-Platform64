@@ -403,20 +403,16 @@ void Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged(wxFileDirPickerEvent&
     if (wxFileExists(event.GetPath())) // Check absolute path first
     {
         externalfile = true;
-        if (this->m_LoadedAsset->m_SndFile.fmt != AUDIOFMT_NONE)
-            audio_freedata(&this->m_LoadedAsset->m_SndFile);
-        this->m_LoadedAsset->m_SndFile = audio_decodefile((const char*)(event.GetPath().c_str()));
+        this->m_LoadedAsset->m_SndFile.DecodeFile(event.GetPath());
     }
     else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
     {
         wxFileName path = this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath();
-        if (this->m_LoadedAsset->m_SndFile.fmt != AUDIOFMT_NONE)
-            audio_freedata(&this->m_LoadedAsset->m_SndFile);
-        this->m_LoadedAsset->m_SndFile = audio_decodefile((const char*)(path.GetFullPath().c_str()));
+        this->m_LoadedAsset->m_SndFile.DecodeFile(path.GetFullPath());
     }
 
     // Check a valid sound loaded
-    if (this->m_LoadedAsset->m_SndFile.fmt != AUDIOFMT_NONE)
+    if (this->m_LoadedAsset->m_SndFile.IsOk())
     {
         // If not relative to our main folder, make a copy of the sound and make it relative
         if (externalfile)
@@ -729,15 +725,9 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt()))
     {
         wxFileName finalpath = path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt();
-        ret->m_SndFile = audio_decodefile((const char*)(finalpath.GetFullPath().c_str()));
-        printf("Format %d\n", ret->m_SndFile.fmt);
-        printf("Sample Rate %d\n", ret->m_SndFile.samplerate);
-        printf("Channels %d\n", ret->m_SndFile.channels);
-        printf("Depth %d\n", ret->m_SndFile.depth);
-        printf("Length %lf\n", ret->m_SndFile.length);
-        printf("Total Samples %ld\n", ret->m_SndFile.totalsamples);
+        ret->m_SndFile.DecodeFile(finalpath.GetFullPath());
+        ret->RegenerateFinal();
     }
-    // TODO: RegenerateFinal
     switch (ret->m_SampleRate)
     {
         case 44100: this->m_Choice_SampleRate->Select(0); break;

@@ -1,26 +1,52 @@
-#ifndef _LIB_AUDIO_FMTS_
-#define _LIB_AUDIO_FMTS_
+#pragma once
 
-    typedef enum {
-        AUDIOFMT_NONE,
-        AUDIOFMT_WAV,
-        AUDIOFMT_FLAC,
-        AUDIOFMT_MP3,
-        //AUDIOFMT_OGG,
-    } AudioFormat;
+typedef struct IUnknown IUnknown;
 
-    typedef struct {
-        AudioFormat fmt;
-        uint32_t samplerate;
-        uint8_t  channels;
-        uint8_t  depth;
-        double   length;
-        uint64_t totalsamples;
-        uint8_t* samples;
-    } AudioFile;
+#include <wx/filename.h>
+#include <stdint.h>
 
-    AudioFile audio_decodefile(const char* path);
-    uint32_t audio_getsampleindex(AudioFile* file, double time);
-    void audio_freedata(AudioFile* file);
 
-#endif
+/*=============================================================
+                             Types
+=============================================================*/
+
+typedef enum {
+    AUDIOFMT_NONE,
+    AUDIOFMT_WAV,
+    AUDIOFMT_FLAC,
+    AUDIOFMT_MP3,
+    //AUDIOFMT_OGG,
+} AudioFormat;
+
+
+/*=============================================================
+                            Classes
+=============================================================*/
+
+class AudioFile
+{
+    private:
+        AudioFormat m_Format;
+        uint32_t m_SampleRate;
+        uint8_t  m_Channels;
+        uint8_t  m_ByteDepth;
+        double   m_Length;
+        uint64_t m_TotalSamples;
+        uint8_t* m_SampleData;
+
+        bool Decode_WAV(wxFileName path);
+        bool Decode_FLAC(wxFileName path);
+        void Free();
+
+    protected:
+
+    public:
+        AudioFile();
+        AudioFile(wxFileName path);
+        ~AudioFile();
+
+        bool DecodeFile(wxFileName path);
+        bool IsOk();
+
+        AudioFile operator=(const AudioFile & rhs);
+};

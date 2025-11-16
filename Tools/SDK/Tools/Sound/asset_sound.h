@@ -31,9 +31,11 @@ class P64Asset_Sound
         //VADPCM  m_N64SndFile;
         wxSound   m_SoundPreview;
 
+        P64Asset_Sound();
+        ~P64Asset_Sound();
+
         std::vector<uint8_t>   Serialize();
         static P64Asset_Sound* Deserialize(std::vector<uint8_t> bytes);
 
-        P64Asset_Sound();
-        ~P64Asset_Sound();
+        void RegenerateFinal();
 };
