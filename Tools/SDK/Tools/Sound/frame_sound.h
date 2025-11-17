@@ -22,6 +22,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/frame.h>
 #include "../panel_search.h"
 #include "asset_sound.h"
+#include "panel_sndview.h"
 
 
 /*=============================================================
@@ -44,7 +45,7 @@ class Frame_SoundBrowser : public wxFrame
 		wxToolBar* m_ToolBar_Preview;
 		wxToolBarToolBase* m_Tool_Save;
 		wxToolBarToolBase* m_Tool_FlashcartUpload;
-        wxScrolledWindow* m_ScrolledWin_Preview;
+        Panel_SndView* m_ScrolledWin_Preview;
         wxPanel* m_Panel_Config;
         wxFilePickerCtrl* m_FilePicker_Source;
         wxChoice* m_Choice_SampleRate;

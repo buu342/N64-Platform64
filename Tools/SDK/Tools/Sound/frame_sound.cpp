@@ -170,18 +170,23 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_ToolBar_Preview->Disable();
     this->m_Tool_Save = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_Save, wxNullBitmap, wxITEM_NORMAL, _("Save changes"), wxEmptyString, NULL);
     this->m_ToolBar_Preview->AddSeparator();
-    this->m_Tool_FlashcartUpload = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload texture to flashcart"), wxEmptyString, NULL);
+    this->m_Tool_FlashcartUpload = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload sound to flashcart"), wxEmptyString, NULL);
     this->m_ToolBar_Preview->Realize();
     Sizer_Preview->Add(this->m_ToolBar_Preview, 0, wxEXPAND, 5);
 
     // Create the preview window
-    this->m_ScrolledWin_Preview = new wxScrolledWindow(m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE | wxHSCROLL | wxVSCROLL);
-    this->m_ScrolledWin_Preview->SetScrollRate(5, 5);
+    this->m_ScrolledWin_Preview = new Panel_SndView(this->m_Panel_Preview, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE | wxHSCROLL | wxVSCROLL);
+    this->m_ScrolledWin_Preview->SetScrollRate(5, 0);
     Sizer_Preview->Add(this->m_ScrolledWin_Preview, 1, wxEXPAND, 5);
+
+    // Finalize the preview sizer
+    this->m_Panel_Preview->SetSizer(Sizer_Preview);
+    this->m_Panel_Preview->Layout();
+    Sizer_Preview->Fit(this->m_Panel_Preview);
 
     // Create the configuration panel
     this->m_Panel_Config = new wxPanel(this->m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxTAB_TRAVERSAL);
-    this->m_Panel_Config->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    /*
     wxFlexGridSizer* Sizer_Config;
     Sizer_Config = new wxFlexGridSizer(0, 2, 0, 0);
     Sizer_Config->AddGrowableCol(1);
@@ -248,6 +253,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Config->SetSizer(Sizer_Config);
     this->m_Panel_Config->Layout();
     Sizer_Config->Fit(this->m_Panel_Config);
+    */
     this->m_Splitter_Horizontal->SplitHorizontally(this->m_Panel_Preview, this->m_Panel_Config, 0);
     Sizer_Edit->Add(this->m_Splitter_Horizontal, 1, wxEXPAND, 5);
     this->m_Panel_Edit->SetSizer(Sizer_Edit);
@@ -262,14 +268,14 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     // Connect Events
     this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(Frame_SoundBrowser::OnClose));
     this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_SoundBrowser::m_Panel_Edit_OnChar), NULL, this);
-    this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_Save_OnToolClicked));
-    this->Connect(this->m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked));
-    this->m_FilePicker_Source->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged), NULL, this);
-    this->m_Choice_SampleRate->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_SoundBrowser::m_Choice_SampleRate_OnChoice), NULL, this);
-    this->m_CheckBox_Mono->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox), NULL, this);
-    this->m_CheckBox_Loop->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox), NULL, this);
-    this->m_SpinCtrl_LoopStart->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl), NULL, this);
-    this->m_SpinCtrl_LoopEnd->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl), NULL, this);
+    //this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_Save_OnToolClicked));
+    //this->Connect(this->m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked));
+    //this->m_FilePicker_Source->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged), NULL, this);
+    //this->m_Choice_SampleRate->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_SoundBrowser::m_Choice_SampleRate_OnChoice), NULL, this);
+    //this->m_CheckBox_Mono->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox), NULL, this);
+    //this->m_CheckBox_Loop->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox), NULL, this);
+    //this->m_SpinCtrl_LoopStart->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl), NULL, this);
+    //this->m_SpinCtrl_LoopEnd->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl), NULL, this);
 }
 
 
@@ -677,6 +683,7 @@ void Frame_SoundBrowser::UpdateFilePath(wxFileName path)
 
 P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
 {
+    /*
     wxFile file;
     std::vector<uint8_t> data;
     P64Asset_Sound* ret;
@@ -746,6 +753,8 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     // Finish
     this->UpdateTitle();
     return ret;
+    */
+        return NULL;
 }
 
 
