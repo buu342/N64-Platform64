@@ -10420,7 +10420,7 @@
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">1</property>
     </object>
-    <object class="Frame" expanded="false">
+    <object class="Frame" expanded="true">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -10450,16 +10450,16 @@
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">1</property>
       <event name="OnClose">OnClose</event>
-      <object class="wxBoxSizer" expanded="false">
+      <object class="wxBoxSizer" expanded="true">
         <property name="minimum_size"></property>
         <property name="name">Sizer_Main</property>
         <property name="orient">wxVERTICAL</property>
         <property name="permission">none</property>
-        <object class="sizeritem" expanded="false">
+        <object class="sizeritem" expanded="true">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxSplitterWindow" expanded="false">
+          <object class="wxSplitterWindow" expanded="true">
             <property name="BottomDockable">1</property>
             <property name="LeftDockable">1</property>
             <property name="RightDockable">1</property>
@@ -10572,8 +10572,8 @@
                 <property name="window_style">wxTAB_TRAVERSAL</property>
               </object>
             </object>
-            <object class="splitteritem" expanded="false">
-              <object class="wxPanel" expanded="false">
+            <object class="splitteritem" expanded="true">
+              <object class="wxPanel" expanded="true">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -10626,16 +10626,16 @@
                 <property name="window_name"></property>
                 <property name="window_style">wxTAB_TRAVERSAL</property>
                 <event name="OnChar">m_Panel_Edit_OnChar</event>
-                <object class="wxBoxSizer" expanded="false">
+                <object class="wxBoxSizer" expanded="true">
                   <property name="minimum_size"></property>
                   <property name="name">Sizer_Edit</property>
                   <property name="orient">wxVERTICAL</property>
                   <property name="permission">none</property>
-                  <object class="sizeritem" expanded="false">
+                  <object class="sizeritem" expanded="true">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">1</property>
-                    <object class="wxSplitterWindow" expanded="false">
+                    <object class="wxSplitterWindow" expanded="true">
                       <property name="BottomDockable">1</property>
                       <property name="LeftDockable">1</property>
                       <property name="RightDockable">1</property>
@@ -10686,15 +10686,15 @@
                       <property name="show">1</property>
                       <property name="size"></property>
                       <property name="splitmode">wxSPLIT_HORIZONTAL</property>
-                      <property name="style">wxSP_3D</property>
+                      <property name="style">wxSP_3D|wxSP_LIVE_UPDATE</property>
                       <property name="subclass">; ; forward_declare</property>
                       <property name="toolbar_pane">0</property>
                       <property name="tooltip"></property>
                       <property name="window_extra_style"></property>
                       <property name="window_name"></property>
                       <property name="window_style"></property>
-                      <object class="splitteritem" expanded="false">
-                        <object class="wxPanel" expanded="false">
+                      <object class="splitteritem" expanded="true">
+                        <object class="wxPanel" expanded="true">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10746,7 +10746,7 @@
                           <property name="window_extra_style"></property>
                           <property name="window_name"></property>
                           <property name="window_style">wxTAB_TRAVERSAL</property>
-                          <object class="wxBoxSizer" expanded="false">
+                          <object class="wxBoxSizer" expanded="true">
                             <property name="minimum_size"></property>
                             <property name="name">Sizer_Preview</property>
                             <property name="orient">wxVERTICAL</property>
@@ -10905,8 +10905,8 @@
                           </object>
                         </object>
                       </object>
-                      <object class="splitteritem" expanded="false">
-                        <object class="wxPanel" expanded="false">
+                      <object class="splitteritem" expanded="true">
+                        <object class="wxPanel" expanded="true">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10958,16 +10958,16 @@
                           <property name="window_extra_style"></property>
                           <property name="window_name"></property>
                           <property name="window_style">wxBORDER_THEME|wxTAB_TRAVERSAL</property>
-                          <object class="wxBoxSizer" expanded="false">
+                          <object class="wxBoxSizer" expanded="true">
                             <property name="minimum_size"></property>
                             <property name="name">Sizer_Config</property>
                             <property name="orient">wxVERTICAL</property>
                             <property name="permission">none</property>
-                            <object class="sizeritem" expanded="false">
+                            <object class="sizeritem" expanded="true">
                               <property name="border">5</property>
                               <property name="flag">wxEXPAND | wxALL</property>
                               <property name="proportion">1</property>
-                              <object class="wxNotebook" expanded="false">
+                              <object class="wxNotebook" expanded="true">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
@@ -11008,7 +11008,7 @@
                                 <property name="pane_border">1</property>
                                 <property name="pane_position"></property>
                                 <property name="pane_size"></property>
-                                <property name="permission">protected</property>
+                                <property name="permission">private</property>
                                 <property name="pin_button">1</property>
                                 <property name="pos"></property>
                                 <property name="resize">Resizable</property>
@@ -11065,7 +11065,7 @@
                                     <property name="pane_border">1</property>
                                     <property name="pane_position"></property>
                                     <property name="pane_size"></property>
-                                    <property name="permission">protected</property>
+                                    <property name="permission">private</property>
                                     <property name="pin_button">1</property>
                                     <property name="pos"></property>
                                     <property name="resize">Resizable</property>
@@ -11761,7 +11761,7 @@
                                     </object>
                                   </object>
                                 </object>
-                                <object class="notebookpage" expanded="false">
+                                <object class="notebookpage" expanded="true">
                                   <property name="bitmap"></property>
                                   <property name="label">Advanced</property>
                                   <property name="select">0</property>
@@ -11805,7 +11805,7 @@
                                     <property name="pane_border">1</property>
                                     <property name="pane_position"></property>
                                     <property name="pane_size"></property>
-                                    <property name="permission">protected</property>
+                                    <property name="permission">private</property>
                                     <property name="pin_button">1</property>
                                     <property name="pos"></property>
                                     <property name="resize">Resizable</property>
@@ -11917,7 +11917,7 @@
                                           <property name="dock_fixed">0</property>
                                           <property name="docking">Left</property>
                                           <property name="drag_accept_files">0</property>
-                                          <property name="enabled">1</property>
+                                          <property name="enabled">0</property>
                                           <property name="fg"></property>
                                           <property name="floatable">1</property>
                                           <property name="font"></property>
@@ -11938,7 +11938,7 @@
                                           <property name="pane_border">1</property>
                                           <property name="pane_position"></property>
                                           <property name="pane_size"></property>
-                                          <property name="permission">protected</property>
+                                          <property name="permission">private</property>
                                           <property name="pin_button">1</property>
                                           <property name="pos"></property>
                                           <property name="resize">Resizable</property>
@@ -12042,7 +12042,7 @@
                                           <property name="dock_fixed">0</property>
                                           <property name="docking">Left</property>
                                           <property name="drag_accept_files">0</property>
-                                          <property name="enabled">1</property>
+                                          <property name="enabled">0</property>
                                           <property name="fg"></property>
                                           <property name="floatable">1</property>
                                           <property name="font"></property>
@@ -12063,7 +12063,7 @@
                                           <property name="pane_border">1</property>
                                           <property name="pane_position"></property>
                                           <property name="pane_size"></property>
-                                          <property name="permission">protected</property>
+                                          <property name="permission">private</property>
                                           <property name="pin_button">1</property>
                                           <property name="pos"></property>
                                           <property name="resize">Resizable</property>
@@ -12167,7 +12167,7 @@
                                           <property name="dock_fixed">0</property>
                                           <property name="docking">Left</property>
                                           <property name="drag_accept_files">0</property>
-                                          <property name="enabled">1</property>
+                                          <property name="enabled">0</property>
                                           <property name="fg"></property>
                                           <property name="floatable">1</property>
                                           <property name="font"></property>
@@ -12188,7 +12188,7 @@
                                           <property name="pane_border">1</property>
                                           <property name="pane_position"></property>
                                           <property name="pane_size"></property>
-                                          <property name="permission">protected</property>
+                                          <property name="permission">private</property>
                                           <property name="pin_button">1</property>
                                           <property name="pos"></property>
                                           <property name="resize">Resizable</property>

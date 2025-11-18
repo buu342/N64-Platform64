@@ -156,7 +156,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     Sizer_Edit = new wxBoxSizer(wxVERTICAL);
 
     // Split the settings editor panel horizontally
-    this->m_Splitter_Horizontal = new wxSplitterWindow(this->m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D);
+    this->m_Splitter_Horizontal = new wxSplitterWindow(this->m_Panel_Edit, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE);
     this->m_Splitter_Horizontal->Connect(wxEVT_IDLE, wxIdleEventHandler(Frame_SoundBrowser::m_Splitter_HorizontalOnIdle), NULL, this);
     this->m_Splitter_Horizontal->SetMinimumPaneSize(1);
 
@@ -186,45 +186,50 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
 
     // Create the configuration panel
     this->m_Panel_Config = new wxPanel(this->m_Splitter_Horizontal, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxTAB_TRAVERSAL);
-    /*
-    wxFlexGridSizer* Sizer_Config;
-    Sizer_Config = new wxFlexGridSizer(0, 2, 0, 0);
-    Sizer_Config->AddGrowableCol(1);
-    Sizer_Config->SetFlexibleDirection(wxBOTH);
-    Sizer_Config->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+    
+    // Create the basic panel and notebook 
+    wxBoxSizer* Sizer_Config;
+    Sizer_Config = new wxBoxSizer(wxVERTICAL);
+    this->m_Notebook_Config = new wxNotebook(this->m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+    this->m_Panel_Basic = new wxPanel(this->m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    wxFlexGridSizer* Sizer_Config_Basic;
+    Sizer_Config_Basic = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_Config_Basic->AddGrowableCol(1);
+    Sizer_Config_Basic->SetFlexibleDirection(wxBOTH);
+    Sizer_Config_Basic->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     // Sound path file picker
     wxStaticText* StaticText_Path;
-    StaticText_Path = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("Sound path:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_Path = new wxStaticText(this->m_Panel_Basic, wxID_ANY, _("Sound path:"), wxDefaultPosition, wxDefaultSize, 0);
     StaticText_Path->Wrap(-1);
-    Sizer_Config->Add(StaticText_Path, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
-    this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav;*.aiff;*.flac;*.ogg;*.mp3"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
+    Sizer_Config_Basic->Add(StaticText_Path, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
+    this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Basic, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav;*.aiff;*.flac;*.ogg;*.mp3"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
     this->m_FilePicker_Source->Disable();
-    Sizer_Config->Add(this->m_FilePicker_Source, 0, wxALL|wxEXPAND, 5);
+    Sizer_Config_Basic->Add(this->m_FilePicker_Source, 0, wxALL|wxEXPAND, 5);
 
     // Sample rate choice box
     wxStaticText* StaticText_SampleRate;
-    StaticText_SampleRate = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("Sample Rate:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_SampleRate = new wxStaticText(this->m_Panel_Basic, wxID_ANY, _("Sample Rate:"), wxDefaultPosition, wxDefaultSize, 0);
     StaticText_SampleRate->Wrap(-1);
-    Sizer_Config->Add(StaticText_SampleRate, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
+    Sizer_Config_Basic->Add(StaticText_SampleRate, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
     wxString SampleRateChoices[] = { _("44100 Hz"), _("32000 Hz"), _("22050 Hz"), _("16000 Hz"), _("11025 Hz") };
     int SampleRateNChoices = sizeof(SampleRateChoices)/sizeof(wxString);
-    this->m_Choice_SampleRate = new wxChoice(this->m_Panel_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, SampleRateNChoices, SampleRateChoices, 0);
+    this->m_Choice_SampleRate = new wxChoice(this->m_Panel_Basic, wxID_ANY, wxDefaultPosition, wxDefaultSize, SampleRateNChoices, SampleRateChoices, 0);
     this->m_Choice_SampleRate->SetSelection(0);
     this->m_Choice_SampleRate->Disable();
-    Sizer_Config->Add(this->m_Choice_SampleRate, 0, wxALL, 5);
+    Sizer_Config_Basic->Add(this->m_Choice_SampleRate, 0, wxALL, 5);
 
     // Mono checkbox
-    this->m_CheckBox_Mono = new wxCheckBox(this->m_Panel_Config, wxID_ANY, _("Force Mono"), wxDefaultPosition, wxDefaultSize, 0);
+    this->m_CheckBox_Mono = new wxCheckBox(this->m_Panel_Basic, wxID_ANY, _("Force Mono"), wxDefaultPosition, wxDefaultSize, 0);
     this->m_CheckBox_Mono->SetValue(true);
     this->m_CheckBox_Mono->Disable();
-    Sizer_Config->Add(this->m_CheckBox_Mono, 0, wxALL, 5);
+    Sizer_Config_Basic->Add(this->m_CheckBox_Mono, 0, wxALL, 5);
 
     // Loop checkbox
-    Sizer_Config->Add(0, 0, 1, wxEXPAND, 5);
-    this->m_CheckBox_Loop = new wxCheckBox(this->m_Panel_Config, wxID_ANY, _("Loop"), wxDefaultPosition, wxDefaultSize, 0);
+    Sizer_Config_Basic->Add(0, 0, 1, wxEXPAND, 5);
+    this->m_CheckBox_Loop = new wxCheckBox(this->m_Panel_Basic, wxID_ANY, _("Loop"), wxDefaultPosition, wxDefaultSize, 0);
     this->m_CheckBox_Loop->Disable();
-    Sizer_Config->Add(this->m_CheckBox_Loop, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    Sizer_Config_Basic->Add(this->m_CheckBox_Loop, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
     // Loop start+end spin controls
     wxFlexGridSizer* Sizer_LoopPoints;
@@ -234,32 +239,82 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     Sizer_LoopPoints->SetFlexibleDirection(wxBOTH);
     Sizer_LoopPoints->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
     wxStaticText* StaticText_LoopStart;
-    StaticText_LoopStart = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("Start:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_LoopStart = new wxStaticText(this->m_Panel_Basic, wxID_ANY, _("Start:"), wxDefaultPosition, wxDefaultSize, 0);
     StaticText_LoopStart->Wrap(-1);
     Sizer_LoopPoints->Add(StaticText_LoopStart, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    this->m_SpinCtrl_LoopStart = new wxSpinCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
+    this->m_SpinCtrl_LoopStart = new wxSpinCtrl(this->m_Panel_Basic, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
     this->m_SpinCtrl_LoopStart->Disable();
     Sizer_LoopPoints->Add(this->m_SpinCtrl_LoopStart, 0, wxALL | wxEXPAND, 5);
     wxStaticText* StaticText_LoopEnd;
-    StaticText_LoopEnd = new wxStaticText(this->m_Panel_Config, wxID_ANY, _("End:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_LoopEnd = new wxStaticText(this->m_Panel_Basic, wxID_ANY, _("End:"), wxDefaultPosition, wxDefaultSize, 0);
     StaticText_LoopEnd->Wrap(-1);
     Sizer_LoopPoints->Add(StaticText_LoopEnd, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    this->m_SpinCtrl_LoopEnd = new wxSpinCtrl(this->m_Panel_Config, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
+    this->m_SpinCtrl_LoopEnd = new wxSpinCtrl(this->m_Panel_Basic, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0);
     this->m_SpinCtrl_LoopEnd->Disable();
     Sizer_LoopPoints->Add(this->m_SpinCtrl_LoopEnd, 0, wxALL | wxEXPAND, 5);
-    Sizer_Config->Add(Sizer_LoopPoints, 1, wxEXPAND, 5);
+    Sizer_Config_Basic->Add(Sizer_LoopPoints, 1, wxEXPAND, 5);
+
+    // Add the basic panel to the notebook
+    this->m_Panel_Basic->SetSizer(Sizer_Config_Basic);
+    this->m_Panel_Basic->Layout();
+    Sizer_Config_Basic->Fit(this->m_Panel_Basic);
+    this->m_Notebook_Config->AddPage(this->m_Panel_Basic, _("Basic"), true);
+
+    // Create the advanced notebook panel
+    this->m_Panel_Advanced = new wxPanel(this->m_Notebook_Config, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    wxFlexGridSizer* Sizer_Config_Advanced;
+    Sizer_Config_Advanced = new wxFlexGridSizer(0, 2, 0, 0);
+    Sizer_Config_Advanced->AddGrowableCol(1);
+    Sizer_Config_Advanced->SetFlexibleDirection(wxBOTH);
+    Sizer_Config_Advanced->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+    // Add the codebook entry count spin
+    wxStaticText* StaticText_CodebookEntryCount;
+    StaticText_CodebookEntryCount = new wxStaticText(this->m_Panel_Advanced, wxID_ANY, _("Codebook entry count:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_CodebookEntryCount->Wrap(-1);
+    Sizer_Config_Advanced->Add(StaticText_CodebookEntryCount, 0, wxALL, 5);
+    this->m_SpinCtrl_CodebookEntryCount = new wxSpinCtrl(this->m_Panel_Advanced, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 3, 2);
+    this->m_SpinCtrl_CodebookEntryCount->SetToolTip(_("The base 2 log of the number of entries in the codebook. Currently up to eight entries are supported, so the value can range from 0 to 3."));
+    this->m_SpinCtrl_CodebookEntryCount->Disable();
+    Sizer_Config_Advanced->Add(this->m_SpinCtrl_CodebookEntryCount, 0, wxALL|wxEXPAND, 5);
+
+    // Add the codebook sample size spin
+    wxStaticText* StaticText_CodebookSampleSize;
+    StaticText_CodebookSampleSize = new wxStaticText(this->m_Panel_Advanced, wxID_ANY, _("Codebook sample size:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_CodebookSampleSize->Wrap(-1);
+    Sizer_Config_Advanced->Add(StaticText_CodebookSampleSize, 0, wxALL, 5);
+    m_SpinCtrl_CodebookSampleSize = new wxSpinCtrl(this->m_Panel_Advanced, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 128, 16);
+    m_SpinCtrl_CodebookSampleSize->SetToolTip(_("Is the size of the frames (in samples) used to estimate linear predictors."));
+    this->m_SpinCtrl_CodebookSampleSize->Disable();
+    Sizer_Config_Advanced->Add(this->m_SpinCtrl_CodebookSampleSize, 0, wxALL|wxEXPAND, 5);
+
+    // Add the cluster iterations spin
+    wxStaticText* StaticText_ClusterIterations;
+    StaticText_ClusterIterations = new wxStaticText(this->m_Panel_Advanced, wxID_ANY, _("Cluster iterations:"), wxDefaultPosition, wxDefaultSize, 0);
+    StaticText_ClusterIterations->Wrap(-1);
+    Sizer_Config_Advanced->Add(StaticText_ClusterIterations, 0, wxALL, 5);
+    this->m_SpinCtrl_ClusterIterations = new wxSpinCtrl(this->m_Panel_Advanced, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 2);
+    this->m_SpinCtrl_ClusterIterations->SetToolTip(_("Is the number of iterations used in the refinement step of the clustering algorithm. Increasing this parameter will increase design time with some possible improvement in quality."));
+    this->m_SpinCtrl_ClusterIterations->Disable();
+
+    // Add the sizer and panel to the notebook
+    Sizer_Config_Advanced->Add(this->m_SpinCtrl_ClusterIterations, 0, wxALL|wxEXPAND, 5);
+    this->m_Panel_Advanced->SetSizer(Sizer_Config_Advanced);
+    this->m_Panel_Advanced->Layout();
+    Sizer_Config_Advanced->Fit(this->m_Panel_Advanced);
+    this->m_Notebook_Config->AddPage(this->m_Panel_Advanced, _("Advanced"), false);
 
     // Finalize the layout
+    Sizer_Config->Add(this->m_Notebook_Config, 1, wxEXPAND | wxALL, 5);
     this->m_Panel_Config->SetSizer(Sizer_Config);
     this->m_Panel_Config->Layout();
     Sizer_Config->Fit(this->m_Panel_Config);
-    */
     this->m_Splitter_Horizontal->SplitHorizontally(this->m_Panel_Preview, this->m_Panel_Config, 0);
     Sizer_Edit->Add(this->m_Splitter_Horizontal, 1, wxEXPAND, 5);
-    this->m_Panel_Edit->SetSizer(Sizer_Edit);
+    this->m_Panel_Edit->SetSizer( Sizer_Edit );
     this->m_Panel_Edit->Layout();
-    Sizer_Edit->Fit(m_Panel_Edit);
-    this->m_Splitter_Vertical->SplitVertically(this->m_Panel_Search, this->m_Panel_Edit, 219);
+    Sizer_Edit->Fit(this->m_Panel_Edit);
+    this->m_Splitter_Vertical->SplitVertically(this->m_Panel_Search, this->m_Panel_Edit, 0);
     Sizer_Main->Add(this->m_Splitter_Vertical, 1, wxEXPAND, 5);
     this->SetSizer(Sizer_Main);
     this->Layout();
@@ -268,14 +323,14 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     // Connect Events
     this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(Frame_SoundBrowser::OnClose));
     this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_SoundBrowser::m_Panel_Edit_OnChar), NULL, this);
-    //this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_Save_OnToolClicked));
-    //this->Connect(this->m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked));
-    //this->m_FilePicker_Source->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged), NULL, this);
-    //this->m_Choice_SampleRate->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_SoundBrowser::m_Choice_SampleRate_OnChoice), NULL, this);
-    //this->m_CheckBox_Mono->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox), NULL, this);
-    //this->m_CheckBox_Loop->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox), NULL, this);
-    //this->m_SpinCtrl_LoopStart->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl), NULL, this);
-    //this->m_SpinCtrl_LoopEnd->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl), NULL, this);
+    this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_Save_OnToolClicked));
+    this->Connect(this->m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked));
+    this->m_FilePicker_Source->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged), NULL, this);
+    this->m_Choice_SampleRate->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_SoundBrowser::m_Choice_SampleRate_OnChoice), NULL, this);
+    this->m_CheckBox_Mono->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox), NULL, this);
+    this->m_CheckBox_Loop->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox), NULL, this);
+    this->m_SpinCtrl_LoopStart->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl), NULL, this);
+    this->m_SpinCtrl_LoopEnd->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl), NULL, this);
 }
 
 
@@ -322,7 +377,7 @@ void Frame_SoundBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
     wxChar uc = event.GetKeyCode();
     if (wxGetKeyState(WXK_CONTROL))
     {
-        switch (event.GetKeyCode())
+        switch (uc)
         {
             case 'S':
                 this->SaveChanges();
@@ -683,7 +738,6 @@ void Frame_SoundBrowser::UpdateFilePath(wxFileName path)
 
 P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
 {
-    /*
     wxFile file;
     std::vector<uint8_t> data;
     P64Asset_Sound* ret;
@@ -726,6 +780,9 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     this->m_CheckBox_Loop->Enable();
     this->m_SpinCtrl_LoopEnd->Enable(ret->m_Loop);
     this->m_SpinCtrl_LoopStart->Enable(ret->m_Loop);
+    this->m_SpinCtrl_CodebookEntryCount->Enable();
+    this->m_SpinCtrl_CodebookSampleSize->Enable();
+    this->m_SpinCtrl_ClusterIterations->Enable();
 
     // Set the content's values
     this->m_FilePicker_Source->SetPath(ret->m_SourcePath.GetFullPath());
@@ -749,12 +806,13 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     this->m_SpinCtrl_LoopStart->SetValue(ret->m_LoopStart);
     this->m_SpinCtrl_LoopEnd->SetValue(ret->m_LoopEnd);
     // TODO: Set spin ctrl's maximum value based on the sample count in the loaded sound
+    this->m_SpinCtrl_CodebookEntryCount->SetValue(ret->m_Codebook_EntryCount);
+    this->m_SpinCtrl_CodebookSampleSize->SetValue(ret->m_Codebook_SampleSize);
+    this->m_SpinCtrl_ClusterIterations->SetValue(ret->m_ClusterIterations);
 
     // Finish
     this->UpdateTitle();
     return ret;
-    */
-        return NULL;
 }
 
 

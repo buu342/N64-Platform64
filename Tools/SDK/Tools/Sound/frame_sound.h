@@ -19,6 +19,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/spinctrl.h>
 #include <wx/sizer.h>
 #include <wx/splitter.h>
+#include <wx/notebook.h>
 #include <wx/frame.h>
 #include "../panel_search.h"
 #include "asset_sound.h"
@@ -47,12 +48,18 @@ class Frame_SoundBrowser : public wxFrame
 		wxToolBarToolBase* m_Tool_FlashcartUpload;
         Panel_SndView* m_ScrolledWin_Preview;
         wxPanel* m_Panel_Config;
+        wxNotebook* m_Notebook_Config;
+        wxPanel* m_Panel_Basic;
+        wxPanel* m_Panel_Advanced;
         wxFilePickerCtrl* m_FilePicker_Source;
         wxChoice* m_Choice_SampleRate;
         wxCheckBox* m_CheckBox_Mono;
         wxCheckBox* m_CheckBox_Loop;
         wxSpinCtrl* m_SpinCtrl_LoopStart;
         wxSpinCtrl* m_SpinCtrl_LoopEnd;
+        wxSpinCtrl* m_SpinCtrl_CodebookEntryCount;
+        wxSpinCtrl* m_SpinCtrl_CodebookSampleSize;
+        wxSpinCtrl* m_SpinCtrl_ClusterIterations;
 
         void OnClose(wxCloseEvent& event);
         void m_Panel_Edit_OnChar(wxKeyEvent& event);
