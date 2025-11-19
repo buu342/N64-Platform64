@@ -139,10 +139,8 @@ void Panel_SndView::ReloadAsset()
 
 void Panel_SndView::RefreshDrawing()
 {
-    int w, h;
     if (this->m_LoadedAsset == NULL)
         return;
-    this->SetVirtualSize(w, h);
     this->Layout();
     this->Refresh();
 }
@@ -155,10 +153,7 @@ void Panel_SndView::RefreshDrawing()
 ==============================*/
 
 void Panel_SndView::OnPaint(wxPaintEvent& event)
-{
-    int screen_w, screen_h;
-    wxRealPoint zoom = this->m_PreviewSettings.zoom;
-    
+{    
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);

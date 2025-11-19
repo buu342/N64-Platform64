@@ -48,5 +48,5 @@ class AudioFile
         bool DecodeFile(wxFileName path);
         bool IsOk();
 
-        AudioFile operator=(const AudioFile & rhs);
+        AudioFile& operator=(const AudioFile & rhs);
 };

@@ -99,9 +99,8 @@ void AudioFile::Free()
     this->m_Format = AUDIOFMT_NONE;
 }
 
-AudioFile AudioFile::operator=(const AudioFile & rhs)
+AudioFile& AudioFile::operator=(const AudioFile & rhs)
 {
-    this->m_Format = rhs.m_Format;
     this->m_SampleRate = rhs.m_SampleRate;
     this->m_Channels = rhs.m_Channels;
     this->m_ByteDepth = rhs.m_ByteDepth;
@@ -111,9 +110,11 @@ AudioFile AudioFile::operator=(const AudioFile & rhs)
     {
         uint8_t* bytes = (uint8_t*)malloc(rhs.m_TotalSamples);
         memcpy(bytes, rhs.m_SampleData, rhs.m_TotalSamples);
+        this->Free();
         this->m_SampleData = bytes;
     }
     else
         this->m_SampleData = NULL;
+    this->m_Format = rhs.m_Format;
     return *this;
 }

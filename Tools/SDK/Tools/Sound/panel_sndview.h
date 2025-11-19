@@ -10,7 +10,7 @@ typedef struct IUnknown IUnknown;
                              Types
 =============================================================*/
 
-struct PreviewSettings {
+struct PreviewSettings_Audio {
     wxRealPoint zoom;
 };
 
@@ -24,7 +24,7 @@ class Panel_SndView : public wxScrolledWindow
     private:
         AudioFile m_AudioFile;
         P64Asset_Sound* m_LoadedAsset;
-        PreviewSettings m_PreviewSettings;
+        PreviewSettings_Audio m_PreviewSettings;
 
         void OnPaint(wxPaintEvent& event);
     

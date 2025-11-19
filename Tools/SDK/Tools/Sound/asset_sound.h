@@ -26,6 +26,9 @@ class P64Asset_Sound
         uint8_t     m_Loop;
         uint32_t    m_LoopStart;
         uint32_t    m_LoopEnd;
+        uint8_t     m_Codebook_EntryCount;
+        uint8_t     m_Codebook_SampleSize;
+        uint8_t     m_ClusterIterations;
 
         AudioFile m_SndFile;
         //VADPCM  m_N64SndFile;

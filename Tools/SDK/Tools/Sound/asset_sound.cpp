@@ -35,6 +35,9 @@ P64Asset_Sound::P64Asset_Sound()
     this->m_Loop = 0;
     this->m_LoopStart = 0;
     this->m_LoopEnd = 0;
+    this->m_Codebook_EntryCount = 2;
+    this->m_Codebook_SampleSize = 16;
+    this->m_ClusterIterations = 2;
 }
 
 
@@ -65,6 +68,9 @@ std::vector<uint8_t> P64Asset_Sound::Serialize()
     serialize_u8(&data, this->m_Loop);
     serialize_u32(&data, this->m_LoopStart);
     serialize_u32(&data, this->m_LoopEnd);
+    serialize_u8(&data, this->m_Codebook_EntryCount);
+    serialize_u8(&data, this->m_Codebook_SampleSize);
+    serialize_u8(&data, this->m_ClusterIterations);
     return data;
 }
 
@@ -117,6 +123,9 @@ P64Asset_Sound* P64Asset_Sound::Deserialize(std::vector<uint8_t> bytes)
     pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Loop);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopStart);
     pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_LoopEnd);
+    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Codebook_EntryCount);
+    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Codebook_SampleSize);
+    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_ClusterIterations);
     return asset;
 }
 

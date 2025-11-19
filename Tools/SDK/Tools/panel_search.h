@@ -37,7 +37,6 @@ typedef struct IUnknown IUnknown;
 typedef struct {
     wxFileName file;
     bool large;
-    bool isnew;
 } ThreadWork;
 
 typedef struct {

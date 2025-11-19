@@ -11,7 +11,7 @@ typedef struct IUnknown IUnknown;
                              Types
 =============================================================*/
 
-struct PreviewSettings {
+struct PreviewSettings_Image {
     bool showalpha;
     bool showfilter;
     bool showtiling;
@@ -29,7 +29,7 @@ class Panel_ImgView : public wxScrolledWindow
     private:
         wxBitmap m_Bitmap;
         P64Asset_Image* m_LoadedAsset;
-        PreviewSettings m_PreviewSettings;
+        PreviewSettings_Image m_PreviewSettings;
 
         void OnPaint(wxPaintEvent& event);
     

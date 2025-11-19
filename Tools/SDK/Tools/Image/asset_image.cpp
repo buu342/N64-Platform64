@@ -699,7 +699,6 @@ void P64Asset_Image::Blur_Average(uint8_t** srcptr, uint8_t depth, uint32_t w_in
     float x_ratio = (((float)w_in) - 1.0) / (((float)w_out) - 1.0);
     float y_ratio = (((float)h_in) - 1.0) / (((float)h_out) - 1.0);
     uint8_t* out = (uint8_t*)malloc(depth*w_out*h_out*sizeof(uint8_t));
-    int mult = zoom.x;
     if (out == NULL)
         return;
 

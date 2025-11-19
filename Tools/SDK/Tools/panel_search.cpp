@@ -1099,7 +1099,6 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
 
 void Panel_AssetDisplay_List::SelectItem(wxString itemname, bool isfolder, bool rename)
 {
-    Panel_Search* parent = (Panel_Search*)this->GetParent();
     for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
     {
         wxVariant variant;
@@ -1216,7 +1215,6 @@ void Panel_AssetDisplay_List::DeleteItem(wxFileName itempath)
 
 void Panel_AssetDisplay_List::ThreadEvent(wxThreadEvent& event)
 {
-    Panel_Search* parent = (Panel_Search*)this->GetParent();
     ThreadResult* iconresult = event.GetPayload<ThreadResult*>();
     for (int i=0; i<this->m_DataViewListCtrl_ObjectList->GetItemCount(); i++)
     {
@@ -1526,7 +1524,6 @@ void Panel_AssetDisplay_Grid::DeleteItem(wxFileName itempath)
 
 void Panel_AssetDisplay_Grid::ThreadEvent(wxThreadEvent& event)
 {
-    Panel_Search* parent = (Panel_Search*)this->GetParent();
     ThreadResult* iconresult = event.GetPayload<ThreadResult*>();
     int item = this->m_ListCtrl_ObjectGrid->FindItem(this->m_Folders.size(), iconresult->file.GetName());
     if (item != -1)

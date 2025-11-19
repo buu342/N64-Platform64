@@ -542,7 +542,7 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
     wxChar uc = event.GetKeyCode();
     if (wxGetKeyState(WXK_CONTROL))
     {
-        switch (event.GetKeyCode())
+        switch (uc)
         {
             case 'S':
                 this->SaveChanges();
@@ -557,7 +557,7 @@ void Frame_ImageBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
     }
     else
     {
-        switch (event.GetKeyCode())
+        switch (uc)
         {
             case WXK_ESCAPE:
                 if (this->m_UsingPipette)
