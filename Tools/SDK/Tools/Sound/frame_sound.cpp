@@ -812,6 +812,7 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
 
     // Finish
     this->UpdateTitle();
+    this->m_ScrolledWin_Preview->SetAsset(ret);
     return ret;
 }
 

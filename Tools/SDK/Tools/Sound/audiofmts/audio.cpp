@@ -52,7 +52,35 @@ bool AudioFile::DecodeFile(wxFileName path)
 
 bool AudioFile::IsOk()
 {
-    return this->m_Format != AUDIOFMT_NONE && this->m_SampleData != NULL;
+    return this->m_Format != AUDIOFMT_NONE && this->m_SampleData != NULL && this->m_Channels > 0;
+}
+
+
+/*==============================
+    AudioFile::GetSampleAtTime
+    Gets the sample value (from -1 to 1) at a given channel's
+    time
+    @param  The sample index to get the frame from (should be
+            between 0 and the total samples per channel)
+    @param  The channel to get the sample from (channel 
+            index must be larger or equal to 1)
+    @return The sample value, between 0 and 1
+==============================*/
+
+double AudioFile::GetSampleAtTime(uint64_t samplepos, int channel)
+{
+    if (samplepos < 0 || samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
+        return 0;
+
+    uint64_t sampledatai = (samplepos*this->m_ByteDepth) + ((channel-1)*this->m_ByteDepth);
+
+    switch (this->m_Format)
+    {
+        case AUDIOFMT_WAV:
+        case AUDIOFMT_FLAC:
+            return *(float*)(&this->m_SampleData[sampledatai]);
+    }
+    return 0;
 }
 
 bool AudioFile::Decode_WAV(wxFileName path)
@@ -69,7 +97,7 @@ bool AudioFile::Decode_WAV(wxFileName path)
     this->m_ByteDepth = 4;
     this->m_TotalSamples = totalsamples;
     this->m_SampleData = (uint8_t*)samples;
-    this->m_Length = ((double)totalsamples)/((double)(channels*samplerate));
+    this->m_Length = ((double)totalsamples)/((double)(samplerate));
     return true;
 }
 
@@ -78,7 +106,7 @@ bool AudioFile::Decode_FLAC(wxFileName path)
     unsigned int channels;
     unsigned int samplerate;
     drflac_uint64 totalsamples;
-    drflac_int32* samples = drflac_open_file_and_read_pcm_frames_s32((const char*)path.GetFullPath().c_str(), &channels, &samplerate, &totalsamples, NULL);
+    float* samples = drflac_open_file_and_read_pcm_frames_f32((const char*)path.GetFullPath().c_str(), &channels, &samplerate, &totalsamples, NULL);
     if (samples == NULL)
         return false;
     this->m_Format = AUDIOFMT_FLAC;
@@ -87,7 +115,7 @@ bool AudioFile::Decode_FLAC(wxFileName path)
     this->m_ByteDepth = 4;
     this->m_TotalSamples = totalsamples;
     this->m_SampleData = (uint8_t*)samples;
-    this->m_Length = ((double)totalsamples)/((double)(channels*samplerate));
+    this->m_Length = ((double)totalsamples)/((double)(samplerate));
     return true;
 }
 
@@ -108,8 +136,8 @@ AudioFile& AudioFile::operator=(const AudioFile & rhs)
     this->m_TotalSamples = rhs.m_TotalSamples;
     if (rhs.m_SampleData != NULL)
     {
-        uint8_t* bytes = (uint8_t*)malloc(rhs.m_TotalSamples);
-        memcpy(bytes, rhs.m_SampleData, rhs.m_TotalSamples);
+        uint8_t* bytes = (uint8_t*)malloc(rhs.m_TotalSamples*rhs.m_ByteDepth*rhs.m_Channels);
+        memcpy(bytes, rhs.m_SampleData, rhs.m_TotalSamples*rhs.m_ByteDepth*rhs.m_Channels);
         this->Free();
         this->m_SampleData = bytes;
     }

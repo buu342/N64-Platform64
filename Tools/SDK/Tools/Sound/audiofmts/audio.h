@@ -26,13 +26,6 @@ typedef enum {
 class AudioFile
 {
     private:
-        AudioFormat m_Format;
-        uint32_t m_SampleRate;
-        uint8_t  m_Channels;
-        uint8_t  m_ByteDepth;
-        double   m_Length;
-        uint64_t m_TotalSamples;
-        uint8_t* m_SampleData;
 
         bool Decode_WAV(wxFileName path);
         bool Decode_FLAC(wxFileName path);
@@ -41,12 +34,21 @@ class AudioFile
     protected:
 
     public:
+        AudioFormat m_Format;
+        uint32_t m_SampleRate;
+        uint8_t  m_Channels;
+        uint8_t  m_ByteDepth;
+        double   m_Length;
+        uint64_t m_TotalSamples;
+        uint8_t* m_SampleData;
+
         AudioFile();
         AudioFile(wxFileName path);
         ~AudioFile();
 
         bool DecodeFile(wxFileName path);
         bool IsOk();
+        double GetSampleAtTime(uint64_t samplepos, int channel);
 
         AudioFile& operator=(const AudioFile & rhs);
 };

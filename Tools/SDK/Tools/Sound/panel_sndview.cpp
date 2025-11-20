@@ -128,6 +128,8 @@ wxRealPoint Panel_SndView::GetZoom()
 
 void Panel_SndView::ReloadAsset()
 {
+    if (this->m_LoadedAsset != NULL)
+        this->m_AudioFile = this->m_LoadedAsset->m_SndFile;
     this->RefreshDrawing();
 }
 
@@ -153,15 +155,39 @@ void Panel_SndView::RefreshDrawing()
 ==============================*/
 
 void Panel_SndView::OnPaint(wxPaintEvent& event)
-{    
+{
+    AudioFile* af = &this->m_AudioFile;
+    int screen_w, screen_h;
+
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT)));
     dc.Clear();
+    dc.GetSize(&screen_w, &screen_h);
 
-    dc.SetBrush(wxBrush(wxColour(0,255,0)));
-    dc.DrawRectangle(64,64,64,64);
+    // Draw the waveforms
+    if (this->m_LoadedAsset != NULL && af->IsOk())
+    {
+        int channel_h = screen_h/af->m_Channels;
+        for (int ch=0; ch<af->m_Channels; ch++)
+        {
+            int channel_mid = (channel_h*(ch+1)) - (channel_h/2);
+
+            // Render the waveform
+            dc.SetPen(wxPen(wxColour(0, 255, 0), 1, wxPENSTYLE_SOLID));
+            for (int x=0; x<screen_w; x++)
+            {
+                uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
+                double sampley = af->GetSampleAtTime(sampletime, ch+1);
+                dc.DrawLine(x, channel_mid, x, channel_mid - sampley*(channel_h/2));
+            }
+
+            // Render the center line
+            dc.SetPen(wxPen(wxColour(255, 0, 0), 1, wxPENSTYLE_SOLID));
+            dc.DrawLine(0, channel_mid, screen_w, channel_mid);
+        }
+    }
 
     event.Skip();
 }
