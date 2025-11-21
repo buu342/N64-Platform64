@@ -8,6 +8,7 @@
 #define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
 
+
 /*=============================================================
                Audio File Class Implementation
 =============================================================*/
@@ -79,8 +80,57 @@ double AudioFile::GetSampleAtTime(uint64_t samplepos, int channel)
         case AUDIOFMT_WAV:
         case AUDIOFMT_FLAC:
             return *(float*)(&this->m_SampleData[sampledatai]);
+            break;
     }
     return 0;
+}
+
+
+/*==============================
+    TODO
+==============================*/
+
+std::pair<double, double> AudioFile::GetAvgMinMaxSampleAtTime(uint64_t samplepos, uint64_t samplecount, int channel)
+{
+    double av_min = 0;
+    double av_max = 0;
+    uint64_t c_max = 0;
+    uint64_t c_min = 0;
+    int sc = this->m_TotalSamples - samplepos;
+    if (samplepos < 0 || samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
+        return {0, 0};
+    if (sc > samplecount)
+        sc = samplecount;
+
+    for (int i=0; i<sc; i++)
+    {
+        uint64_t sampledatai = ((samplepos+i)*this->m_ByteDepth) + ((channel-1)*this->m_ByteDepth);
+        float sample = 0;
+        switch (this->m_Format)
+        {
+            case AUDIOFMT_WAV:
+            case AUDIOFMT_FLAC:
+                sample = *(float*)(&this->m_SampleData[sampledatai]);
+                break;
+            default:
+                sample = 0;
+        }
+        if (sample >= 0)
+        {
+            av_max += sample;
+            c_max++;
+        }
+        else
+        {
+            av_min += sample;
+            c_min++;
+        }
+    }
+    if (c_min > 0)
+        av_min /= c_min;
+    if (c_max > 0)
+        av_max /= c_max;
+    return {av_min, av_max};
 }
 
 bool AudioFile::Decode_WAV(wxFileName path)

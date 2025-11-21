@@ -4,6 +4,7 @@ typedef struct IUnknown IUnknown;
 
 #include <wx/filename.h>
 #include <stdint.h>
+#include <utility>
 
 
 /*=============================================================
@@ -49,6 +50,7 @@ class AudioFile
         bool DecodeFile(wxFileName path);
         bool IsOk();
         double GetSampleAtTime(uint64_t samplepos, int channel);
+        std::pair<double, double> GetAvgMinMaxSampleAtTime(uint64_t samplepos, uint64_t samplecount, int channel);
 
         AudioFile& operator=(const AudioFile & rhs);
 };

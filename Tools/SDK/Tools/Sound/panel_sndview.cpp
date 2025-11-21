@@ -179,8 +179,9 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
             for (int x=0; x<screen_w; x++)
             {
                 uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
-                double sampley = af->GetSampleAtTime(sampletime, ch+1);
-                dc.DrawLine(x, channel_mid, x, channel_mid - sampley*(channel_h/2));
+                uint64_t samplesppx = af->m_TotalSamples/screen_w;
+                std::pair<double, double> sampley = af->GetAvgMinMaxSampleAtTime(sampletime, samplesppx, ch+1);
+                dc.DrawLine(x, channel_mid - (sampley.first*(channel_h/2)), x, channel_mid - (sampley.second*(channel_h/2)));
             }
 
             // Render the center line
