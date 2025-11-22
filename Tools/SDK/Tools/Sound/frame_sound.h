@@ -45,6 +45,9 @@ class Frame_SoundBrowser : public wxFrame
         wxPanel* m_Panel_Preview;
 		wxToolBar* m_ToolBar_Preview;
 		wxToolBarToolBase* m_Tool_Save;
+        wxToolBarToolBase* m_Tool_ZoomIn;
+        wxToolBarToolBase* m_Tool_ZoomOut;
+        wxToolBarToolBase* m_Tool_ZoomNone;
 		wxToolBarToolBase* m_Tool_FlashcartUpload;
         Panel_SndView* m_ScrolledWin_Preview;
         wxPanel* m_Panel_Config;
@@ -64,6 +67,9 @@ class Frame_SoundBrowser : public wxFrame
         void OnClose(wxCloseEvent& event);
         void m_Panel_Edit_OnChar(wxKeyEvent& event);
         void m_Tool_Save_OnToolClicked(wxCommandEvent& event);
+        void m_Tool_ZoomIn_OnToolClicked(wxCommandEvent& event);
+        void m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event);
+        void m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event);
         void m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& event);
         void m_Splitter_VerticalOnIdle(wxIdleEvent&);
         void m_Splitter_HorizontalOnIdle(wxIdleEvent&);
@@ -73,6 +79,9 @@ class Frame_SoundBrowser : public wxFrame
         void m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event);
         void m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event);
         void m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event);
+        void m_SpinCtrl_CodebookEntryCount_OnSpinCtrl(wxSpinEvent& event);
+        void m_SpinCtrl_CodebookSampleSize_OnSpinCtrl(wxSpinEvent& event);
+        void m_SpinCtrl_ClusterIterations_OnSpinCtrl(wxSpinEvent& event);
 
         void MarkAssetModified();
         void SaveChanges();

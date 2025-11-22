@@ -170,6 +170,10 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_ToolBar_Preview->Disable();
     this->m_Tool_Save = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_Save, wxNullBitmap, wxITEM_NORMAL, _("Save changes"), wxEmptyString, NULL);
     this->m_ToolBar_Preview->AddSeparator();
+    this->m_Tool_ZoomIn = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomIn, wxNullBitmap, wxITEM_NORMAL, _("Zoom in"), wxEmptyString, NULL);
+    this->m_Tool_ZoomOut = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomOut, wxNullBitmap, wxITEM_NORMAL, _("Zoom out"), wxEmptyString, NULL);
+    this->m_Tool_ZoomNone = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ZoomFit, wxNullBitmap, wxITEM_NORMAL, _("No zoom"), wxEmptyString, NULL);
+    this->m_ToolBar_Preview->AddSeparator();
     this->m_Tool_FlashcartUpload = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload sound to flashcart"), wxEmptyString, NULL);
     this->m_ToolBar_Preview->Realize();
     Sizer_Preview->Add(this->m_ToolBar_Preview, 0, wxEXPAND, 5);
@@ -324,6 +328,9 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(Frame_SoundBrowser::OnClose));
     this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_SoundBrowser::m_Panel_Edit_OnChar), NULL, this);
     this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_Save_OnToolClicked));
+    this->Connect(this->m_Tool_ZoomIn->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_ZoomIn_OnToolClicked));
+    this->Connect(this->m_Tool_ZoomOut->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_ZoomOut_OnToolClicked));
+    this->Connect(this->m_Tool_ZoomNone->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_ZoomNone_OnToolClicked));
     this->Connect(this->m_Tool_FlashcartUpload->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked));
     this->m_FilePicker_Source->Connect(wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler(Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged), NULL, this);
     this->m_Choice_SampleRate->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(Frame_SoundBrowser::m_Choice_SampleRate_OnChoice), NULL, this);
@@ -331,6 +338,9 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_CheckBox_Loop->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox), NULL, this);
     this->m_SpinCtrl_LoopStart->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl), NULL, this);
     this->m_SpinCtrl_LoopEnd->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl), NULL, this);
+    this->m_SpinCtrl_CodebookEntryCount->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_CodebookEntryCount_OnSpinCtrl), NULL, this);
+    this->m_SpinCtrl_CodebookSampleSize->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_CodebookSampleSize_OnSpinCtrl), NULL, this);
+    this->m_SpinCtrl_ClusterIterations->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(Frame_SoundBrowser::m_SpinCtrl_ClusterIterations_OnSpinCtrl), NULL, this);
 }
 
 
@@ -382,6 +392,12 @@ void Frame_SoundBrowser::m_Panel_Edit_OnChar(wxKeyEvent& event)
             case 'S':
                 this->SaveChanges();
                 break;
+            case '+':
+                this->m_ScrolledWin_Preview->ZoomIn();
+                break;
+            case '-':
+                this->m_ScrolledWin_Preview->ZoomOut();
+                break;
         }
     }
     event.Skip();
@@ -427,6 +443,45 @@ void Frame_SoundBrowser::m_Splitter_HorizontalOnIdle(wxIdleEvent& event)
 void Frame_SoundBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 {
     this->SaveChanges();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_Tool_ZoomIn_OnToolClicked
+    Handles pressing the zoom in toolbar button
+    @param The command event
+==============================*/
+
+void Frame_SoundBrowser::m_Tool_ZoomIn_OnToolClicked(wxCommandEvent& event)
+{
+    this->m_ScrolledWin_Preview->ZoomIn();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_Tool_ZoomOut_OnToolClicked
+    Handles pressing the zoom out toolbar button
+    @param The command event
+==============================*/
+
+void Frame_SoundBrowser::m_Tool_ZoomOut_OnToolClicked(wxCommandEvent& event)
+{
+    this->m_ScrolledWin_Preview->ZoomOut();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_Tool_ZoomNone_OnToolClicked
+    Handles pressing the zoom reset toolbar button
+    @param The command event
+==============================*/
+
+void Frame_SoundBrowser::m_Tool_ZoomNone_OnToolClicked(wxCommandEvent& event)
+{
+    this->m_ScrolledWin_Preview->ZoomReset();
     event.Skip();
 }
 
@@ -621,6 +676,63 @@ void Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event)
         return;
     }
     this->m_LoadedAsset->m_LoopEnd = event.GetValue();
+    this->MarkAssetModified();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_SpinCtrl_CodebookEntryCount_OnSpinCtrl
+    Handles pressing the codebook entry count spin control
+    @param The spin event
+==============================*/
+
+void Frame_SoundBrowser::m_SpinCtrl_CodebookEntryCount_OnSpinCtrl(wxSpinEvent& event)
+{
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
+    this->m_LoadedAsset->m_Codebook_EntryCount = event.GetValue();
+    this->MarkAssetModified();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_SpinCtrl_CodebookSampleSize_OnSpinCtrl
+    Handles pressing the codebook sample size spin control
+    @param The spin event
+==============================*/
+
+void Frame_SoundBrowser::m_SpinCtrl_CodebookSampleSize_OnSpinCtrl(wxSpinEvent& event)
+{
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
+    this->m_LoadedAsset->m_Codebook_SampleSize = event.GetValue();
+    this->MarkAssetModified();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_SoundBrowser::m_SpinCtrl_ClusterIterations_OnSpinCtrl
+    Handles pressing the cluster iterations spin control
+    @param The spin event
+==============================*/
+
+void Frame_SoundBrowser::m_SpinCtrl_ClusterIterations_OnSpinCtrl(wxSpinEvent& event)
+{
+    if (this->m_LoadedAsset == NULL)
+    {
+        event.Skip();
+        return;
+    }
+    this->m_LoadedAsset->m_ClusterIterations = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }

@@ -10751,11 +10751,11 @@
                             <property name="name">Sizer_Preview</property>
                             <property name="orient">wxVERTICAL</property>
                             <property name="permission">none</property>
-                            <object class="sizeritem" expanded="false">
+                            <object class="sizeritem" expanded="true">
                               <property name="border">5</property>
                               <property name="flag">wxEXPAND</property>
                               <property name="proportion">0</property>
-                              <object class="wxToolBar" expanded="false">
+                              <object class="wxToolBar" expanded="true">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
                                 <property name="RightDockable">1</property>
@@ -10825,6 +10825,45 @@
                                   <event name="OnToolClicked">m_Tool_Save_OnToolClicked</event>
                                 </object>
                                 <object class="toolSeparator" expanded="false">
+                                  <property name="permission">private</property>
+                                </object>
+                                <object class="tool" expanded="true">
+                                  <property name="bitmap"></property>
+                                  <property name="context_menu">0</property>
+                                  <property name="id">wxID_ANY</property>
+                                  <property name="kind">wxITEM_NORMAL</property>
+                                  <property name="label">tool</property>
+                                  <property name="name">m_Tool_ZoomIn</property>
+                                  <property name="permission">private</property>
+                                  <property name="statusbar"></property>
+                                  <property name="tooltip">Zoom in</property>
+                                  <event name="OnToolClicked">m_Tool_ZoomIn_OnToolClicked</event>
+                                </object>
+                                <object class="tool" expanded="true">
+                                  <property name="bitmap"></property>
+                                  <property name="context_menu">0</property>
+                                  <property name="id">wxID_ANY</property>
+                                  <property name="kind">wxITEM_NORMAL</property>
+                                  <property name="label">tool</property>
+                                  <property name="name">m_Tool_ZoomOut</property>
+                                  <property name="permission">private</property>
+                                  <property name="statusbar"></property>
+                                  <property name="tooltip">Zoom out</property>
+                                  <event name="OnToolClicked">m_Tool_ZoomOut_OnToolClicked</event>
+                                </object>
+                                <object class="tool" expanded="true">
+                                  <property name="bitmap"></property>
+                                  <property name="context_menu">0</property>
+                                  <property name="id">wxID_ANY</property>
+                                  <property name="kind">wxITEM_NORMAL</property>
+                                  <property name="label">tool</property>
+                                  <property name="name">m_Tool_ZoomNone</property>
+                                  <property name="permission">private</property>
+                                  <property name="statusbar"></property>
+                                  <property name="tooltip">No zoom</property>
+                                  <event name="OnToolClicked">m_Tool_ZoomNone_OnToolClicked</event>
+                                </object>
+                                <object class="toolSeparator" expanded="true">
                                   <property name="permission">private</property>
                                 </object>
                                 <object class="tool" expanded="false">
