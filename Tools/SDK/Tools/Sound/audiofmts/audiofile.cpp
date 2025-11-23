@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "audio.h"
+#include "audiofile.h"
 #define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 #define DR_FLAC_IMPLEMENTATION
@@ -70,7 +70,7 @@ bool AudioFile::IsOk()
 
 double AudioFile::GetSampleAtTime(uint64_t samplepos, int channel)
 {
-    if (samplepos < 0 || samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
+    if (samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
         return 0;
 
     uint64_t sampledatai = (samplepos*this->m_ByteDepth) + ((channel-1)*this->m_ByteDepth);
@@ -80,9 +80,9 @@ double AudioFile::GetSampleAtTime(uint64_t samplepos, int channel)
         case AUDIOFMT_WAV:
         case AUDIOFMT_FLAC:
             return *(float*)(&this->m_SampleData[sampledatai]);
-            break;
+        default:
+            return 0;
     }
-    return 0;
 }
 
 
@@ -96,10 +96,10 @@ std::pair<double, double> AudioFile::GetAvgMinMaxSampleAtTime(uint64_t samplepos
     double av_max = 0;
     uint64_t c_max = 0;
     uint64_t c_min = 0;
-    int sc = this->m_TotalSamples - samplepos;
-    if (samplepos < 0 || samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
+    int64_t sc = this->m_TotalSamples - samplepos;
+    if (samplepos > this->m_TotalSamples || channel <= 0 || channel > this->m_Channels)
         return {0, 0};
-    if (sc > samplecount)
+    if (sc > ((int64_t)samplecount))
         sc = samplecount;
 
     for (int i=0; i<sc; i++)
@@ -114,6 +114,7 @@ std::pair<double, double> AudioFile::GetAvgMinMaxSampleAtTime(uint64_t samplepos
                 break;
             default:
                 sample = 0;
+                break;
         }
         if (sample >= 0)
         {

@@ -6,7 +6,7 @@ typedef struct IUnknown IUnknown;
 #include <stdint.h>
 #include <vector>
 #include <wx/sound.h>
-#include "audiofmts/audio.h"
+#include "audiofmts/audiofile.h"
 
 
 /*=============================================================

@@ -81,7 +81,7 @@ void Panel_SndView::SetAsset(P64Asset_Sound* asset)
 
 void Panel_SndView::ZoomIn()
 {
-    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, this->m_PreviewSettings.zoom.y*ZOOM_SPEED);
+    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, 1.0f);
     this->RefreshDrawing();
 }
 
@@ -93,7 +93,9 @@ void Panel_SndView::ZoomIn()
 
 void Panel_SndView::ZoomOut()
 {
-    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
+    this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, 1.0f);
+    if (this->m_PreviewSettings.zoom.x < 1.0f)
+        this->m_PreviewSettings.zoom.x = 1.0f;
     this->RefreshDrawing();
 }
 
@@ -141,8 +143,10 @@ void Panel_SndView::ReloadAsset()
 
 void Panel_SndView::RefreshDrawing()
 {
-    if (this->m_LoadedAsset == NULL)
+    int w;
+    if (this->m_LoadedAsset == NULL || !this->m_AudioFile.IsOk())
         return;
+    this->SetVirtualSize(this->GetSize().x*this->m_PreviewSettings.zoom.x, this->GetSize().y);
     this->Layout();
     this->Refresh();
 }
@@ -164,24 +168,46 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
     PrepareDC(dc);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT)));
     dc.Clear();
-    dc.GetSize(&screen_w, &screen_h);
+    this->GetVirtualSize(&screen_w, &screen_h);
 
     // Draw the waveforms
     if (this->m_LoadedAsset != NULL && af->IsOk())
     {
         int channel_h = screen_h/af->m_Channels;
+        double samplesppx = (af->m_TotalSamples/screen_w)/this->m_PreviewSettings.zoom.x;
         for (int ch=0; ch<af->m_Channels; ch++)
         {
             int channel_mid = (channel_h*(ch+1)) - (channel_h/2);
 
             // Render the waveform
             dc.SetPen(wxPen(wxColour(0, 255, 0), 1, wxPENSTYLE_SOLID));
-            for (int x=0; x<screen_w; x++)
+            if (samplesppx > 1)
             {
-                uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
-                uint64_t samplesppx = af->m_TotalSamples/screen_w;
-                std::pair<double, double> sampley = af->GetAvgMinMaxSampleAtTime(sampletime, samplesppx, ch+1);
-                dc.DrawLine(x, channel_mid - (sampley.first*(channel_h/2)), x, channel_mid - (sampley.second*(channel_h/2)));
+                for (uint64_t x=0; x<screen_w; x++)
+                {
+                    uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
+                    std::pair<double, double> sampley = af->GetAvgMinMaxSampleAtTime(sampletime, samplesppx, ch+1);
+                    dc.DrawLine(x, channel_mid - (sampley.first*(channel_h/2)), x, channel_mid - (sampley.second*(channel_h/2)));
+                }
+            }
+            else
+            {
+                uint64_t lastx = 0;
+                double lastvalue = 0;
+                uint64_t lastsample = UINT64_MAX;
+                for (uint64_t x=0; x<screen_w; x++)
+                {
+                    uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
+                    if (sampletime != lastsample)
+                    {
+                        double value = af->GetSampleAtTime(sampletime, ch+1);
+                        dc.DrawLine(x - (x - lastx), channel_mid - (lastvalue*(channel_h/2)), x, channel_mid - (value*(channel_h/2)));
+                        //printf("%ld %ld %lf %lf\n", sampletime, lastsample, value, lastvalue);
+                        lastx = x;
+                        lastsample = sampletime;
+                        lastvalue = value;
+                    }
+                }
             }
 
             // Render the center line
