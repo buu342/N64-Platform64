@@ -1,3 +1,9 @@
+/***************************************************************
+                       panel_sndview.cpp
+
+A custom panel that allows you to preview an audio waveform
+***************************************************************/
+
 #include "panel_sndview.h"
 #include <math.h>
 #include <wx/wx.h>
@@ -146,7 +152,6 @@ void Panel_SndView::RefreshDrawing()
     int w;
     if (this->m_LoadedAsset == NULL || !this->m_AudioFile.IsOk())
         return;
-    this->SetVirtualSize(this->GetSize().x*this->m_PreviewSettings.zoom.x, this->GetSize().y);
     this->Layout();
     this->Refresh();
 }
@@ -162,19 +167,28 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
 {
     AudioFile* af = &this->m_AudioFile;
     int screen_w, screen_h;
+    int vis_start, vis_end;
+    int scrollsize;
 
     // Prepare the drawing context
     wxPaintDC dc(this);
     PrepareDC(dc);
     dc.SetBackground(wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT)));
     dc.Clear();
+    this->SetVirtualSize(this->GetSize().x*this->m_PreviewSettings.zoom.x, this->GetSize().y);
     this->GetVirtualSize(&screen_w, &screen_h);
+
+    // Get the visible portion of the DC
+    this->GetScrollPixelsPerUnit(&scrollsize, NULL);
+    vis_start = this->GetViewStart().x*scrollsize;
+    vis_end = vis_start + this->GetClientSize().x;
 
     // Draw the waveforms
     if (this->m_LoadedAsset != NULL && af->IsOk())
     {
         int channel_h = screen_h/af->m_Channels;
         double samplesppx = (af->m_TotalSamples/screen_w)/this->m_PreviewSettings.zoom.x;
+
         for (int ch=0; ch<af->m_Channels; ch++)
         {
             int channel_mid = (channel_h*(ch+1)) - (channel_h/2);
@@ -183,7 +197,7 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
             dc.SetPen(wxPen(wxColour(0, 255, 0), 1, wxPENSTYLE_SOLID));
             if (samplesppx > 1)
             {
-                for (uint64_t x=0; x<screen_w; x++)
+                for (uint64_t x=vis_start; x<vis_end; x++)
                 {
                     uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
                     std::pair<double, double> sampley = af->GetAvgMinMaxSampleAtTime(sampletime, samplesppx, ch+1);
@@ -195,14 +209,13 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
                 uint64_t lastx = 0;
                 double lastvalue = 0;
                 uint64_t lastsample = UINT64_MAX;
-                for (uint64_t x=0; x<screen_w; x++)
+                for (uint64_t x=vis_start; x<vis_end; x++)
                 {
                     uint64_t sampletime = ((((double)x)/((double)screen_w))*af->m_TotalSamples);
                     if (sampletime != lastsample)
                     {
                         double value = af->GetSampleAtTime(sampletime, ch+1);
                         dc.DrawLine(x - (x - lastx), channel_mid - (lastvalue*(channel_h/2)), x, channel_mid - (value*(channel_h/2)));
-                        //printf("%ld %ld %lf %lf\n", sampletime, lastsample, value, lastvalue);
                         lastx = x;
                         lastsample = sampletime;
                         lastvalue = value;
@@ -216,5 +229,6 @@ void Panel_SndView::OnPaint(wxPaintEvent& event)
         }
     }
 
+    // Skip the event to prevent problems
     event.Skip();
 }

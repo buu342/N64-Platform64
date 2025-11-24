@@ -1,3 +1,9 @@
+/***************************************************************
+                       panel_imgview.cpp
+
+A custom panel that allows you to preview an image file
+***************************************************************/
+
 #include "panel_imgview.h"
 #include <math.h>
 #include <wx/wx.h>
