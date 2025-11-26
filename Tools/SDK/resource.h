@@ -10,19 +10,28 @@
 
 #ifdef _WX_WX_H_
     #include "Resources/Cursors/Cursor_Pipette.h"
-    #include "Resources/Icons/Icon_Main.h"
-    #include "Resources/Icons/Icon_Texture.h"
-    #include "Resources/Icons/Icon_Material.h"
     #include "Resources/Icons/Icon_Back.h"
+    #include "Resources/Icons/Icon_Build.h"
+    #include "Resources/Icons/Icon_BuildDebug.h"
+    #include "Resources/Icons/Icon_C.h"
+    #include "Resources/Icons/Icon_Clean.h"
+    #include "Resources/Icons/Icon_Code.h"
+    #include "Resources/Icons/Icon_Copy.h"
+    #include "Resources/Icons/Icon_Cut.h"
+    #include "Resources/Icons/Icon_Folder.h"
+    #include "Resources/Icons/Icon_Folder_Large.h"
+    #include "Resources/Icons/Icon_H.h"
+    #include "Resources/Icons/Icon_Main.h"
+    #include "Resources/Icons/Icon_Material.h"
     #include "Resources/Icons/Icon_NewAsset.h"
     #include "Resources/Icons/Icon_NewFolder.h"
     #include "Resources/Icons/Icon_Search.h"
-    #include "Resources/Icons/Icon_Folder.h"
-    #include "Resources/Icons/Icon_Folder_Large.h"
     #include "Resources/Icons/Icon_Save.h"
     #include "Resources/Icons/Icon_Sound.h"
     #include "Resources/Icons/Icon_Palette.h"
+    #include "Resources/Icons/Icon_Paste.h"
     #include "Resources/Icons/Icon_Pipette.h"
+    #include "Resources/Icons/Icon_Texture.h"
     #include "Resources/Icons/Icon_ToggleAlpha.h"
     #include "Resources/Icons/Icon_ToggleFilter.h"
     #include "Resources/Icons/Icon_ToggleMask.h"
@@ -39,21 +48,30 @@
     #include "Resources/Default/MISSING.h"
 
     extern wxCursor Cursor_Pipette;
-    extern wxIcon   Icon_Main;
-    extern wxIcon   Icon_Texture;
-    extern wxIcon   Icon_Material;
     extern wxIcon   Icon_Back;
     extern wxIcon   Icon_Blank;
     extern wxIcon   Icon_BlankLarge;
+    extern wxIcon   Icon_Build;
+    extern wxIcon   Icon_BuildDebug;
+    extern wxIcon   Icon_C;
+    extern wxIcon   Icon_Clean;
+    extern wxIcon   Icon_Code;
+    extern wxIcon   Icon_Copy;
+    extern wxIcon   Icon_Cut;
+    extern wxIcon   Icon_Folder;
+    extern wxIcon   Icon_Folder_Large;
+    extern wxIcon   Icon_H;
+    extern wxIcon   Icon_Main;
+    extern wxIcon   Icon_Material;
     extern wxIcon   Icon_NewAsset;
     extern wxIcon   Icon_NewFolder;
     extern wxIcon   Icon_Search;
     extern wxIcon   Icon_Save;
     extern wxIcon   Icon_Sound;
-    extern wxIcon   Icon_Folder;
-    extern wxIcon   Icon_Folder_Large;
     extern wxIcon   Icon_Palette;
+    extern wxIcon   Icon_Paste;
     extern wxIcon   Icon_Pipette;
+    extern wxIcon   Icon_Texture;
     extern wxIcon   Icon_ToggleAlpha;
     extern wxIcon   Icon_ToggleFilter;
     extern wxIcon   Icon_ToggleMask;

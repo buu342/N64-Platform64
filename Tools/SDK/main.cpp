@@ -8,6 +8,7 @@ tools in the game's SDK.
 #include "app.h"
 #include "main.h"
 #include "resource.h"
+#include "Tools/Code/frame_code.h"
 #include "Tools/Image/frame_image.h"
 #include "Tools/Sound/frame_sound.h"
 #include <wx/stdpaths.h>
@@ -28,6 +29,7 @@ typedef struct {
                       Function Prototypes
 =============================================================*/
 
+wxWindowID StartTool_Code(wxWindow* parent, wxString title);
 wxWindowID StartTool_Image(wxWindow* parent, wxString title);
 wxWindowID StartTool_Sound(wxWindow* parent, wxString title);
 
@@ -50,9 +52,26 @@ static std::vector<Tools> g_tools;
 
 static void Initialize_Tools()
 {
+    g_tools.push_back({wxString("Code Editor"), Icon_Code, StartTool_Code});
     g_tools.push_back({wxString("Image Browser"), Icon_Texture, StartTool_Image});
     g_tools.push_back({wxString("Material Browser"), Icon_Material, NULL});
     g_tools.push_back({wxString("Sound Browser"), Icon_Sound, StartTool_Sound});
+}
+
+
+/*==============================
+    StartTool_Code
+    Starts the Code editor tool
+    @param  The main window to attach this tool to
+    @param  The name of this tool
+    @return The created window's ID
+==============================*/
+
+wxWindowID StartTool_Code(wxWindow* parent, wxString title)
+{
+    Frame_CodeEditor* w = new Frame_CodeEditor(parent, -1, title);
+    w->Show();
+    return w->GetId();
 }
 
 

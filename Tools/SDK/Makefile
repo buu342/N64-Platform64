@@ -1,6 +1,5 @@
 CODEFILES   = app.cpp json.cpp main.cpp serializer.cpp \
-			  Tools/panel_search.cpp \
-			  Tools/asset_thumbnail.cpp \
+			  $(wildcard Tools/*.cpp) \
 			  $(wildcard Tools/**/*.cpp) \
 			  $(wildcard Tools/**/**/*.cpp) 
 LIBFILES    = Include/flashcart.a
@@ -45,7 +44,7 @@ endif
 # Location and arguments of wx-config script 
 WX_CONFIG ?= wx-config
 
-LIBRARIES ?= core,net,base,richtext,html,xml
+LIBRARIES ?= aui,stc,core,net,base,richtext,html,xml
 
 # Port of the wx library to build against [gtk1,gtk2,msw,x11,motif,osx_cocoa,osx_carbon,dfb]
 WX_PORT ?= $(shell $(WX_CONFIG) --query-toolkit)
