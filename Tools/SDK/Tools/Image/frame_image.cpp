@@ -37,7 +37,7 @@ static wxIcon IconGenerator(bool large, wxFileName path)
 {
     wxFile file;
     std::vector<uint8_t> data;
-    P64Asset_Image* img;
+    P64Asset_Image img;
     wxIcon ret = large ? Icon_MissingLarge : Icon_MissingSmall;
 
     // Open the file and get its bytes
@@ -49,18 +49,16 @@ static wxIcon IconGenerator(bool large, wxFileName path)
     file.Close();
 
     // Read the asset file
-    img = P64Asset_Image::Deserialize(data);
-    if (img == NULL)
+    if (img.Deserialize(data) == false)
         return ret;
 
     // Grab the thumbnail
-    if (large && img->m_Thumbnail.IsValidLarge())
-        ret = img->m_Thumbnail.m_IconLarge;
-    else if (!large && img->m_Thumbnail.IsValidSmall())
-        ret = img->m_Thumbnail.m_IconSmall;
+    if (large && img.ValidLargeThumbnail())
+        ret = img.GetLargeThumbnail();
+    else if (!large && img.ValidSmallThumbnail())
+        ret = img.GetSmallThumbnail();
 
     // Finish
-    delete img;
     return ret;
 }
 
@@ -144,7 +142,6 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 {
     // Initialize attributes to their defaults
     this->m_Title = title;
-    this->m_LoadedAsset = NULL;
     this->m_AssetModified = false;
     this->m_UsingPipette = false;
     this->m_AssetFilePath = wxFileName("");
@@ -506,8 +503,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
 
 Frame_ImageBrowser::~Frame_ImageBrowser()
 {
-    if (this->m_LoadedAsset != NULL)
-        delete this->m_LoadedAsset;
+
 }
 
 
@@ -656,14 +652,14 @@ void Frame_ImageBrowser::m_ScrolledWin_Preview_OnMouseLeftDown(wxMouseEvent& eve
 {
     if (this->m_UsingPipette)
     {
-        if (this->m_LoadedAsset != NULL)
+        if (this->m_LoadedAsset.IsOk())
         {
             wxColor c;
             wxWindowDC dc(this->m_ScrolledWin_Preview);
             wxPoint p = event.GetPosition();
             dc.GetPixel(p.x, p.y, &c);
             this->m_ColourPicker_AlphaColor->SetColour(c);
-            this->m_LoadedAsset->m_AlphaColor = c;
+            this->m_LoadedAsset.m_AlphaColor = c;
             this->MarkAssetModified();
         }
 
@@ -697,8 +693,8 @@ void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleAlphaDisplay();
-    if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    if (this->m_LoadedAsset.IsOk())
+        this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
@@ -725,8 +721,8 @@ void Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked(wxCommandEvent& event)
 void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleFilterDisplay();
-    if (this->m_LoadedAsset != NULL)
-        this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    if (this->m_LoadedAsset.IsOk())
+        this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
@@ -821,20 +817,21 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
 {
     bool foundbitmap = false;
     bool externalfile = false;
-    if (this->m_LoadedAsset == NULL)
+
+    if (!P64Asset::FileInAssetPath(event.GetPath(), this->m_Panel_Search->GetMainFolder()))
     {
-        event.Skip();
-        return;
+
     }
 
+    /*
     // Try to load the image either from an absolute path or from a relative path
     if (wxFileExists(event.GetPath())) // Check absolute path first
     {
-        foundbitmap = this->m_LoadedAsset->m_Image.LoadFile(event.GetPath());
+        foundbitmap = this->m_LoadedAsset.m_Image.LoadFile(event.GetPath());
         externalfile = true;
     }
     else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
-        foundbitmap = this->m_LoadedAsset->m_Image.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
+        foundbitmap = this->m_LoadedAsset.m_Image.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
 
     // Check a valid image loaded
     if (foundbitmap)
@@ -850,24 +847,25 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
             wxCopyFile(event.GetPath(), copyfullpath, true);
             relative = wxFileName(copyfullpath);
             relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
-            this->m_LoadedAsset->m_SourcePath = relative;
+            this->m_LoadedAsset.m_SourcePath = relative;
             this->m_FilePicker_Image->SetPath(relative.GetFullPath());
         }
         else
         {
             this->m_FilePicker_Image->SetPath(event.GetPath());
-            this->m_LoadedAsset->m_SourcePath = event.GetPath();
+            this->m_LoadedAsset.m_SourcePath = event.GetPath();
         }
-        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Image.GetWidth()));
-        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset->m_Image.GetHeight()));
+        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
+        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
     }
     else
     {
-        this->m_LoadedAsset->m_SourcePath = event.GetPath();
-        this->m_LoadedAsset->m_Image = wxImage();
+        this->m_LoadedAsset.m_SourcePath = event.GetPath();
+        this->m_LoadedAsset.m_Image = wxImage();
     }
     this->m_ScrolledWin_Preview->ZoomReset();
     this->MarkAssetModified();
+    */
     event.Skip();
 }
 
@@ -880,12 +878,12 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_NONE;
+    this->m_LoadedAsset.m_ResizeMode = RESIZETYPE_NONE;
     this->m_TextCtrl_ResizeW->Disable();
     this->m_TextCtrl_ResizeH->Disable();
     this->m_Choice_Align->Disable();
@@ -903,12 +901,12 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeNone_OnRadioButton(wxCommandEvent& eve
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_POWER2;
+    this->m_LoadedAsset.m_ResizeMode = RESIZETYPE_POWER2;
     this->m_TextCtrl_ResizeW->Disable();
     this->m_TextCtrl_ResizeH->Disable();
     this->m_Choice_Align->Enable();
@@ -926,12 +924,12 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeTwo_OnRadioButton(wxCommandEvent& even
 
 void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ResizeMode = RESIZETYPE_CUSTOM;
+    this->m_LoadedAsset.m_ResizeMode = RESIZETYPE_CUSTOM;
     this->m_TextCtrl_ResizeW->Enable();
     this->m_TextCtrl_ResizeH->Enable();
     this->m_Choice_Align->Enable();
@@ -949,12 +947,12 @@ void Frame_ImageBrowser::m_RadioBtn_ResizeCustom_OnRadioButton(wxCommandEvent& e
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.x);
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset.m_CustomSize.x);
     this->MarkAssetModified();
     event.Skip();
 }
@@ -968,12 +966,12 @@ void Frame_ImageBrowser::m_TextCtrl_ResizeW_OnText(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_CustomSize.y);
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset.m_CustomSize.y);
     this->MarkAssetModified();
     event.Skip();
 }
@@ -987,12 +985,12 @@ void Frame_ImageBrowser::m_TextCtrl_ResizeH_OnText(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_Align_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_Alignment = (P64Img_Alignment)event.GetSelection();
+    this->m_LoadedAsset.m_Alignment = (P64Img_Alignment)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1006,12 +1004,12 @@ void Frame_ImageBrowser::m_Choice_Align_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ResizeFill = (P64Img_Fill)event.GetSelection();
+    this->m_LoadedAsset.m_ResizeFill = (P64Img_Fill)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1025,12 +1023,12 @@ void Frame_ImageBrowser::m_Choice_ResizeFill_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_Format_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ImageFormat = (P64Img_Format)event.GetSelection();
+    this->m_LoadedAsset.m_ImageFormat = (P64Img_Format)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1044,12 +1042,12 @@ void Frame_ImageBrowser::m_Choice_Format_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_TilingX = (P64Img_Tiling)event.GetSelection();
+    this->m_LoadedAsset.m_TilingX = (P64Img_Tiling)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1063,12 +1061,12 @@ void Frame_ImageBrowser::m_Choice_TilingX_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_TilingY_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_TilingY = (P64Img_Tiling)event.GetSelection();
+    this->m_LoadedAsset.m_TilingY = (P64Img_Tiling)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1082,12 +1080,12 @@ void Frame_ImageBrowser::m_Choice_TilingY_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.x);
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset.m_MaskStart.x);
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1101,12 +1099,12 @@ void Frame_ImageBrowser::m_TextCtrl_MaskPosW_OnText(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset->m_MaskStart.y);
+    event.GetString().ToUInt((unsigned int*)&this->m_LoadedAsset.m_MaskStart.y);
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1120,14 +1118,14 @@ void Frame_ImageBrowser::m_TextCtrl_MaskPosH_OnText(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
 
     // TODO: Check if we can generate Mipmaps to begin with (requires texture occupy <= 2048 bytes)
-    this->m_LoadedAsset->m_UseMipmaps = event.IsChecked();
+    this->m_LoadedAsset.m_UseMipmaps = event.IsChecked();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1141,12 +1139,12 @@ void Frame_ImageBrowser::m_Checkbox_Mipmaps_OnCheckBox(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_Choice_Dithering_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_Dithering = (P64Img_DitheringMode)event.GetSelection();
+    this->m_LoadedAsset.m_Dithering = (P64Img_DitheringMode)event.GetSelection();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1160,12 +1158,12 @@ void Frame_ImageBrowser::m_Choice_Dithering_OnChoice(wxCommandEvent& event)
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_AlphaMode = ALPHA_NONE;
+    this->m_LoadedAsset.m_AlphaMode = ALPHA_NONE;
     this->m_ColourPicker_AlphaColor->Disable();
     this->m_BitmapButton_Pipette->Disable();
     this->m_FilePicker_Alpha->Disable();
@@ -1182,12 +1180,12 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaNone_OnRadioButton(wxCommandEvent& even
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_AlphaMode = ALPHA_MASK;
+    this->m_LoadedAsset.m_AlphaMode = ALPHA_MASK;
     this->m_ColourPicker_AlphaColor->Disable();
     this->m_BitmapButton_Pipette->Disable();
     this->m_FilePicker_Alpha->Disable();
@@ -1204,12 +1202,12 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaMask_OnRadioButton(wxCommandEvent& even
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_AlphaMode = ALPHA_CUSTOM;
+    this->m_LoadedAsset.m_AlphaMode = ALPHA_CUSTOM;
     this->m_ColourPicker_AlphaColor->Enable();
     this->m_BitmapButton_Pipette->Enable();
     this->m_FilePicker_Alpha->Disable();
@@ -1226,12 +1224,12 @@ void Frame_ImageBrowser::m_RadioBtn_AlphaColor_OnRadioButton(wxCommandEvent& eve
 
 void Frame_ImageBrowser::m_ColourPicker_AlphaColor_OnColourChanged(wxColourPickerEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_AlphaColor = event.GetColour();
+    this->m_LoadedAsset.m_AlphaColor = event.GetColour();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -1260,12 +1258,12 @@ void Frame_ImageBrowser::m_BitmapButton_Pipette_OnButtonClick(wxCommandEvent& ev
 
 void Frame_ImageBrowser::m_RadioBtn_AlphaExternal_OnRadioButton(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_AlphaMode = ALPHA_EXTERNALMASK;
+    this->m_LoadedAsset.m_AlphaMode = ALPHA_EXTERNALMASK;
     this->m_ColourPicker_AlphaColor->Disable();
     this->m_BitmapButton_Pipette->Disable();
     this->m_FilePicker_Alpha->Enable();
@@ -1307,11 +1305,11 @@ void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 
 void Frame_ImageBrowser::MarkAssetModified()
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
         return;
     this->m_AssetModified = true;
     this->UpdateTitle();
-    this->m_LoadedAsset->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->ReloadAsset();
 }
 
@@ -1328,7 +1326,7 @@ void Frame_ImageBrowser::SaveChanges()
     std::vector<uint8_t> data;
 
     // Check we have an asset loaded to begin with
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
         return;
 
     // Create the path to the file if it doesn't exist anymore
@@ -1350,7 +1348,7 @@ void Frame_ImageBrowser::SaveChanges()
     }
 
     // Serialize the asset and write it
-    data = this->m_LoadedAsset->Serialize();
+    data = this->m_LoadedAsset.Serialize();
     file.Write(data.data(), data.size());
     file.Close();
     this->m_AssetModified = false;
@@ -1397,14 +1395,13 @@ void Frame_ImageBrowser::UpdateFilePath(wxFileName path)
     Frame_ImageBrowser::LoadAsset
     Loads an image asset from a given path
     @param  The path of the asset
-    @return The loaded asset, or NULL
+    @return Whether the asset managed to load or not
 ==============================*/
 
-P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
+bool Frame_ImageBrowser::LoadAsset(wxFileName path)
 {
     wxFile file;
     std::vector<uint8_t> data;
-    P64Asset_Image* ret;
 
     // Warn the user that the file was changed before doing anything potentially destructive
     if (this->IsAssetModified())
@@ -1428,34 +1425,29 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
     file.Close();
 
     // Create the asset object by deserializing the bytes
-    ret = P64Asset_Image::Deserialize(data);
-    if (ret == NULL)
-        return NULL;
-    if (this->m_LoadedAsset != NULL)
-        delete this->m_LoadedAsset;
-    this->m_LoadedAsset = ret;
-    this->m_AssetModified = false;
+    if (this->m_LoadedAsset.Deserialize(data) == false)
+        return false;
 
     // Set asset content
-    this->m_FilePicker_Image->SetPath(ret->m_SourcePath.GetFullPath());
-    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt()))
-        ret->m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt());
-    ret->RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
-    this->m_ScrolledWin_Preview->SetAsset(ret);
+    this->m_FilePicker_Image->SetPath(this->m_LoadedAsset.m_SourcePath.GetFullPath());
+    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + this->m_LoadedAsset.m_SourcePath.GetName() + "." + this->m_LoadedAsset.m_SourcePath.GetExt()))
+        this->m_LoadedAsset.m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + this->m_LoadedAsset.m_SourcePath.GetName() + "." + this->m_LoadedAsset.m_SourcePath.GetExt());
+    this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
+    this->m_ScrolledWin_Preview->SetAsset(&this->m_LoadedAsset);
 
     // Activate the window
     this->m_ToolBar_Preview->Enable();
     this->m_Notebook_Config->Enable();
 
     // Set panel item values based on asset data
-    switch (ret->m_ResizeMode)
+    switch (this->m_LoadedAsset.m_ResizeMode)
     {
         case RESIZETYPE_NONE:
             this->m_RadioBtn_ResizeNone->SetValue(true);
-            if (ret->m_Image.IsOk())
+            if (this->m_LoadedAsset.m_Image.IsOk())
             {
-                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_Image.GetWidth()));
-                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_Image.GetHeight()));
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
             }
             else
             {
@@ -1469,10 +1461,10 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
             break;
         case RESIZETYPE_POWER2:
             this->m_RadioBtn_ResizeTwo->SetValue(true);
-            if (ret->m_Image.IsOk())
+            if (this->m_LoadedAsset.m_Image.IsOk())
             {
-                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_Image.GetWidth()));
-                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_Image.GetHeight()));
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
             }
             else
             {
@@ -1486,24 +1478,24 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
             break;
         case RESIZETYPE_CUSTOM:
             this->m_RadioBtn_ResizeCustom->SetValue(true);
-            this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", ret->m_CustomSize.x));
-            this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", ret->m_CustomSize.y));
+            this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_CustomSize.x));
+            this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_CustomSize.y));
             this->m_TextCtrl_ResizeW->Enable();
             this->m_TextCtrl_ResizeH->Enable();
             this->m_Choice_Align->Enable();
             this->m_Choice_ResizeFill->Enable();
             break;
     }
-    this->m_Choice_Align->SetSelection(ret->m_Alignment);
-    this->m_Choice_ResizeFill->SetSelection(ret->m_ResizeFill);
-    this->m_Choice_TilingX->SetSelection(ret->m_TilingX);
-    this->m_Choice_TilingY->SetSelection(ret->m_TilingY);
-    this->m_Choice_Format->SetSelection(ret->m_ImageFormat);
-    this->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", ret->m_MaskStart.x));
-    this->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", ret->m_MaskStart.y));
-    this->m_Checkbox_Mipmaps->SetValue(ret->m_UseMipmaps);
-    this->m_Choice_Dithering->SetSelection(ret->m_Dithering);
-    switch (ret->m_AlphaMode)
+    this->m_Choice_Align->SetSelection(this->m_LoadedAsset.m_Alignment);
+    this->m_Choice_ResizeFill->SetSelection(this->m_LoadedAsset.m_ResizeFill);
+    this->m_Choice_TilingX->SetSelection(this->m_LoadedAsset.m_TilingX);
+    this->m_Choice_TilingY->SetSelection(this->m_LoadedAsset.m_TilingY);
+    this->m_Choice_Format->SetSelection(this->m_LoadedAsset.m_ImageFormat);
+    this->m_TextCtrl_MaskPosW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_MaskStart.x));
+    this->m_TextCtrl_MaskPosH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_MaskStart.y));
+    this->m_Checkbox_Mipmaps->SetValue(this->m_LoadedAsset.m_UseMipmaps);
+    this->m_Choice_Dithering->SetSelection(this->m_LoadedAsset.m_Dithering);
+    switch (this->m_LoadedAsset.m_AlphaMode)
     {
         case ALPHA_NONE:
             this->m_RadioBtn_AlphaNone->SetValue(true);
@@ -1523,7 +1515,7 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
             break;
         case ALPHA_CUSTOM:
             this->m_RadioBtn_AlphaColor->SetValue(true);
-            this->m_ColourPicker_AlphaColor->SetColour(ret->m_AlphaColor);
+            this->m_ColourPicker_AlphaColor->SetColour(this->m_LoadedAsset.m_AlphaColor);
             this->m_FilePicker_Alpha->SetPath("");
             this->m_ColourPicker_AlphaColor->Enable();
             this->m_BitmapButton_Pipette->Enable();
@@ -1532,7 +1524,7 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
         case ALPHA_EXTERNALMASK:
             this->m_RadioBtn_AlphaColor->SetValue(true);
             this->m_ColourPicker_AlphaColor->SetColour(*wxBLACK);
-            this->m_FilePicker_Alpha->SetPath(ret->m_AlphaPath.GetFullPath());
+            this->m_FilePicker_Alpha->SetPath(this->m_LoadedAsset.m_AlphaPath.GetFullPath());
             this->m_ColourPicker_AlphaColor->Disable();
             this->m_BitmapButton_Pipette->Disable();
             this->m_FilePicker_Alpha->Enable();
@@ -1542,7 +1534,7 @@ P64Asset_Image* Frame_ImageBrowser::LoadAsset(wxFileName path)
     // Finalize
     this->UpdateTitle();
     this->m_ScrolledWin_Preview->ZoomReset();
-    return ret;
+    return true;
 }
 
 
@@ -1566,7 +1558,7 @@ bool Frame_ImageBrowser::IsAssetModified()
 
 P64Asset_Image* Frame_ImageBrowser::GetLoadedAsset()
 {
-    return this->m_LoadedAsset;
+    return &this->m_LoadedAsset;
 }
 
 

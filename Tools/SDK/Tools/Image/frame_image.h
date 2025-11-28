@@ -44,7 +44,7 @@ class Frame_ImageBrowser : public wxFrame
 	private:
         wxString m_Title;
         wxFileName m_AssetFilePath;
-        P64Asset_Image* m_LoadedAsset;
+        P64Asset_Image m_LoadedAsset;
         bool m_AssetModified;
         bool m_UsingPipette;
 
@@ -153,7 +153,7 @@ class Frame_ImageBrowser : public wxFrame
 	public:
         void UpdateTitle();
         void UpdateFilePath(wxFileName newpath);
-        P64Asset_Image* LoadAsset(wxFileName path);
+        bool LoadAsset(wxFileName path);
         
         bool IsAssetModified();
         P64Asset_Image* GetLoadedAsset();

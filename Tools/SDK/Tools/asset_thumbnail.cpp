@@ -18,11 +18,11 @@ binary files.
 
 
 /*==============================
-    P64Asset_Thumbnail (Constructor)
+    P64AssetThumbnail (Constructor)
     Initializes the class
 ==============================*/
 
-P64Asset_Thumbnail::P64Asset_Thumbnail()
+P64AssetThumbnail::P64AssetThumbnail()
 {
     this->m_IconLargeSize = wxSize(0, 0);
     this->m_IconSmallSize = wxSize(0, 0);
@@ -34,11 +34,11 @@ P64Asset_Thumbnail::P64Asset_Thumbnail()
 
 
 /*==============================
-    P64Asset_Thumbnail (Destructor)
+    P64AssetThumbnail (Destructor)
     Cleans up the class before deletion
 ==============================*/
 
-P64Asset_Thumbnail::~P64Asset_Thumbnail()
+P64AssetThumbnail::~P64AssetThumbnail()
 {
     if (this->m_IconLargeData != NULL)
         free(this->m_IconLargeData);
@@ -48,12 +48,12 @@ P64Asset_Thumbnail::~P64Asset_Thumbnail()
 
 
 /*==============================
-    P64Asset_Thumbnail::operator=
+    P64AssetThumbnail::operator=
     Assigns this object to another, making a deep copy of its
     data.
 ==============================*/
 
-P64Asset_Thumbnail& P64Asset_Thumbnail::operator=(const P64Asset_Thumbnail& rhs)
+P64AssetThumbnail& P64AssetThumbnail::operator=(const P64AssetThumbnail& rhs)
 {
     uint32_t datasize;
     if (this == &rhs)
@@ -103,12 +103,12 @@ P64Asset_Thumbnail& P64Asset_Thumbnail::operator=(const P64Asset_Thumbnail& rhs)
 
 
 /*==============================
-    P64Asset_Thumbnail::Serialize
+    P64AssetThumbnail::Serialize
     Serializes the object
     @return The seralized data
 ==============================*/
 
-std::vector<uint8_t> P64Asset_Thumbnail::Serialize()
+std::vector<uint8_t> P64AssetThumbnail::Serialize()
 {
     std::vector<uint8_t> data;
     uint32_t datasize;
@@ -118,6 +118,7 @@ std::vector<uint8_t> P64Asset_Thumbnail::Serialize()
     datasize = this->m_IconLargeSize.x* this->m_IconLargeSize.y*4;
     if (datasize > 0)
         serialize_buffer(&data, this->m_IconLargeData, datasize);
+    
     serialize_u32(&data, this->m_IconSmallSize.x);
     serialize_u32(&data, this->m_IconSmallSize.y);
     datasize = this->m_IconSmallSize.x* this->m_IconSmallSize.y*4;
@@ -128,22 +129,21 @@ std::vector<uint8_t> P64Asset_Thumbnail::Serialize()
 
 
 /*==============================
-    P64Asset_Thumbnail::Deserialize
+    P64AssetThumbnail::Deserialize
     Deserializes the object from a byte array
     @param  The byte array containing the object data
     @return The seralized data
 ==============================*/
 
-P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
+P64AssetThumbnail* P64AssetThumbnail::Deserialize(uint8_t** bytes)
 {
     uint32_t datasize;
-    P64Asset_Thumbnail* asset = new P64Asset_Thumbnail();
-    uint8_t* bytesptr = &bytes[0];
-    uint32_t pos = 0;
+    P64AssetThumbnail* asset = new P64AssetThumbnail();
+    uint8_t* bytesptr = *bytes;
 
     // Large thumbnail
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_IconLargeSize.x);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_IconLargeSize.y);
+    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconLargeSize.x);
+    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconLargeSize.y);
     datasize = asset->m_IconLargeSize.x*asset->m_IconLargeSize.y*4;
     if (datasize != 0)
     {
@@ -151,14 +151,14 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
         uint8_t* a = NULL;
         wxImage img;
 
-        // Deseralize
+        // Deserialize
         asset->m_IconLargeData = (uint8_t*)malloc(datasize);
         if (asset->m_IconLargeData == NULL)
         {
             delete asset;
             return NULL;
         }
-        pos = deserialize_buffer(bytesptr, pos, asset->m_IconLargeData, datasize);
+        deserialize_buffer(&bytesptr, asset->m_IconLargeData, datasize);
 
         // Copy the data into two buffers
         rgb = (uint8_t*)malloc(asset->m_IconLargeSize.x*asset->m_IconLargeSize.y*3);
@@ -194,8 +194,8 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
     }
 
     // Small thumbnail
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_IconSmallSize.x);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_IconSmallSize.y);
+    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconSmallSize.x);
+    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconSmallSize.y);
     datasize = asset->m_IconSmallSize.x*asset->m_IconSmallSize.y*4;
     if (datasize)
     {
@@ -209,7 +209,7 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
             delete asset;
             return NULL;
         }
-        pos = deserialize_buffer(bytesptr, pos, asset->m_IconSmallData, datasize);
+        deserialize_buffer(&bytesptr, asset->m_IconSmallData, datasize);
 
         // Copy the data into two buffers
         rgb = (uint8_t*)malloc(asset->m_IconSmallSize.x*asset->m_IconSmallSize.y*3);
@@ -250,7 +250,7 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
 
 
 /*==============================
-    P64Asset_Thumbnail::GenerateThumbnails
+    P64AssetThumbnail::GenerateThumbnails
     Takes an image and generates correctly sized thumbnails for
     them.
     @param An array with RGB data for the image
@@ -259,7 +259,7 @@ P64Asset_Thumbnail* P64Asset_Thumbnail::Deserialize(uint8_t* bytes)
     @param The height of the source image
 ==============================*/
 
-void P64Asset_Thumbnail::GenerateThumbnails(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in)
+void P64AssetThumbnail::GenerateThumbnails(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in)
 {
     wxImage temp;
     uint32_t datasize;
@@ -348,13 +348,13 @@ void P64Asset_Thumbnail::GenerateThumbnails(uint8_t* src, uint8_t* alphasrc, uin
 
 
 /*==============================
-    P64Asset_Thumbnail::GenerateThumbnails
+    P64AssetThumbnail::GenerateThumbnails
     Takes an image and generates correctly sized thumbnails for
     them.
     @param A wxImage to generate the thumbnails from
 ==============================*/
 
-void P64Asset_Thumbnail::GenerateThumbnails(wxImage img)
+void P64AssetThumbnail::GenerateThumbnails(wxImage img)
 {
     if (img.IsOk())
         this->GenerateThumbnails(img.GetData(), img.GetAlpha(), img.GetWidth(), img.GetHeight());
@@ -362,24 +362,48 @@ void P64Asset_Thumbnail::GenerateThumbnails(wxImage img)
 
 
 /*==============================
-    P64Asset_Thumbnail::IsValidLarge
+    P64AssetThumbnail::IsValidLarge
     Checks if the large thumbnail is valid or not
     @return Whether the large thumbnail is valid or not
 ==============================*/
 
-bool P64Asset_Thumbnail::IsValidLarge()
+bool P64AssetThumbnail::IsValidLarge()
 {
     return this->m_IconLargeData != NULL;
 }
 
 
 /*==============================
-    P64Asset_Thumbnail::IsValidSmall
+    P64AssetThumbnail::IsValidSmall
     Checks if the small thumbnail is valid or not
     @return Whether the small thumbnail is valid or not
 ==============================*/
 
-bool P64Asset_Thumbnail::IsValidSmall()
+bool P64AssetThumbnail::IsValidSmall()
 {
     return this->m_IconSmallData != NULL;
+}
+
+
+/*==============================
+    P64AssetThumbnail::GetLargeIcon
+    Gets a wxIcon of the large icon
+    @return The large icon
+==============================*/
+
+wxIcon P64AssetThumbnail::GetLargeIcon()
+{
+    return this->m_IconLarge;
+}
+
+
+/*==============================
+    P64AssetThumbnail::GetSmallIcon
+    Gets a wxIcon of the small icon
+    @return The small icon
+==============================*/
+
+wxIcon P64AssetThumbnail::GetSmallIcon()
+{
+    return this->m_IconSmall;
 }

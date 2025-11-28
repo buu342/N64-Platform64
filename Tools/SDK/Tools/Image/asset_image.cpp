@@ -156,12 +156,32 @@ P64Asset_Image::P64Asset_Image()
     this->m_FinalSize = wxSize(0, 0);
     this->m_FinalTexelCount = 0;
     this->m_FinalTexels = NULL;
-    this->m_Thumbnail = P64Asset_Thumbnail();
 
     this->m_Image = wxImage();
     this->m_ImageAlpha = wxImage();
     this->m_ImageFinal = wxImage();
     this->m_ImageFinalRaw = wxImage();
+
+    this->SetUpFileFormat({P64ASSET_HEADER, P64ASSET_VERSION}, {
+        std::make_pair(DF_FILENAME, &this->m_SourcePath),
+        std::make_pair(DF_U8, &this->m_ResizeMode),
+        std::make_pair(DF_XY, &this->m_CustomSize),
+        std::make_pair(DF_U8, &this->m_Alignment),
+        std::make_pair(DF_U8, &this->m_ResizeFill),
+        std::make_pair(DF_U8, &this->m_ImageFormat),
+        std::make_pair(DF_U8, &this->m_TilingX),
+        std::make_pair(DF_U8, &this->m_TilingY),
+        std::make_pair(DF_XY, &this->m_MaskStart),
+        std::make_pair(DF_U8, &this->m_UseMipmaps),
+        std::make_pair(DF_U8, &this->m_Dithering),
+        std::make_pair(DF_U8, &this->m_AlphaMode),
+        std::make_pair(DF_RGB, &this->m_AlphaColor),
+        std::make_pair(DF_FILENAME, &this->m_AlphaPath),
+        std::make_pair(DF_XY, &this->m_FinalSize),
+        std::make_pair(DF_BUFFERSIZE, &this->m_FinalTexelCount),
+        std::make_pair(DF_BUFFER, &this->m_FinalTexels),
+        std::make_pair(DF_THUMBNAIL, &this->m_Thumbnail),
+    });
 }
 
 
@@ -178,147 +198,44 @@ P64Asset_Image::~P64Asset_Image()
 
 
 /*==============================
-    P64Asset_Image::Serialize
-    Serializes the object
-    @return The serialized data
+    P64Asset::operator=
+    Assigns this object to another, making a deep copy of the
+    data.
 ==============================*/
 
-std::vector<uint8_t> P64Asset_Image::Serialize()
+void P64Asset_Image::operator=(const P64Asset_Image& rhs)
 {
-    std::vector<uint8_t> data;
-    std::vector<uint8_t> tdata;
-
-    // Image configuration
-    serialize_header(&data, P64ASSET_HEADER, P64ASSET_VERSION);
-    serialize_wxstring(&data, this->m_SourcePath.GetFullPath());
-    serialize_u8(&data, this->m_ResizeMode);
-    serialize_u32(&data, this->m_CustomSize.x);
-    serialize_u32(&data, this->m_CustomSize.y);
-    serialize_u8(&data, this->m_Alignment);
-    serialize_u8(&data, this->m_ResizeFill);
-    serialize_u8(&data, this->m_ImageFormat);
-    serialize_u8(&data, this->m_TilingX);
-    serialize_u8(&data, this->m_TilingY);
-    serialize_u32(&data, this->m_MaskStart.x);
-    serialize_u32(&data, this->m_MaskStart.y);
-    serialize_u8(&data, this->m_UseMipmaps);
-    serialize_u8(&data, this->m_Dithering);
-    serialize_u8(&data, this->m_AlphaMode);
-    serialize_u8(&data, this->m_AlphaColor.Red());
-    serialize_u8(&data, this->m_AlphaColor.Green());
-    serialize_u8(&data, this->m_AlphaColor.Blue());
-    serialize_wxstring(&data, this->m_AlphaPath.GetFullPath());
-
-    // Texel data
-    serialize_u32(&data, this->m_FinalSize.x);
-    serialize_u32(&data, this->m_FinalSize.y);
-    serialize_u32(&data, this->m_FinalTexelCount);
-    if (this->m_FinalTexelCount != 0)
-        serialize_buffer(&data, this->m_FinalTexels, this->CalculateTexelCount());
-
-    // Thumbnail
-    this->m_Thumbnail.GenerateThumbnails(this->m_ImageFinalRaw);
-    tdata = this->m_Thumbnail.Serialize();
-    serialize_buffer(&data, &tdata[0], tdata.size());
-
-    // Done
-    return data;
-}
-
-
-/*==============================
-    P64Asset_Image::Deserialize
-    Serializes the object
-    @param  The serialized data
-    @return The deserialized object or NULL
-==============================*/
-
-P64Asset_Image* P64Asset_Image::Deserialize(std::vector<uint8_t> bytes)
-{
-    P64Asset_Image* asset;
-    P64Asset_Thumbnail* thumb;
-    wxString temp_str;
-    uint32_t temp_32;
-    uint8_t temp_8[3];
-    char header[16];
-    uint8_t* bytesptr = &bytes[0];
-    uint32_t pos = 0;
-
-    // Check if the file at least contains a header
-    if (bytes.size() < 16)
+    this->m_ImageFinalRaw = rhs.m_ImageFinalRaw;
+    this->m_SourcePath = rhs.m_SourcePath;
+    this->m_ResizeMode = rhs.m_ResizeMode;
+    this->m_CustomSize = rhs.m_CustomSize;
+    this->m_Alignment = rhs.m_Alignment;
+    this->m_ResizeFill = rhs.m_ResizeFill;
+    this->m_ImageFormat = rhs.m_ImageFormat;
+    this->m_TilingX = rhs.m_TilingX;
+    this->m_TilingY = rhs.m_TilingY;
+    this->m_MaskStart = rhs.m_MaskStart;
+    this->m_UseMipmaps = rhs.m_UseMipmaps;
+    this->m_Dithering = rhs.m_Dithering;
+    this->m_AlphaMode = rhs.m_AlphaMode;
+    this->m_AlphaColor = rhs.m_AlphaColor;
+    this->m_AlphaPath = rhs.m_AlphaPath;
+    this->m_FinalSize = rhs.m_FinalSize;
+    this->m_FinalTexelCount = rhs.m_FinalTexelCount;
+    if (this->m_FinalTexelCount > 0)
     {
-        wxMessageDialog dialog(NULL, "File is not a P64 image", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return NULL;
-    }
-
-    // Validate the header
-    pos = deserialize_header(bytesptr, pos, header, &temp_32);
-    if (strcmp(header, P64ASSET_HEADER) != 0)
-    {
-        wxMessageDialog dialog(NULL, "File is not a P64 image", "Error deserializing", wxCENTER | wxOK |  wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return NULL;
-    }
-    if (temp_32 > P64ASSET_VERSION)
-    {
-        wxMessageDialog dialog(NULL, "File is a more recent, unsupported version", "Error deserializing", wxCENTER | wxOK |  wxOK_DEFAULT | wxICON_ERROR);
-        dialog.ShowModal();
-        return NULL;
-    }
-
-    // Read the image configuration data
-    asset = new P64Asset_Image();
-    pos = deserialize_wxstring(bytesptr, pos, &temp_str);
-    asset->m_SourcePath = wxFileName(temp_str);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_ResizeMode);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_CustomSize.x);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_CustomSize.y);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Alignment);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_ResizeFill);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_ImageFormat);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_TilingX);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_TilingY);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_MaskStart.x);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_MaskStart.y);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_UseMipmaps);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_Dithering);
-    pos = deserialize_u8(bytesptr, pos, (uint8_t*)&asset->m_AlphaMode);
-    pos = deserialize_u8(bytesptr, pos, &temp_8[0]);
-    pos = deserialize_u8(bytesptr, pos, &temp_8[1]);
-    pos = deserialize_u8(bytesptr, pos, &temp_8[2]);
-    asset->m_AlphaColor.Set(temp_8[0], temp_8[1], temp_8[2], 255);
-    pos = deserialize_wxstring(bytesptr, pos, &temp_str);
-    asset->m_AlphaPath = wxFileName(temp_str);
-
-    // Read the texel data
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.x);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalSize.y);
-    pos = deserialize_u32(bytesptr, pos, (uint32_t*)&asset->m_FinalTexelCount);
-    if (asset->m_FinalTexelCount != 0)
-    {
-        asset->m_FinalTexels = (uint8_t*)malloc(asset->m_FinalTexelCount);
-        if (asset->m_FinalTexels == NULL)
-        {
-            wxMessageDialog dialog(NULL, "Unable to allocate memory", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
-            dialog.ShowModal();
-            delete asset;
-            return NULL;
-        }
-        pos = deserialize_buffer(bytesptr, pos, asset->m_FinalTexels, asset->m_FinalTexelCount);
+        free(this->m_FinalTexels);
+        this->m_FinalTexels = (uint8_t*)malloc(this->m_FinalTexelCount);
+        memcpy(this->m_FinalTexels, rhs.m_FinalTexels, this->m_FinalTexelCount);
     }
     else
-        asset->m_FinalTexels = NULL;
-
-    // Read the embedded thumbnail 
-    thumb = P64Asset_Thumbnail::Deserialize(&bytesptr[pos]);
-    if (thumb != NULL)
-        asset->m_Thumbnail = *thumb;
-    else
-        asset->m_Thumbnail = P64Asset_Thumbnail();
-
-    // Done
-    return asset;
+    {
+        free(this->m_FinalTexels);
+        this->m_FinalTexels = NULL;
+    }
+    this->m_Image = rhs.m_Image;
+    this->m_ImageAlpha = rhs.m_ImageAlpha;
+    this->m_ImageFinal = rhs.m_ImageFinal;
 }
 
 
@@ -996,4 +913,9 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
         base_alpha = NULL;
     }
     this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
+}
+
+bool P64Asset_Image::IsOk()
+{
+    return this->m_Image.IsOk();
 }

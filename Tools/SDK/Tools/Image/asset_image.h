@@ -7,6 +7,7 @@ typedef struct IUnknown IUnknown;
 #include <vector>
 #include <stdint.h>
 #include "../asset_thumbnail.h"
+#include "../asset.h"
 
 
 /*=============================================================
@@ -75,7 +76,7 @@ typedef enum {
                             Classes
 =============================================================*/
 
-class P64Asset_Image
+class P64Asset_Image : public P64Asset
 {
     private:
         wxImage  m_ImageFinalRaw;
@@ -111,7 +112,6 @@ class P64Asset_Image
         wxSize                m_FinalSize;
         uint32_t              m_FinalTexelCount;
         uint8_t*              m_FinalTexels;
-        P64Asset_Thumbnail    m_Thumbnail;
 
         // Loaded images
         wxImage               m_Image;
@@ -120,10 +120,11 @@ class P64Asset_Image
         // Preview image
         wxImage               m_ImageFinal;
 
+        bool IsOk();
         void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
-        std::vector<uint8_t> Serialize();
-        static P64Asset_Image* Deserialize(std::vector<uint8_t> bytes);
         uint32_t CalculateTexelCount();
+
+        void operator=(const P64Asset_Image& rhs);
 
         P64Asset_Image();
         ~P64Asset_Image();

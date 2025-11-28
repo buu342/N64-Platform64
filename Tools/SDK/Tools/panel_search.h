@@ -21,6 +21,7 @@ typedef struct IUnknown IUnknown;
 #include <wx/textctrl.h>
 #include <wx/dataview.h>
 #include <wx/listctrl.h>
+#include <wx/filename.h>
 #include <wx/panel.h>
 #include <wx/dir.h>
 #include <wx/msgqueue.h>
