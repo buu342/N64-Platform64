@@ -10590,7 +10590,7 @@
         <property name="window_name"></property>
         <property name="window_style">wxTAB_TRAVERSAL</property>
       </object>
-      <object class="wxAuiNotebook" expanded="false">
+      <object class="wxAuiNotebook" expanded="true">
         <property name="BottomDockable">1</property>
         <property name="LeftDockable">1</property>
         <property name="RightDockable">1</property>
@@ -10604,7 +10604,7 @@
         <property name="caption"></property>
         <property name="caption_visible">0</property>
         <property name="center_pane">1</property>
-        <property name="close_button">1</property>
+        <property name="close_button">0</property>
         <property name="context_help"></property>
         <property name="context_menu">1</property>
         <property name="default_pane">1</property>
@@ -10625,7 +10625,7 @@
         <property name="min_size"></property>
         <property name="minimize_button">0</property>
         <property name="minimum_size"></property>
-        <property name="moveable">1</property>
+        <property name="moveable">0</property>
         <property name="name">m_Notebook_Editor</property>
         <property name="pane_border">1</property>
         <property name="pane_position"></property>
@@ -10944,7 +10944,7 @@
                   <property name="resize">Resizable</property>
                   <property name="show">1</property>
                   <property name="size"></property>
-                  <property name="style"></property>
+                  <property name="style">wxTE_READONLY</property>
                   <property name="subclass">; ; forward_declare</property>
                   <property name="toolbar_pane">0</property>
                   <property name="tooltip"></property>
@@ -11072,7 +11072,7 @@
                   <property name="resize">Resizable</property>
                   <property name="show">1</property>
                   <property name="size"></property>
-                  <property name="style"></property>
+                  <property name="style">wxTE_READONLY</property>
                   <property name="subclass">; ; forward_declare</property>
                   <property name="toolbar_pane">0</property>
                   <property name="tooltip"></property>
@@ -11207,7 +11207,7 @@
                   <property name="resize">Resizable</property>
                   <property name="show">1</property>
                   <property name="size"></property>
-                  <property name="style"></property>
+                  <property name="style">wxTE_READONLY</property>
                   <property name="subclass">; ; forward_declare</property>
                   <property name="toolbar_pane">0</property>
                   <property name="tooltip"></property>
