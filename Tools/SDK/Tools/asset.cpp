@@ -43,17 +43,71 @@ void P64Asset::operator=(const P64Asset& rhs)
 }
 
 
-bool P64Asset::FileInAssetPath(wxFileName file, wxFileName basepath)
+bool P64Asset::FileInAssetsFolder(wxFileName file, wxFileName basepath)
 {
-    file.Normalize(wxPATH_NORM_ABSOLUTE, basepath.GetPathWithSep());
-    if (wxFileExists(file.GetFullPath()))
-        return true;
+    wxString fullpath;
+    file.Normalize(wxPATH_NORM_ABSOLUTE | wxPATH_NORM_DOTS | wxPATH_NORM_TILDE, basepath.GetPathWithSep());
+    fullpath = file.GetFullPath();
+    if (fullpath.Contains(basepath.GetFullPath()))
+        return wxFileExists(fullpath);
     return false;
 }
 
-bool P64Asset::CopyFileToAssetPath(wxFileName file, wxFileName assetdir, wxFileName basepath)
+wxFileName P64Asset::CopyFileToAssetPath(wxFileName file, wxFileName assetdir)
 {
-    return false;
+    wxMessageDialog dialog(NULL, "The file you have selected is not inside the asset folder, so it will be copied into it.\nContinue?", "File outside assets folder", wxCENTER | wxYES_NO | wxYES_DEFAULT | wxICON_WARNING);
+    if (dialog.ShowModal() == wxID_YES)
+    {
+        wxString newpath = assetdir.GetPathWithSep() + file.GetFullName();
+        if (wxFileExists(newpath))
+        {
+            wxMessageDialog dialog(NULL, wxString::Format("The file '%s' already exists in the asset folder.\nHow to proceed?", (const char*)file.GetFullName().c_str()), "Duplicate file", wxCENTER | wxYES_NO | wxCANCEL | wxYES_DEFAULT | wxICON_WARNING);
+            dialog.SetYesNoLabels("Overwrite it", "Rename it");
+            switch (dialog.ShowModal())
+            {
+                case wxID_YES: 
+                    wxCopyFile(file.GetFullPath(), newpath, true); 
+                    return newpath;
+                case wxID_NO:
+                {
+                    int newnum = 2;
+                    wxString newnewpath;
+                    do
+                    {
+                        newnewpath = assetdir.GetPathWithSep() + file.GetName() + wxString::Format(" (%d).", newnum) + file.GetExt();
+                        newnum++;
+                    }
+                    while (wxFileExists(newnewpath));
+                    wxCopyFile(file.GetFullPath(), newnewpath); 
+                    return newnewpath;
+                }
+                default: 
+                    return wxFileName("");
+            }
+        }
+        else
+        {
+            wxCopyFile(file.GetFullPath(), newpath);
+            return newpath;
+        }
+    }
+    else
+        return wxFileName("");
+}
+
+wxFileName P64Asset::GetRelativeAssetPath(wxFileName file, wxFileName assetdir)
+{
+    if (file.MakeRelativeTo(assetdir.GetPathWithSep()))
+        return file;
+    return wxFileName("");
+}
+
+
+wxFileName P64Asset::GetFullAssetPath(wxFileName file, wxFileName assetdir)
+{
+    if (file.Normalize(wxPATH_NORM_ABSOLUTE | wxPATH_NORM_DOTS | wxPATH_NORM_TILDE, assetdir.GetPathWithSep()))
+        return file;
+    return wxFileName("");
 }
 
 void P64Asset::SetUpFileFormat(FileHeader header, std::vector<std::pair<DataType, void*>> fmt)

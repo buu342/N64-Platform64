@@ -815,13 +815,43 @@ void Frame_ImageBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& ev
 
 void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& event)
 {
-    bool foundbitmap = false;
-    bool externalfile = false;
+    wxFileName file = event.GetPath();
+    bool isrelative = P64Asset::FileInAssetsFolder(file, this->m_Panel_Search->GetMainFolder());
 
-    if (!P64Asset::FileInAssetPath(event.GetPath(), this->m_Panel_Search->GetMainFolder()))
+    // Check the path is junk
+    if (!wxFileExists(file.GetFullPath()) && !isrelative)
+        goto fail;
+
+    // Check if the path is inside the assets folder. If it isn't, copy the file into it
+    if (!isrelative)
     {
-
+        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath);
+        if (!file.IsOk())
+            goto fail;
     }
+
+    // Success
+    file = P64Asset::GetFullAssetPath(file, this->m_AssetFilePath);
+    if (!file.IsOk())
+        goto fail;
+    this->m_LoadedAsset.m_Image.LoadFile(file.GetFullPath());
+    file = P64Asset::GetRelativeAssetPath(file, this->m_AssetFilePath);
+    this->m_FilePicker_Image->SetPath(file.GetFullPath());
+    this->m_LoadedAsset.m_SourcePath = file;
+    this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
+    this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
+    this->MarkAssetModified();
+    event.Skip();
+    return;
+
+    // Handle fail
+    fail:
+        printf("A\n");
+        this->m_LoadedAsset.m_SourcePath = event.GetPath();
+        this->m_LoadedAsset.m_Image = wxImage();
+        this->m_ScrolledWin_Preview->ZoomReset();
+        this->MarkAssetModified();
+        event.Skip();
 
     /*
     // Try to load the image either from an absolute path or from a relative path
@@ -1305,8 +1335,6 @@ void Frame_ImageBrowser::m_Button_Palette_OnButtonClick(wxCommandEvent& event)
 
 void Frame_ImageBrowser::MarkAssetModified()
 {
-    if (!this->m_LoadedAsset.IsOk())
-        return;
     this->m_AssetModified = true;
     this->UpdateTitle();
     this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
@@ -1324,10 +1352,6 @@ void Frame_ImageBrowser::SaveChanges()
     wxFile file;
     bool refresh = false;
     std::vector<uint8_t> data;
-
-    // Check we have an asset loaded to begin with
-    if (!this->m_LoadedAsset.IsOk())
-        return;
 
     // Create the path to the file if it doesn't exist anymore
     if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
