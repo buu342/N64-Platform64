@@ -63,10 +63,10 @@ class P64Asset
         bool IsOk();
 
         std::vector<uint8_t> Serialize();
-        bool Deserialize(std::vector<uint8_t> bytes);
+        bool Deserialize(std::vector<uint8_t> bytes, wxWindow* win=NULL);
 
         static bool FileInAssetsFolder(wxFileName file, wxFileName basepath);
-        static wxFileName CopyFileToAssetPath(wxFileName file, wxFileName assetdir);
+        static wxFileName CopyFileToAssetPath(wxFileName file, wxFileName assetdir, wxWindow* win=NULL);
         static wxFileName GetRelativeAssetPath(wxFileName file, wxFileName assetdir);
         static wxFileName GetFullAssetPath(wxFileName file, wxFileName assetdir);
 

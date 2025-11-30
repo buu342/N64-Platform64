@@ -825,7 +825,7 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
     // Check if the path is inside the assets folder. If it isn't, copy the file into it
     if (!isrelative)
     {
-        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath);
+        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath, this);
         if (!file.IsOk())
             goto fail;
     }
@@ -846,7 +846,6 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
 
     // Handle fail
     fail:
-        printf("A\n");
         this->m_LoadedAsset.m_SourcePath = event.GetPath();
         this->m_LoadedAsset.m_Image = wxImage();
         this->m_ScrolledWin_Preview->ZoomReset();
@@ -1449,7 +1448,7 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
     file.Close();
 
     // Create the asset object by deserializing the bytes
-    if (this->m_LoadedAsset.Deserialize(data) == false)
+    if (this->m_LoadedAsset.Deserialize(data, this) == false)
         return false;
 
     // Set asset content
