@@ -113,15 +113,13 @@ class P64Asset_Image : public P64Asset
         uint32_t              m_FinalTexelCount;
         uint8_t*              m_FinalTexels;
 
-        // Loaded images
-        wxImage               m_Image;
-        wxImage               m_ImageAlpha;
-
-        // Preview image
-        wxImage               m_ImageFinal;
+        wxImage               m_SourceImage;
+        wxImage               m_SourceAlpha;
+        wxImage               m_PreviewImage;
 
         bool IsOk();
-        void RegenerateFinal(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
+        void GenerateFinal(wxFileName assetpath);
+        void GeneratePreview(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
         uint32_t CalculateTexelCount();
 
         void operator=(const P64Asset_Image& rhs);

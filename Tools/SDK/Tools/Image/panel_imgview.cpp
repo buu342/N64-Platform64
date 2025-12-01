@@ -80,7 +80,6 @@ void Panel_ImgView::SetDefaultSettings()
 void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 {
     this->m_LoadedAsset = asset;
-    this->ReloadAsset();
 }
 
 
@@ -92,13 +91,7 @@ void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 void Panel_ImgView::ZoomIn()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x*ZOOM_SPEED, this->m_PreviewSettings.zoom.y*ZOOM_SPEED);
-    if (this->m_PreviewSettings.showfilter)
-    {
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
-        this->ReloadAsset();
-    }
-    else
-        this->RefreshDrawing();
+    this->RefreshDrawing();
 }
 
 
@@ -110,13 +103,7 @@ void Panel_ImgView::ZoomIn()
 void Panel_ImgView::ZoomOut()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(this->m_PreviewSettings.zoom.x/ZOOM_SPEED, this->m_PreviewSettings.zoom.y/ZOOM_SPEED);
-    if (this->m_PreviewSettings.showfilter)
-    {
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
-        this->ReloadAsset();
-    }
-    else
-        this->RefreshDrawing();
+    this->RefreshDrawing();
 }
 
 
@@ -128,13 +115,7 @@ void Panel_ImgView::ZoomOut()
 void Panel_ImgView::ZoomReset()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
-    if (this->m_PreviewSettings.showfilter)
-    {
-        this->m_LoadedAsset->RegenerateFinal(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
-        this->ReloadAsset();
-    }
-    else
-        this->RefreshDrawing();
+    this->RefreshDrawing();
 }
 
 
@@ -158,6 +139,7 @@ wxRealPoint Panel_ImgView::GetZoom()
 void Panel_ImgView::ToggleAlphaDisplay()
 {
     this->m_PreviewSettings.showalpha = !this->m_PreviewSettings.showalpha;
+    this->RefreshDrawing();
 }
 
 
@@ -181,6 +163,7 @@ bool Panel_ImgView::GetAlphaDisplay()
 void Panel_ImgView::ToggleFilterDisplay()
 {
     this->m_PreviewSettings.showfilter = !this->m_PreviewSettings.showfilter;
+    this->RefreshDrawing();
 }
 
 
@@ -204,20 +187,6 @@ bool Panel_ImgView::GetFilterDisplay()
 void Panel_ImgView::ToggleStatisticsDisplay()
 {
     this->m_PreviewSettings.showstats = !this->m_PreviewSettings.showstats;
-}
-
-
-/*==============================
-    Panel_ImgView::ReloadAsset
-    Reload the asset's preview bitmap
-==============================*/
-
-void Panel_ImgView::ReloadAsset()
-{
-    if (this->m_LoadedAsset == NULL || !this->m_LoadedAsset->m_ImageFinal.IsOk())
-        this->m_Bitmap = Tex_Missing;
-    else
-        this->m_Bitmap = wxBitmap(this->m_LoadedAsset->m_ImageFinal);
     this->RefreshDrawing();
 }
 
@@ -230,8 +199,13 @@ void Panel_ImgView::ReloadAsset()
 void Panel_ImgView::RefreshDrawing()
 {
     int w, h;
-    if (this->m_LoadedAsset == NULL || !this->m_Bitmap.IsOk())
-        return;
+    if (this->m_LoadedAsset != NULL && this->m_LoadedAsset->IsOk())
+    {
+        this->m_LoadedAsset->GeneratePreview(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
+        this->m_Bitmap = wxBitmap(this->m_LoadedAsset->m_PreviewImage);
+    }
+    else
+        this->m_Bitmap = Tex_Missing;
     w = this->m_Bitmap.GetWidth();
     h = this->m_Bitmap.GetHeight();
     if (!this->m_PreviewSettings.showfilter)
@@ -346,7 +320,7 @@ void Panel_ImgView::OnPaint(wxPaintEvent& event)
     if (this->m_PreviewSettings.showstats)
     {
         wxString str;
-        bool validasset = this->m_LoadedAsset != NULL && this->m_LoadedAsset->m_Image.IsOk();
+        bool validasset = this->m_LoadedAsset != NULL && this->m_LoadedAsset->IsOk();
         uint32_t y = screen_h;
         dc.SetBackgroundMode(wxPENSTYLE_SOLID);
         dc.SetTextBackground(wxColor(0, 0, 0, 128));

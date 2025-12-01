@@ -693,9 +693,6 @@ void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleAlphaDisplay();
-    if (this->m_LoadedAsset.IsOk())
-        this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
-    this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
 
@@ -721,9 +718,6 @@ void Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked(wxCommandEvent& event)
 void Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleFilterDisplay();
-    if (this->m_LoadedAsset.IsOk())
-        this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
-    this->m_ScrolledWin_Preview->ReloadAsset();
     event.Skip();
 }
 
@@ -749,7 +743,6 @@ void Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked(wxCommandEvent& eve
 void Frame_ImageBrowser::m_Tool_Statistics_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleStatisticsDisplay();
-    this->m_ScrolledWin_Preview->RefreshDrawing();
     event.Skip();
 }
 
@@ -825,77 +818,30 @@ void Frame_ImageBrowser::m_FilePicker_Image_OnFileChanged(wxFileDirPickerEvent& 
     // Check if the path is inside the assets folder. If it isn't, copy the file into it
     if (!isrelative)
     {
-        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath, this);
+        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath.GetPathWithSep(), this);
         if (!file.IsOk())
             goto fail;
     }
 
     // Success
-    file = P64Asset::GetFullAssetPath(file, this->m_AssetFilePath);
+    file = P64Asset::GetFullAssetPath(file, this->m_AssetFilePath.GetPathWithSep());
     if (!file.IsOk())
         goto fail;
-    this->m_LoadedAsset.m_Image.LoadFile(file.GetFullPath());
-    file = P64Asset::GetRelativeAssetPath(file, this->m_AssetFilePath);
-    this->m_FilePicker_Image->SetPath(file.GetFullPath());
+    file = P64Asset::GetRelativeAssetPath(file, this->m_AssetFilePath.GetPathWithSep());
     this->m_LoadedAsset.m_SourcePath = file;
-    this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
-    this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
+    this->m_FilePicker_Image->SetPath(file.GetFullPath());
     this->MarkAssetModified();
+    this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetWidth()));
+    this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetHeight()));
     event.Skip();
     return;
 
     // Handle fail
     fail:
         this->m_LoadedAsset.m_SourcePath = event.GetPath();
-        this->m_LoadedAsset.m_Image = wxImage();
-        this->m_ScrolledWin_Preview->ZoomReset();
         this->MarkAssetModified();
+        this->m_ScrolledWin_Preview->ZoomReset();
         event.Skip();
-
-    /*
-    // Try to load the image either from an absolute path or from a relative path
-    if (wxFileExists(event.GetPath())) // Check absolute path first
-    {
-        foundbitmap = this->m_LoadedAsset.m_Image.LoadFile(event.GetPath());
-        externalfile = true;
-    }
-    else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
-        foundbitmap = this->m_LoadedAsset.m_Image.LoadFile(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath());
-
-    // Check a valid image loaded
-    if (foundbitmap)
-    {
-        // If not relative to our main folder, make a copy of the image and make it relative
-        if (externalfile)
-        {
-            wxFileName relative;
-            wxString fileext = wxFileName(event.GetPath()).GetExt();
-            wxString assetpath = this->m_AssetFilePath.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
-            wxString assetname = this->m_AssetFilePath.GetName();
-            wxString copyfullpath =  assetpath + assetname + "." + fileext;
-            wxCopyFile(event.GetPath(), copyfullpath, true);
-            relative = wxFileName(copyfullpath);
-            relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
-            this->m_LoadedAsset.m_SourcePath = relative;
-            this->m_FilePicker_Image->SetPath(relative.GetFullPath());
-        }
-        else
-        {
-            this->m_FilePicker_Image->SetPath(event.GetPath());
-            this->m_LoadedAsset.m_SourcePath = event.GetPath();
-        }
-        this->m_TextCtrl_ResizeW->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
-        this->m_TextCtrl_ResizeH->SetValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
-    }
-    else
-    {
-        this->m_LoadedAsset.m_SourcePath = event.GetPath();
-        this->m_LoadedAsset.m_Image = wxImage();
-    }
-    this->m_ScrolledWin_Preview->ZoomReset();
-    this->MarkAssetModified();
-    */
-    event.Skip();
 }
 
 
@@ -1336,8 +1282,8 @@ void Frame_ImageBrowser::MarkAssetModified()
 {
     this->m_AssetModified = true;
     this->UpdateTitle();
-    this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
-    this->m_ScrolledWin_Preview->ReloadAsset();
+    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath.GetPathWithSep());
+    this->m_ScrolledWin_Preview->RefreshDrawing();
 }
 
 
@@ -1424,14 +1370,19 @@ void Frame_ImageBrowser::UpdateFilePath(wxFileName path)
 bool Frame_ImageBrowser::LoadAsset(wxFileName path)
 {
     wxFile file;
+    wxFileName srcimg;
     std::vector<uint8_t> data;
+
+    // Don't reload the asset
+    if (this->m_AssetFilePath.SameAs(path))
+        return false;
 
     // Warn the user that the file was changed before doing anything potentially destructive
     if (this->IsAssetModified())
     {
         wxMessageDialog dialog(this, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
         if (dialog.ShowModal() == wxID_NO)
-            return NULL;
+            return false;
     }
 
     // Set the path and open the file so we can extract its data
@@ -1441,7 +1392,7 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
     {
         wxMessageDialog dialog(this, "Unable to open file for reading", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
         dialog.ShowModal();
-        return NULL;
+        return false;
     }
     data.resize(path.GetSize().ToULong());
     file.Read(&data[0], data.capacity());
@@ -1452,10 +1403,8 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
         return false;
 
     // Set asset content
+    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath);
     this->m_FilePicker_Image->SetPath(this->m_LoadedAsset.m_SourcePath.GetFullPath());
-    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + this->m_LoadedAsset.m_SourcePath.GetName() + "." + this->m_LoadedAsset.m_SourcePath.GetExt()))
-        this->m_LoadedAsset.m_Image.LoadFile(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + this->m_LoadedAsset.m_SourcePath.GetName() + "." + this->m_LoadedAsset.m_SourcePath.GetExt());
-    this->m_LoadedAsset.RegenerateFinal(this->m_ScrolledWin_Preview->GetAlphaDisplay(), this->m_ScrolledWin_Preview->GetFilterDisplay(), this->m_ScrolledWin_Preview->GetZoom());
     this->m_ScrolledWin_Preview->SetAsset(&this->m_LoadedAsset);
 
     // Activate the window
@@ -1467,10 +1416,10 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
     {
         case RESIZETYPE_NONE:
             this->m_RadioBtn_ResizeNone->SetValue(true);
-            if (this->m_LoadedAsset.m_Image.IsOk())
+            if (this->m_LoadedAsset.m_SourceImage.IsOk())
             {
-                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
-                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetHeight()));
             }
             else
             {
@@ -1484,10 +1433,10 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
             break;
         case RESIZETYPE_POWER2:
             this->m_RadioBtn_ResizeTwo->SetValue(true);
-            if (this->m_LoadedAsset.m_Image.IsOk())
+            if (this->m_LoadedAsset.m_SourceImage.IsOk())
             {
-                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetWidth()));
-                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_Image.GetHeight()));
+                this->m_TextCtrl_ResizeW->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetWidth()));
+                this->m_TextCtrl_ResizeH->ChangeValue(wxString::Format("%d", this->m_LoadedAsset.m_SourceImage.GetHeight()));
             }
             else
             {
@@ -1555,6 +1504,7 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
     }
 
     // Finalize
+    this->m_AssetModified = false;
     this->UpdateTitle();
     this->m_ScrolledWin_Preview->ZoomReset();
     return true;

@@ -157,9 +157,9 @@ P64Asset_Image::P64Asset_Image()
     this->m_FinalTexelCount = 0;
     this->m_FinalTexels = NULL;
 
-    this->m_Image = wxImage();
-    this->m_ImageAlpha = wxImage();
-    this->m_ImageFinal = wxImage();
+    this->m_SourceImage = wxImage();
+    this->m_SourceAlpha = wxImage();
+    this->m_PreviewImage = wxImage();
     this->m_ImageFinalRaw = wxImage();
 
     this->SetUpFileFormat({P64ASSET_HEADER, P64ASSET_VERSION}, {
@@ -233,9 +233,9 @@ void P64Asset_Image::operator=(const P64Asset_Image& rhs)
         free(this->m_FinalTexels);
         this->m_FinalTexels = NULL;
     }
-    this->m_Image = rhs.m_Image;
-    this->m_ImageAlpha = rhs.m_ImageAlpha;
-    this->m_ImageFinal = rhs.m_ImageFinal;
+    this->m_SourceImage = rhs.m_SourceImage;
+    this->m_SourceAlpha = rhs.m_SourceAlpha;
+    this->m_PreviewImage = rhs.m_PreviewImage;
 }
 
 
@@ -251,12 +251,12 @@ wxSize P64Asset_Image::CalculateImageSize()
     uint32_t w, h;
 
     // Check we have a valid image
-    if (!this->m_Image.IsOk())
+    if (!this->m_SourceImage.IsOk())
         return wxSize(1, 1);
 
     // Resize the image
-    w = this->m_Image.GetWidth();
-    h = this->m_Image.GetHeight();
+    w = this->m_SourceImage.GetWidth();
+    h = this->m_SourceImage.GetHeight();
     switch (this->m_ResizeMode)
     {
         case RESIZETYPE_NONE:
@@ -805,27 +805,34 @@ void P64Asset_Image::GenerateTexels(uint8_t* src, uint8_t* alphasrc, uint32_t w_
 
 
 /*==============================
-    P64Asset_Image::RegenerateFinal
+    P64Asset_Image::GenerateFinal
     Generate the texture based on the settings in this object
-    @param Whether to preview or not
-    @param Whether to preview filtering
-    @param The preview zoom
+    @param The path of the asset (so the absolute path for
+           the source images can be calculated)
 ==============================*/
 
-void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
+void P64Asset_Image::GenerateFinal(wxFileName assetpath)
 {
-    if (!this->m_Image.IsOk())
-        return;
-    wxSize rawsize = this->m_Image.GetSize();
+    wxSize rawsize;
     wxSize newsize;
-    uint8_t* base_alpha = NULL;
     uint8_t* base_rgb = NULL;
+    uint8_t* base_alpha = NULL;
+    wxFileName srcimg = this->m_SourcePath;
+
+    // Get the source image
+    srcimg.Normalize(wxPATH_NORM_ABSOLUTE | wxPATH_NORM_DOTS | wxPATH_NORM_TILDE, assetpath.GetPathWithSep());
+    if (!wxFileExists(srcimg.GetFullPath()) || !this->m_SourceImage.LoadFile(srcimg.GetFullPath()))
+    {
+        this->m_ImageFinalRaw = wxImage();
+        return;
+    }
 
     // Get the raw RGB data from the image
+    rawsize = this->m_SourceImage.GetSize();
     base_rgb = (uint8_t*)malloc(rawsize.x*rawsize.y*3);
     if (base_rgb == NULL)
         return;
-    memcpy(base_rgb, this->m_Image.GetData(), rawsize.x*rawsize.y*3);
+    memcpy(base_rgb, this->m_SourceImage.GetData(), rawsize.x*rawsize.y*3);
 
     // Handle alpha
     switch (this->m_AlphaMode)
@@ -835,8 +842,8 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
             base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
             if (base_alpha != NULL)
             {
-                if (this->m_Image.GetAlpha() != NULL)
-                    memcpy(base_alpha, this->m_Image.GetAlpha(), rawsize.x*rawsize.y);
+                if (this->m_SourceImage.GetAlpha() != NULL)
+                    memcpy(base_alpha, this->m_SourceImage.GetAlpha(), rawsize.x*rawsize.y);
                 else
                     memset(base_alpha, 255, rawsize.x*rawsize.y);
             }
@@ -855,14 +862,14 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
             }
             break;
         case ALPHA_EXTERNALMASK:
-            if (this->m_Image.GetSize() == this->m_ImageAlpha.GetSize())
+            if (this->m_SourceImage.GetSize() == this->m_SourceAlpha.GetSize())
             {
                 base_alpha = (unsigned char*)malloc(rawsize.x*rawsize.y);
                 if (base_alpha != NULL)
                 {
-                    if (this->m_ImageAlpha.IsOk())
+                    if (this->m_SourceAlpha.IsOk())
                     {
-                        wxImage bw = this->m_ImageAlpha.ConvertToGreyscale();
+                        wxImage bw = this->m_SourceAlpha.ConvertToGreyscale();
                         for (int i=0; i<rawsize.x*rawsize.y; i++)
                             base_alpha[i] = bw.GetData()[i*3];
                     }
@@ -896,26 +903,57 @@ void P64Asset_Image::RegenerateFinal(bool bitmap_alpha, bool bitmap_filter, wxRe
     }
     
     // Generate the final texels
+    this->m_FinalSize = newsize;
     this->GenerateTexels(base_rgb, base_alpha, newsize.x, newsize.y);
-
-    // Generate some images for wxWidgets preview
+    this->m_Thumbnail.GenerateThumbnails(base_rgb, base_alpha, newsize.x, newsize.y);
     this->m_ImageFinalRaw = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, true);
+}
+
+
+/*==============================
+    P64Asset_Image::GeneratePreview
+    Generate a preview version of the texture
+    @param Whether to preview or not
+    @param Whether to preview filtering
+    @param The preview zoom
+==============================*/
+
+void P64Asset_Image::GeneratePreview(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
+{
+    uint8_t* base_rgb = NULL;
+    uint8_t* base_alpha = NULL;
+    wxSize size;
+    if (!this->m_ImageFinalRaw.IsOk())
+        return;
+
+    // Get the RGB data
+    size = this->m_ImageFinalRaw.GetSize();
+    base_rgb = (uint8_t*)malloc(size.x*size.y*3);
+    if (base_rgb == NULL)
+        return;
+    memcpy(base_rgb, this->m_ImageFinalRaw.GetData(), size.x*size.y*3);
+
+    // Get the alpha data
+    if (bitmap_alpha && this->m_SourceImage.GetAlpha() != NULL)
+    {
+        base_alpha = (uint8_t*)malloc(size.x*size.y);
+        memcpy(base_alpha, this->m_SourceImage.GetAlpha(), size.x*size.y);
+    }
+
+    // Apply the bilinear filter
     if (bitmap_filter)
     {
-        this->Blur_Bilinear(&base_rgb, 3, newsize.x, newsize.y, zoom);
-        this->Blur_Bilinear(&base_alpha, 1, newsize.x, newsize.y, zoom);
-        newsize.x = roundf(((float)newsize.x)*zoom.x);
-        newsize.y = roundf(((float)newsize.y)*zoom.y);
+        this->Blur_Bilinear(&base_rgb, 3, size.x, size.y, zoom);
+        this->Blur_Bilinear(&base_alpha, 1, size.x, size.y, zoom);
+        size.x = roundf(((float)size.x)*zoom.x);
+        size.y = roundf(((float)size.y)*zoom.y);
     }
-    if (!bitmap_alpha)
-    {
-        free(base_alpha);
-        base_alpha = NULL;
-    }
-    this->m_ImageFinal = wxImage(newsize.x, newsize.y, base_rgb, base_alpha, false);
+
+    // Finalize the preview image
+    this->m_PreviewImage = wxImage(size.x, size.y, base_rgb, base_alpha, false);
 }
 
 bool P64Asset_Image::IsOk()
 {
-    return this->m_Image.IsOk();
+    return this->m_ImageFinalRaw.IsOk();
 }

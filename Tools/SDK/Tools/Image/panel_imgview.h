@@ -47,7 +47,6 @@ class Panel_ImgView : public wxScrolledWindow
         void ToggleStatisticsDisplay();
         void SetDefaultSettings();
         void SetAsset(P64Asset_Image* asset);
-        void ReloadAsset();
         void RefreshDrawing();
         
         ~Panel_ImgView();
