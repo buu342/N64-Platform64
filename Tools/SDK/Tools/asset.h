@@ -53,7 +53,6 @@ class P64Asset
         std::vector<std::pair<DataType, void*>> m_Format;
 
         void SetUpFileFormat(FileHeader header, std::vector<std::pair<DataType, void*>> fmt);
-        void GenerateThumbnail();
 
     public:
         bool ValidSmallThumbnail();

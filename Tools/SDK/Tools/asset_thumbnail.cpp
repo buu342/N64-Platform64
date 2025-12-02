@@ -132,19 +132,19 @@ std::vector<uint8_t> P64AssetThumbnail::Serialize()
     P64AssetThumbnail::Deserialize
     Deserializes the object from a byte array
     @param  The byte array containing the object data
-    @return The seralized data
+    @return Whether the deserialization succeeded or not
 ==============================*/
 
-P64AssetThumbnail* P64AssetThumbnail::Deserialize(uint8_t** bytes)
+bool P64AssetThumbnail::Deserialize(uint8_t** bytes)
 {
     uint32_t datasize;
-    P64AssetThumbnail* asset = new P64AssetThumbnail();
     uint8_t* bytesptr = *bytes;
 
-    // Large thumbnail
-    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconLargeSize.x);
-    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconLargeSize.y);
-    datasize = asset->m_IconLargeSize.x*asset->m_IconLargeSize.y*4;
+     // Large thumbnail
+    deserialize_u32(&bytesptr, (uint32_t*)&this->m_IconLargeSize.x);
+    deserialize_u32(&bytesptr, (uint32_t*)&this->m_IconLargeSize.y);
+
+    datasize = this->m_IconLargeSize.x*this->m_IconLargeSize.y*4;
     if (datasize != 0)
     {
         uint8_t* rgb = NULL;
@@ -152,100 +152,88 @@ P64AssetThumbnail* P64AssetThumbnail::Deserialize(uint8_t** bytes)
         wxImage img;
 
         // Deserialize
-        asset->m_IconLargeData = (uint8_t*)malloc(datasize);
-        if (asset->m_IconLargeData == NULL)
-        {
-            delete asset;
-            return NULL;
-        }
-        deserialize_buffer(&bytesptr, asset->m_IconLargeData, datasize);
+        this->m_IconLargeData = (uint8_t*)malloc(datasize);
+        if (this->m_IconLargeData == NULL)
+            return false;
+        deserialize_buffer(&bytesptr, this->m_IconLargeData, datasize);
 
         // Copy the data into two buffers
-        rgb = (uint8_t*)malloc(asset->m_IconLargeSize.x*asset->m_IconLargeSize.y*3);
+        rgb = (uint8_t*)malloc(this->m_IconLargeSize.x*this->m_IconLargeSize.y*3);
         if (rgb == NULL)
-        {
-            delete asset;
-            return NULL;
-        }
-        a = (uint8_t*)malloc(asset->m_IconLargeSize.x*asset->m_IconLargeSize.y*1);
+            return false;
+        a = (uint8_t*)malloc(this->m_IconLargeSize.x*this->m_IconLargeSize.y*1);
         if (a == NULL)
         {
             free(rgb);
-            delete asset;
-            return NULL;
+            return false;
         }
-        for (int i=0; i<asset->m_IconLargeSize.x*asset->m_IconLargeSize.y; i++)
+        for (int i=0; i<this->m_IconLargeSize.x*this->m_IconLargeSize.y; i++)
         {
             #pragma warning(push)
             #pragma warning(disable:6385) // False positive
-            rgb[(i*3) + 0] = asset->m_IconLargeData[(i*4) + 0];
-            rgb[(i*3) + 1] = asset->m_IconLargeData[(i*4) + 1];
-            rgb[(i*3) + 2] = asset->m_IconLargeData[(i*4) + 2];
-            a[i]           = asset->m_IconLargeData[(i*4) + 3];
+            rgb[(i*3) + 0] = this->m_IconLargeData[(i*4) + 0];
+            rgb[(i*3) + 1] = this->m_IconLargeData[(i*4) + 1];
+            rgb[(i*3) + 2] = this->m_IconLargeData[(i*4) + 2];
+            a[i]           = this->m_IconLargeData[(i*4) + 3];
             #pragma warning(pop)
         }
-        img = wxImage(asset->m_IconLargeSize.x, asset->m_IconLargeSize.y, rgb, a, false);
-        asset->m_IconLarge.CopyFromBitmap(img);
+        img = wxImage(this->m_IconLargeSize.x, this->m_IconLargeSize.y, rgb, a, false);
+        img.Resize(wxSize(THUMBSIZE_LARGE, THUMBSIZE_LARGE), wxPoint((THUMBSIZE_LARGE-img.GetWidth())/2, (THUMBSIZE_LARGE-img.GetHeight())/2));
+        this->m_IconLarge.CopyFromBitmap(img);
     }
     else
     {
-        asset->m_IconLargeData = NULL;
-        asset->m_IconLarge = wxIcon();
+        this->m_IconLargeData = NULL;
+        this->m_IconLarge = wxIcon();
     }
 
     // Small thumbnail
-    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconSmallSize.x);
-    deserialize_u32(&bytesptr, (uint32_t*)&asset->m_IconSmallSize.y);
-    datasize = asset->m_IconSmallSize.x*asset->m_IconSmallSize.y*4;
+    deserialize_u32(&bytesptr, (uint32_t*)&this->m_IconSmallSize.x);
+    deserialize_u32(&bytesptr, (uint32_t*)&this->m_IconSmallSize.y);
+    datasize = this->m_IconSmallSize.x*this->m_IconSmallSize.y*4;
     if (datasize)
     {
         uint8_t* rgb = NULL;
         uint8_t* a = NULL;
         wxImage img;
 
-        asset->m_IconSmallData = (uint8_t*)malloc(datasize);
-        if (asset->m_IconSmallData == NULL)
-        {
-            delete asset;
-            return NULL;
-        }
-        deserialize_buffer(&bytesptr, asset->m_IconSmallData, datasize);
+        this->m_IconSmallData = (uint8_t*)malloc(datasize);
+        if (this->m_IconSmallData == NULL)
+            return false;
+        deserialize_buffer(&bytesptr, this->m_IconSmallData, datasize);
 
         // Copy the data into two buffers
-        rgb = (uint8_t*)malloc(asset->m_IconSmallSize.x*asset->m_IconSmallSize.y*3);
+        rgb = (uint8_t*)malloc(this->m_IconSmallSize.x*this->m_IconSmallSize.y*3);
         if (rgb == NULL)
-        {
-            delete asset;
-            return NULL;
-        }
-        a = (uint8_t*)malloc(asset->m_IconSmallSize.x*asset->m_IconSmallSize.y*1);
+            return false;
+        a = (uint8_t*)malloc(this->m_IconSmallSize.x*this->m_IconSmallSize.y*1);
         if (a == NULL)
         {
             free(rgb);
-            delete asset;
-            return NULL;
+            return false;
         }
-        for (int i=0; i<asset->m_IconSmallSize.x*asset->m_IconSmallSize.y; i++)
+        for (int i=0; i<this->m_IconSmallSize.x*this->m_IconSmallSize.y; i++)
         {
             #pragma warning(push)
             #pragma warning(disable:6385) // False positive
-            rgb[(i*3) + 0] = asset->m_IconSmallData[(i*4) + 0];
-            rgb[(i*3) + 1] = asset->m_IconSmallData[(i*4) + 1];
-            rgb[(i*3) + 2] = asset->m_IconSmallData[(i*4) + 2];
-            a[i]           = asset->m_IconSmallData[(i*4) + 3];
+            rgb[(i*3) + 0] = this->m_IconSmallData[(i*4) + 0];
+            rgb[(i*3) + 1] = this->m_IconSmallData[(i*4) + 1];
+            rgb[(i*3) + 2] = this->m_IconSmallData[(i*4) + 2];
+            a[i]           = this->m_IconSmallData[(i*4) + 3];
             #pragma warning(pop)
         }
-        img = wxImage(asset->m_IconSmallSize.x, asset->m_IconSmallSize.y, rgb, a, false);
-        asset->m_IconSmall.CopyFromBitmap(img);
+        img = wxImage(this->m_IconSmallSize.x, this->m_IconSmallSize.y, rgb, a, false);
+        img.Resize(wxSize(THUMBSIZE_SMALL, THUMBSIZE_SMALL), wxPoint((THUMBSIZE_SMALL-img.GetWidth())/2, (THUMBSIZE_SMALL-img.GetHeight())/2));
+        this->m_IconSmall.CopyFromBitmap(img);
     }
     else
     {
-        asset->m_IconSmallData = NULL;
-        asset->m_IconSmall = wxIcon();
+        this->m_IconSmallData = NULL;
+        this->m_IconSmall = wxIcon();
     }
 
     // Done
-    return asset;
+    return true;
 }
 
 
@@ -313,7 +301,6 @@ void P64AssetThumbnail::GenerateThumbnails(uint8_t* src, uint8_t* alphasrc, uint
         else
             this->m_IconLargeData[(i*4) + 3] = 255;
     }
-
 
     // Make the small icon
     temp = wxImage(w_in, h_in, src, alphasrc, true);

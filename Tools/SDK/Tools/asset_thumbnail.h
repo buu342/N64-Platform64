@@ -23,8 +23,8 @@ class P64AssetThumbnail
     protected:
 
     public:
-        std::vector<uint8_t>        Serialize();
-        static P64AssetThumbnail*   Deserialize(uint8_t** bytes);
+        std::vector<uint8_t> Serialize();
+        bool Deserialize(uint8_t** bytes);
 
         void  GenerateThumbnails(uint8_t* src, uint8_t* alphasrc, uint32_t w_in, uint32_t h_in);
         void  GenerateThumbnails(wxImage img);
