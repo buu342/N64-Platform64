@@ -76,7 +76,7 @@ void Panel_SndView::SetDefaultSettings()
 void Panel_SndView::SetAsset(P64Asset_Sound* asset)
 {
     this->m_LoadedAsset = asset;
-    this->ReloadAsset();
+    this->RefreshDrawing();
 }
 
 
@@ -129,18 +129,6 @@ wxRealPoint Panel_SndView::GetZoom()
     return this->m_PreviewSettings.zoom;
 }
 
-/*==============================
-    Panel_SndView::ReloadAsset
-    Reload the asset's preview bitmap
-==============================*/
-
-void Panel_SndView::ReloadAsset()
-{
-    if (this->m_LoadedAsset != NULL)
-        this->m_AudioFile = this->m_LoadedAsset->m_SndFile;
-    this->RefreshDrawing();
-}
-
 
 /*==============================
     Panel_SndView::RefreshDrawing
@@ -149,9 +137,7 @@ void Panel_SndView::ReloadAsset()
 
 void Panel_SndView::RefreshDrawing()
 {
-    int w;
-    if (this->m_LoadedAsset == NULL || !this->m_AudioFile.IsOk())
-        return;
+    this->m_AudioFile = this->m_LoadedAsset->m_SndFile;
     this->Layout();
     this->Refresh();
 }

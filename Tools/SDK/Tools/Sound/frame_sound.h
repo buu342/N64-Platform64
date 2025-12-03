@@ -35,7 +35,7 @@ class Frame_SoundBrowser : public wxFrame
     private:
         wxString m_Title;
         wxFileName m_AssetFilePath;
-        P64Asset_Sound* m_LoadedAsset;
+        P64Asset_Sound m_LoadedAsset;
         bool m_AssetModified;
 
         wxSplitterWindow* m_Splitter_Vertical;
@@ -91,7 +91,7 @@ class Frame_SoundBrowser : public wxFrame
 	public:
         void UpdateTitle();
         void UpdateFilePath(wxFileName path);
-        P64Asset_Sound* LoadAsset(wxFileName path);
+        bool LoadAsset(wxFileName path);
 
         bool IsAssetModified();
         wxFileName GetLoadedAssetPath();

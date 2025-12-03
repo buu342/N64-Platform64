@@ -36,7 +36,6 @@ class Panel_SndView : public wxScrolledWindow
         void ZoomReset();
         void SetAsset(P64Asset_Sound* asset);
         void SetDefaultSettings();
-        void ReloadAsset();
         void RefreshDrawing();
 
         wxRealPoint GetZoom();

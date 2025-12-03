@@ -235,6 +235,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     Sizer_ImageData->Add(this->m_StaticText_Image, 0, wxALL, 5);
     this->m_FilePicker_Image = new wxFilePickerCtrl(this->m_Panel_ImageData, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files|*.bmp;*.gif;*.jpg;*.png"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     this->m_FilePicker_Image->SetToolTip(_("The path for the texture image to load"));
+    this->m_FilePicker_Image->SetInitialDirectory(this->m_Panel_Search->GetMainFolder().GetFullPath());
     Sizer_ImageData->Add(this->m_FilePicker_Image, 0, wxALL|wxEXPAND, 5);
 
     // Image resize radios and inputs
@@ -416,6 +417,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_FilePicker_Alpha = new wxFilePickerCtrl(this->m_Panel_ImageColors, wxID_ANY, wxEmptyString, _("Select a file"), _("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE | wxFLP_USE_TEXTCTRL);
     this->m_FilePicker_Alpha->Disable();
     this->m_FilePicker_Alpha->SetToolTip(_("Filepath for the external alpha mask"));
+    this->m_FilePicker_Alpha->SetInitialDirectory(this->m_Panel_Search->GetMainFolder().GetFullPath());
     Sizer_ImageColors->Add(this->m_FilePicker_Alpha, 0, wxALL|wxEXPAND, 5);
 
     // Create the palette configuration button
@@ -1403,7 +1405,7 @@ bool Frame_ImageBrowser::LoadAsset(wxFileName path)
         return false;
 
     // Set asset content
-    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath);
+    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath.GetPathWithSep());
     this->m_FilePicker_Image->SetPath(this->m_LoadedAsset.m_SourcePath.GetFullPath());
     this->m_ScrolledWin_Preview->SetAsset(&this->m_LoadedAsset);
 

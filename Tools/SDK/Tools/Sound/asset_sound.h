@@ -7,13 +7,14 @@ typedef struct IUnknown IUnknown;
 #include <vector>
 #include <wx/sound.h>
 #include "audiofmts/audiofile.h"
+#include "../asset.h"
 
 
 /*=============================================================
                             Classes
 =============================================================*/
 
-class P64Asset_Sound
+class P64Asset_Sound : public P64Asset
 {
     private:
 
@@ -34,11 +35,11 @@ class P64Asset_Sound
         //VADPCM  m_N64SndFile;
         wxSound   m_SoundPreview;
 
+        bool IsOk();
+        void GenerateFinal(wxFileName assetpath);
+
+        void operator=(const P64Asset_Sound& rhs);
+
         P64Asset_Sound();
         ~P64Asset_Sound();
-
-        std::vector<uint8_t>   Serialize();
-        static P64Asset_Sound* Deserialize(std::vector<uint8_t> bytes);
-
-        void RegenerateFinal();
 };

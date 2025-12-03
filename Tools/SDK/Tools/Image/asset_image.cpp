@@ -953,6 +953,13 @@ void P64Asset_Image::GeneratePreview(bool bitmap_alpha, bool bitmap_filter, wxRe
     this->m_PreviewImage = wxImage(size.x, size.y, base_rgb, base_alpha, false);
 }
 
+
+/*==============================
+    P64Asset_Image::IsOk
+    Checks if the asset is properly initialized
+    @return Whether the asset is properly initialized
+==============================*/
+
 bool P64Asset_Image::IsOk()
 {
     return this->m_ImageFinalRaw.IsOk();

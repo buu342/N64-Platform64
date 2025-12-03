@@ -122,7 +122,6 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
 {
     // Initialize attributes to their defaults
     this->m_Title = title;
-    this->m_LoadedAsset = NULL;
     this->m_AssetModified = false;
     this->m_AssetFilePath = wxFileName("");
 
@@ -208,6 +207,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
     StaticText_Path->Wrap(-1);
     Sizer_Config_Basic->Add(StaticText_Path, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
     this->m_FilePicker_Source = new wxFilePickerCtrl(this->m_Panel_Basic, wxID_ANY, wxEmptyString, _("Select a file"), _("*.wav;*.aiff;*.flac;*.ogg;*.mp3"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_OPEN|wxFLP_USE_TEXTCTRL);
+    this->m_FilePicker_Source->SetInitialDirectory(this->m_Panel_Search->GetMainFolder().GetFullPath());
     this->m_FilePicker_Source->Disable();
     Sizer_Config_Basic->Add(this->m_FilePicker_Source, 0, wxALL|wxEXPAND, 5);
 
@@ -351,8 +351,7 @@ Frame_SoundBrowser::Frame_SoundBrowser(wxWindow* parent, wxWindowID id, const wx
 
 Frame_SoundBrowser::~Frame_SoundBrowser()
 {
-    if (this->m_LoadedAsset != NULL)
-        delete this->m_LoadedAsset;
+
 }
 
 
@@ -508,54 +507,38 @@ void Frame_SoundBrowser::m_Tool_FlashcartUpload_OnToolClicked(wxCommandEvent& ev
 
 void Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged(wxFileDirPickerEvent& event)
 {
-    bool externalfile = false;
-    if (this->m_LoadedAsset == NULL)
+    wxFileName file = event.GetPath();
+    bool isrelative = P64Asset::FileInAssetsFolder(file, this->m_Panel_Search->GetMainFolder());
+
+    // Check the path is junk
+    if (!wxFileExists(file.GetFullPath()) && !isrelative)
+        goto fail;
+
+    // Check if the path is inside the assets folder. If it isn't, copy the file into it
+    if (!isrelative)
     {
-        event.Skip();
-        return;
+        file = P64Asset::CopyFileToAssetPath(event.GetPath(), this->m_AssetFilePath.GetPathWithSep(), this);
+        if (!file.IsOk())
+            goto fail;
     }
 
-    // Try to load the sound either from an absolute path or from a relative path
-    if (wxFileExists(event.GetPath())) // Check absolute path first
-    {
-        externalfile = true;
-        this->m_LoadedAsset->m_SndFile.DecodeFile(event.GetPath());
-    }
-    else if (wxFileExists(this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath()))
-    {
-        wxFileName path = this->m_Panel_Search->GetMainFolder().GetFullPath() + wxFileName::GetPathSeparator() + event.GetPath();
-        this->m_LoadedAsset->m_SndFile.DecodeFile(path.GetFullPath());
-    }
-
-    // Check a valid sound loaded
-    if (this->m_LoadedAsset->m_SndFile.IsOk())
-    {
-        // If not relative to our main folder, make a copy of the sound and make it relative
-        if (externalfile)
-        {
-            wxFileName relative;
-            wxString fileext = wxFileName(event.GetPath()).GetExt();
-            wxString assetpath = this->m_AssetFilePath.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
-            wxString assetname = this->m_AssetFilePath.GetName();
-            wxString copyfullpath = assetpath + assetname + "." + fileext;
-            wxCopyFile(event.GetPath(), copyfullpath, true);
-            relative = wxFileName(copyfullpath);
-            relative.MakeRelativeTo(this->m_Panel_Search->GetMainFolder().GetFullPath());
-            this->m_LoadedAsset->m_SourcePath = relative;
-            this->m_FilePicker_Source->SetPath(relative.GetFullPath());
-        }
-        else
-        {
-            this->m_FilePicker_Source->SetPath(event.GetPath());
-            this->m_LoadedAsset->m_SourcePath = event.GetPath();
-        }
-    }
-    else
-    {
-        this->m_LoadedAsset->m_SourcePath = event.GetPath();
-    }
+    // Success
+    file = P64Asset::GetFullAssetPath(file, this->m_AssetFilePath.GetPathWithSep());
+    if (!file.IsOk())
+        goto fail;
+    file = P64Asset::GetRelativeAssetPath(file, this->m_AssetFilePath.GetPathWithSep());
+    this->m_LoadedAsset.m_SourcePath = file;
+    this->m_FilePicker_Source->SetPath(file.GetFullPath());
     this->MarkAssetModified();
     event.Skip();
+    return;
+
+    // Handle fail
+    fail:
+        this->m_LoadedAsset.m_SourcePath = event.GetPath();
+        this->MarkAssetModified();
+        this->m_ScrolledWin_Preview->ZoomReset();
+        event.Skip();
 }
 
 
@@ -567,19 +550,19 @@ void Frame_SoundBrowser::m_FilePicker_Source_OnFileChanged(wxFileDirPickerEvent&
 
 void Frame_SoundBrowser::m_Choice_SampleRate_OnChoice(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
     switch (event.GetSelection())
     {
-        case 0: this->m_LoadedAsset->m_SampleRate = 44100; break;
-        case 1: this->m_LoadedAsset->m_SampleRate = 32000; break;
-        case 2: this->m_LoadedAsset->m_SampleRate = 22050; break;
-        case 3: this->m_LoadedAsset->m_SampleRate = 16000; break;
-        case 4: this->m_LoadedAsset->m_SampleRate = 11025; break;
-        default: this->m_LoadedAsset->m_SampleRate = 0; break;
+        case 0: this->m_LoadedAsset.m_SampleRate = 44100; break;
+        case 1: this->m_LoadedAsset.m_SampleRate = 32000; break;
+        case 2: this->m_LoadedAsset.m_SampleRate = 22050; break;
+        case 3: this->m_LoadedAsset.m_SampleRate = 16000; break;
+        case 4: this->m_LoadedAsset.m_SampleRate = 11025; break;
+        default: this->m_LoadedAsset.m_SampleRate = 0; break;
     }
     this->MarkAssetModified();
     event.Skip();
@@ -594,12 +577,12 @@ void Frame_SoundBrowser::m_Choice_SampleRate_OnChoice(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ForceMono = event.IsChecked();
+    this->m_LoadedAsset.m_ForceMono = event.IsChecked();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -613,18 +596,18 @@ void Frame_SoundBrowser::m_CheckBox_Mono_OnCheckBox(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_Loop = event.IsChecked();
+    this->m_LoadedAsset.m_Loop = event.IsChecked();
     this->m_SpinCtrl_LoopEnd->Enable(event.IsChecked());
     this->m_SpinCtrl_LoopStart->Enable(event.IsChecked());
     if (event.IsChecked())
     {
-        this->m_SpinCtrl_LoopEnd->SetValue(this->m_LoadedAsset->m_LoopStart);
-        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset->m_LoopEnd);
+        this->m_SpinCtrl_LoopEnd->SetValue(this->m_LoadedAsset.m_LoopStart);
+        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset.m_LoopEnd);
     }
     this->MarkAssetModified();
     event.Skip();
@@ -639,18 +622,18 @@ void Frame_SoundBrowser::m_CheckBox_Loop_OnCheckBox(wxCommandEvent& event)
 
 void Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    if ((uint32_t)event.GetValue() > this->m_LoadedAsset->m_LoopEnd)
+    if ((uint32_t)event.GetValue() > this->m_LoadedAsset.m_LoopEnd)
     {
-        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset->m_LoopEnd);
+        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset.m_LoopEnd);
         event.Veto();
         return;
     }
-    this->m_LoadedAsset->m_LoopStart = event.GetValue();
+    this->m_LoadedAsset.m_LoopStart = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -664,18 +647,18 @@ void Frame_SoundBrowser::m_SpinCtrl_LoopStart_OnSpinCtrl(wxSpinEvent& event)
 
 void Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    if ((uint32_t)event.GetValue() < this->m_LoadedAsset->m_LoopStart)
+    if ((uint32_t)event.GetValue() < this->m_LoadedAsset.m_LoopStart)
     {
-        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset->m_LoopStart);
+        this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset.m_LoopStart);
         event.Veto();
         return;
     }
-    this->m_LoadedAsset->m_LoopEnd = event.GetValue();
+    this->m_LoadedAsset.m_LoopEnd = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -689,12 +672,12 @@ void Frame_SoundBrowser::m_SpinCtrl_LoopEnd_OnSpinCtrl(wxSpinEvent& event)
 
 void Frame_SoundBrowser::m_SpinCtrl_CodebookEntryCount_OnSpinCtrl(wxSpinEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_Codebook_EntryCount = event.GetValue();
+    this->m_LoadedAsset.m_Codebook_EntryCount = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -708,12 +691,12 @@ void Frame_SoundBrowser::m_SpinCtrl_CodebookEntryCount_OnSpinCtrl(wxSpinEvent& e
 
 void Frame_SoundBrowser::m_SpinCtrl_CodebookSampleSize_OnSpinCtrl(wxSpinEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_Codebook_SampleSize = event.GetValue();
+    this->m_LoadedAsset.m_Codebook_SampleSize = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -727,12 +710,12 @@ void Frame_SoundBrowser::m_SpinCtrl_CodebookSampleSize_OnSpinCtrl(wxSpinEvent& e
 
 void Frame_SoundBrowser::m_SpinCtrl_ClusterIterations_OnSpinCtrl(wxSpinEvent& event)
 {
-    if (this->m_LoadedAsset == NULL)
+    if (!this->m_LoadedAsset.IsOk())
     {
         event.Skip();
         return;
     }
-    this->m_LoadedAsset->m_ClusterIterations = event.GetValue();
+    this->m_LoadedAsset.m_ClusterIterations = event.GetValue();
     this->MarkAssetModified();
     event.Skip();
 }
@@ -745,10 +728,10 @@ void Frame_SoundBrowser::m_SpinCtrl_ClusterIterations_OnSpinCtrl(wxSpinEvent& ev
 
 void Frame_SoundBrowser::MarkAssetModified()
 {
-    if (this->m_LoadedAsset == NULL)
-        return;
     this->m_AssetModified = true;
     this->UpdateTitle();
+    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath.GetPathWithSep());
+    this->m_ScrolledWin_Preview->RefreshDrawing();
 }
 
 
@@ -775,10 +758,6 @@ void Frame_SoundBrowser::SaveChanges()
     bool refresh = false;
     std::vector<uint8_t> data;
 
-    // Check we have an asset loaded to begin with
-    if (this->m_LoadedAsset == NULL)
-        return;
-
     // Create the path to the file if it doesn't exist anymore
     if (!wxFileExists(this->m_AssetFilePath.GetFullPath()))
     {
@@ -798,14 +777,13 @@ void Frame_SoundBrowser::SaveChanges()
     }
 
     // Serialize the asset and write it
-    data = this->m_LoadedAsset->Serialize();
+    data = this->m_LoadedAsset.Serialize();
     file.Write(data.data(), data.size());
     file.Close();
     this->m_AssetModified = false;
 
     // Update the title and the previews 
     this->UpdateTitle();
-    this->m_Panel_Search->ReloadThumbnail(this->m_AssetFilePath);
     if (refresh)
         this->m_Panel_Search->ReloadDirectory();
 }
@@ -845,21 +823,20 @@ void Frame_SoundBrowser::UpdateFilePath(wxFileName path)
     Frame_SoundBrowser::LoadAsset
     Loads a sound asset from a given path
     @param  The path of the asset
-    @return The loaded asset, or NULL
+    @return Whether the asset managed to load or not
 ==============================*/
 
-P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
+bool Frame_SoundBrowser::LoadAsset(wxFileName path)
 {
     wxFile file;
     std::vector<uint8_t> data;
-    P64Asset_Sound* ret;
 
     // Warn the user that the file was changed before doing anything potentially destructive
     if (this->IsAssetModified())
     {
         wxMessageDialog dialog(this, "Unsaved changes will be lost. Continue?", "Warning", wxCENTER | wxYES | wxNO | wxNO_DEFAULT | wxICON_WARNING);
         if (dialog.ShowModal() == wxID_NO)
-            return NULL;
+            return false;
     }
 
     // Set the path and open the file so we can extract its data
@@ -869,20 +846,20 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     {
         wxMessageDialog dialog(this, "Unable to open file for reading", "Error deserializing", wxCENTER | wxOK | wxOK_DEFAULT | wxICON_ERROR);
         dialog.ShowModal();
-        return NULL;
+        return false;
     }
     data.resize(path.GetSize().ToULong());
     file.Read(&data[0], data.capacity());
     file.Close();
 
     // Create the asset object by deserializing the bytes
-    ret = P64Asset_Sound::Deserialize(data);
-    if (ret == NULL)
-        return NULL;
-    if (this->m_LoadedAsset != NULL)
-        delete this->m_LoadedAsset;
-    this->m_LoadedAsset = ret;
-    this->m_AssetModified = false;
+    if (!this->m_LoadedAsset.Deserialize(data))
+        return false;
+
+    // Set asset content
+    this->m_FilePicker_Source->SetPath(this->m_LoadedAsset.m_SourcePath.GetFullPath());
+    this->m_LoadedAsset.GenerateFinal(this->m_AssetFilePath.GetPathWithSep());
+    this->m_ScrolledWin_Preview->SetAsset(&this->m_LoadedAsset);
 
     // Activate the window
     this->m_ToolBar_Preview->Enable();
@@ -890,21 +867,14 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
     this->m_Choice_SampleRate->Enable();
     this->m_CheckBox_Mono->Enable();
     this->m_CheckBox_Loop->Enable();
-    this->m_SpinCtrl_LoopEnd->Enable(ret->m_Loop);
-    this->m_SpinCtrl_LoopStart->Enable(ret->m_Loop);
+    this->m_SpinCtrl_LoopEnd->Enable(this->m_LoadedAsset.m_Loop);
+    this->m_SpinCtrl_LoopStart->Enable(this->m_LoadedAsset.m_Loop);
     this->m_SpinCtrl_CodebookEntryCount->Enable();
     this->m_SpinCtrl_CodebookSampleSize->Enable();
     this->m_SpinCtrl_ClusterIterations->Enable();
 
     // Set the content's values
-    this->m_FilePicker_Source->SetPath(ret->m_SourcePath.GetFullPath());
-    if (wxFileExists(path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt()))
-    {
-        wxFileName finalpath = path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + ret->m_SourcePath.GetName() + "." + ret->m_SourcePath.GetExt();
-        ret->m_SndFile.DecodeFile(finalpath.GetFullPath());
-        ret->RegenerateFinal();
-    }
-    switch (ret->m_SampleRate)
+    switch (this->m_LoadedAsset.m_SampleRate)
     {
         case 44100: this->m_Choice_SampleRate->Select(0); break;
         case 32000: this->m_Choice_SampleRate->Select(1); break;
@@ -913,19 +883,19 @@ P64Asset_Sound* Frame_SoundBrowser::LoadAsset(wxFileName path)
         case 11025: this->m_Choice_SampleRate->Select(4); break;
         default:    this->m_Choice_SampleRate->Select(5); break;
     }
-    this->m_CheckBox_Mono->SetValue(ret->m_ForceMono);
-    this->m_CheckBox_Loop->SetValue(ret->m_Loop);
-    this->m_SpinCtrl_LoopStart->SetValue(ret->m_LoopStart);
-    this->m_SpinCtrl_LoopEnd->SetValue(ret->m_LoopEnd);
+    this->m_CheckBox_Mono->SetValue(this->m_LoadedAsset.m_ForceMono);
+    this->m_CheckBox_Loop->SetValue(this->m_LoadedAsset.m_Loop);
+    this->m_SpinCtrl_LoopStart->SetValue(this->m_LoadedAsset.m_LoopStart);
+    this->m_SpinCtrl_LoopEnd->SetValue(this->m_LoadedAsset.m_LoopEnd);
     // TODO: Set spin ctrl's maximum value based on the sample count in the loaded sound
-    this->m_SpinCtrl_CodebookEntryCount->SetValue(ret->m_Codebook_EntryCount);
-    this->m_SpinCtrl_CodebookSampleSize->SetValue(ret->m_Codebook_SampleSize);
-    this->m_SpinCtrl_ClusterIterations->SetValue(ret->m_ClusterIterations);
+    this->m_SpinCtrl_CodebookEntryCount->SetValue(this->m_LoadedAsset.m_Codebook_EntryCount);
+    this->m_SpinCtrl_CodebookSampleSize->SetValue(this->m_LoadedAsset.m_Codebook_SampleSize);
+    this->m_SpinCtrl_ClusterIterations->SetValue(this->m_LoadedAsset.m_ClusterIterations);
 
     // Finish
+    this->m_AssetModified = false;
     this->UpdateTitle();
-    this->m_ScrolledWin_Preview->SetAsset(ret);
-    return ret;
+    return true;
 }
 
 
