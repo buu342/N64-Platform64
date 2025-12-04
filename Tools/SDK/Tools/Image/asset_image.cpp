@@ -149,7 +149,7 @@ P64Asset_Image::P64Asset_Image()
     this->m_MaskStart = wxPoint(0, 0);
     this->m_UseMipmaps = false;
     this->m_Dithering = DITHERING_NONE;
-    this->m_AlphaMode = ALPHA_NONE;
+    this->m_AlphaMode = ALPHA_MASK;
     this->m_AlphaColor = wxColor(0, 0, 0);
     this->m_AlphaPath = "";
 
@@ -913,18 +913,39 @@ void P64Asset_Image::GenerateFinal(wxFileName assetpath)
 /*==============================
     P64Asset_Image::GeneratePreview
     Generate a preview version of the texture
-    @param Whether to preview or not
-    @param Whether to preview filtering
-    @param The preview zoom
+    @param The preview settings
 ==============================*/
 
-void P64Asset_Image::GeneratePreview(bool bitmap_alpha, bool bitmap_filter, wxRealPoint zoom)
+void P64Asset_Image::GeneratePreview(PreviewSettings_Image settings)
 {
     uint8_t* base_rgb = NULL;
     uint8_t* base_alpha = NULL;
     wxSize size;
     if (!this->m_ImageFinalRaw.IsOk())
         return;
+
+    // Handle display of alpha mask seperately
+    if (settings.showalphamask)
+    {
+        uint32_t datasize;
+        size = this->m_ImageFinalRaw.GetSize();
+        datasize = size.x*size.y;
+        base_rgb = (uint8_t*)malloc(datasize*3);
+        if (this->m_ImageFinalRaw.GetAlpha() != NULL)
+        {
+            for (int i=0; i<datasize; i++)
+            {
+                uint8_t a = this->m_ImageFinalRaw.GetAlpha()[i];
+                base_rgb[(i*3)+0] = a;
+                base_rgb[(i*3)+1] = a;
+                base_rgb[(i*3)+2] = a;
+            }
+        }
+        else
+            memset(base_rgb, 255, size.x*size.y*3);
+        this->m_PreviewImage = wxImage(size.x, size.y, base_rgb, NULL, false);
+        return;
+    }
 
     // Get the RGB data
     size = this->m_ImageFinalRaw.GetSize();
@@ -934,19 +955,19 @@ void P64Asset_Image::GeneratePreview(bool bitmap_alpha, bool bitmap_filter, wxRe
     memcpy(base_rgb, this->m_ImageFinalRaw.GetData(), size.x*size.y*3);
 
     // Get the alpha data
-    if (bitmap_alpha && this->m_SourceImage.GetAlpha() != NULL)
+    if (settings.showalpha && this->m_ImageFinalRaw.GetAlpha() != NULL)
     {
         base_alpha = (uint8_t*)malloc(size.x*size.y);
-        memcpy(base_alpha, this->m_SourceImage.GetAlpha(), size.x*size.y);
+        memcpy(base_alpha, this->m_ImageFinalRaw.GetAlpha(), size.x*size.y);
     }
 
     // Apply the bilinear filter
-    if (bitmap_filter)
+    if (settings.showfilter)
     {
-        this->Blur_Bilinear(&base_rgb, 3, size.x, size.y, zoom);
-        this->Blur_Bilinear(&base_alpha, 1, size.x, size.y, zoom);
-        size.x = roundf(((float)size.x)*zoom.x);
-        size.y = roundf(((float)size.y)*zoom.y);
+        this->Blur_Bilinear(&base_rgb, 3, size.x, size.y, settings.zoom);
+        this->Blur_Bilinear(&base_alpha, 1, size.x, size.y, settings.zoom);
+        size.x = roundf(((float)size.x)*settings.zoom.x);
+        size.y = roundf(((float)size.y)*settings.zoom.y);
     }
 
     // Finalize the preview image

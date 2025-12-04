@@ -1295,6 +1295,18 @@
                                   <property name="context_menu">0</property>
                                   <property name="id">wxID_ANY</property>
                                   <property name="kind">wxITEM_NORMAL</property>
+                                  <property name="label"></property>
+                                  <property name="name">m_Tool_AlphaMask</property>
+                                  <property name="permission">private</property>
+                                  <property name="statusbar"></property>
+                                  <property name="tooltip">Toggle the display of the alpha mask</property>
+                                  <event name="OnToolClicked">m_Tool_AlphaMask_OnToolClicked</event>
+                                </object>
+                                <object class="tool" expanded="false">
+                                  <property name="bitmap"></property>
+                                  <property name="context_menu">0</property>
+                                  <property name="id">wxID_ANY</property>
+                                  <property name="kind">wxITEM_NORMAL</property>
                                   <property name="label">tool</property>
                                   <property name="name">m_Tool_Tiling</property>
                                   <property name="permission">private</property>

@@ -65,6 +65,7 @@ void Panel_ImgView::SetDefaultSettings()
 {
     this->m_PreviewSettings.zoom = wxRealPoint(1.0, 1.0);
     this->m_PreviewSettings.showalpha = true;
+    this->m_PreviewSettings.showalphamask = false;
     this->m_PreviewSettings.showfilter = false;
     this->m_PreviewSettings.showtiling = false;
     this->m_PreviewSettings.showstats = false;
@@ -80,6 +81,7 @@ void Panel_ImgView::SetDefaultSettings()
 void Panel_ImgView::SetAsset(P64Asset_Image* asset)
 {
     this->m_LoadedAsset = asset;
+    this->m_PreviewSettings.showalphamask = false;
 }
 
 
@@ -120,18 +122,6 @@ void Panel_ImgView::ZoomReset()
 
 
 /*==============================
-    Panel_ImgView::GetZoom
-    Get the panel's zoom
-    @return The Zoom value
-==============================*/
-
-wxRealPoint Panel_ImgView::GetZoom()
-{
-    return this->m_PreviewSettings.zoom;
-}
-
-
-/*==============================
     Panel_ImgView::ToggleAlphaDisplay
     Toggle the panel's alpha preview mode
 ==============================*/
@@ -144,14 +134,14 @@ void Panel_ImgView::ToggleAlphaDisplay()
 
 
 /*==============================
-    Panel_ImgView::GetAlphaDisplay
-    Get the panel's alpha display setting
-    @return Whether to show alpha or not
+    Panel_ImgView::ToggleAlphaMaskDisplay
+    Toggle the panel's alpha preview mode
 ==============================*/
 
-bool Panel_ImgView::GetAlphaDisplay()
+void Panel_ImgView::ToggleAlphaMaskDisplay()
 {
-    return this->m_PreviewSettings.showalpha;
+    this->m_PreviewSettings.showalphamask = !this->m_PreviewSettings.showalphamask;
+    this->RefreshDrawing();
 }
 
 
@@ -164,18 +154,6 @@ void Panel_ImgView::ToggleFilterDisplay()
 {
     this->m_PreviewSettings.showfilter = !this->m_PreviewSettings.showfilter;
     this->RefreshDrawing();
-}
-
-
-/*==============================
-    Panel_ImgView::GetFilterDisplay
-    Get the panel's filter preview status
-    @return Whether to enable image filtering or not
-==============================*/
-
-bool Panel_ImgView::GetFilterDisplay()
-{
-    return this->m_PreviewSettings.showfilter;
 }
 
 
@@ -201,7 +179,7 @@ void Panel_ImgView::RefreshDrawing()
     int w, h;
     if (this->m_LoadedAsset != NULL && this->m_LoadedAsset->IsOk())
     {
-        this->m_LoadedAsset->GeneratePreview(this->m_PreviewSettings.showalpha, this->m_PreviewSettings.showfilter, this->m_PreviewSettings.zoom);
+        this->m_LoadedAsset->GeneratePreview(this->m_PreviewSettings);
         this->m_Bitmap = wxBitmap(this->m_LoadedAsset->m_PreviewImage);
     }
     else
