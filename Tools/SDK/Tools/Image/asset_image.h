@@ -71,6 +71,15 @@ typedef enum {
     ALPHA_EXTERNALMASK,
 } P64Img_AlphaMode;
 
+struct PreviewSettings_Image {
+    bool showalpha;
+    bool showalphamask;
+    bool showfilter;
+    bool showtiling;
+    bool showstats;
+    wxRealPoint zoom;
+};
+
 
 /*=============================================================
                             Classes
@@ -119,7 +128,7 @@ class P64Asset_Image : public P64Asset
 
         bool IsOk();
         void GenerateFinal(wxFileName assetpath);
-        void GeneratePreview(bool bitmap_alpha=true, bool bitmap_filter=false, wxRealPoint zoom=wxRealPoint(1.0, 1.0));
+        void GeneratePreview(PreviewSettings_Image settings);
         uint32_t CalculateTexelCount();
 
         void operator=(const P64Asset_Image& rhs);

@@ -193,6 +193,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Tool_Save = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_Save, wxNullBitmap, wxITEM_NORMAL, _("Save changes"), wxEmptyString, NULL);
     this->m_ToolBar_Preview->AddSeparator();
     this->m_Tool_Alpha = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_ToggleAlpha, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of alpha"), wxEmptyString, NULL);
+    this->m_Tool_AlphaMask = this->m_ToolBar_Preview->AddTool(wxID_ANY, wxEmptyString, Icon_ToggleMask, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of the alpha mask"), wxEmptyString, NULL);
     this->m_Tool_Tiling = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleTiling, wxNullBitmap, wxITEM_NORMAL, _("Toggle the display of image tiling"), wxEmptyString, NULL);
     this->m_Tool_Filtering = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_ToggleFilter, wxNullBitmap, wxITEM_NORMAL, _("Toggle simulation of the N64's 3-point bilinear filtering"), wxEmptyString, NULL);
     //this->m_Tool_PalettePreview = this->m_ToolBar_Preview->AddTool(wxID_ANY, _("tool"), Icon_Palette, wxNullBitmap, wxITEM_NORMAL, _("Swap the palette for preview"), wxEmptyString, NULL);
@@ -455,6 +456,7 @@ Frame_ImageBrowser::Frame_ImageBrowser(wxWindow* parent, wxWindowID id, const wx
     this->m_Panel_Edit->Connect(wxEVT_CHAR_HOOK, wxKeyEventHandler(Frame_ImageBrowser::m_Panel_Edit_OnChar), NULL, this);
     this->Connect(this->m_Tool_Save->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Save_OnToolClicked));
     this->Connect(this->m_Tool_Alpha->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked));
+    this->Connect(this->m_Tool_AlphaMask->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_AlphaMask_OnToolClicked));
     this->Connect(this->m_Tool_Tiling->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Tiling_OnToolClicked));
     this->Connect(this->m_Tool_Filtering->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_Filtering_OnToolClicked));
     //this->Connect(this->m_Tool_PalettePreview->GetId(), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(Frame_ImageBrowser::m_Tool_PalettePreview_OnToolClicked));
@@ -695,6 +697,19 @@ void Frame_ImageBrowser::m_Tool_Save_OnToolClicked(wxCommandEvent& event)
 void Frame_ImageBrowser::m_Tool_Alpha_OnToolClicked(wxCommandEvent& event)
 {
     this->m_ScrolledWin_Preview->ToggleAlphaDisplay();
+    event.Skip();
+}
+
+
+/*==============================
+    Frame_ImageBrowser::m_Tool_AlphaMask_OnToolClicked
+    Handles pressing the alpha display toolbar button
+    @param The command event
+==============================*/
+
+void Frame_ImageBrowser::m_Tool_AlphaMask_OnToolClicked(wxCommandEvent& event)
+{
+    this->m_ScrolledWin_Preview->ToggleAlphaMaskDisplay();
     event.Skip();
 }
 

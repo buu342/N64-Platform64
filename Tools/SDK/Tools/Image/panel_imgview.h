@@ -11,14 +11,6 @@ typedef struct IUnknown IUnknown;
                              Types
 =============================================================*/
 
-struct PreviewSettings_Image {
-    bool showalpha;
-    bool showfilter;
-    bool showtiling;
-    bool showstats;
-    wxRealPoint zoom;
-};
-
 
 /*=============================================================
                             Classes
@@ -39,11 +31,9 @@ class Panel_ImgView : public wxScrolledWindow
         void ZoomIn();
         void ZoomOut();
         void ZoomReset();
-        wxRealPoint GetZoom();
         void ToggleAlphaDisplay();
-        bool GetAlphaDisplay();
+        void ToggleAlphaMaskDisplay();
         void ToggleFilterDisplay();
-        bool GetFilterDisplay();
         void ToggleStatisticsDisplay();
         void SetDefaultSettings();
         void SetAsset(P64Asset_Image* asset);

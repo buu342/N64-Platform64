@@ -53,6 +53,7 @@ class Frame_ImageBrowser : public wxFrame
         wxSplitterWindow* m_Splitter_Horizontal;
         wxToolBarToolBase* m_Tool_Save;
         wxToolBarToolBase* m_Tool_Alpha;
+        wxToolBarToolBase* m_Tool_AlphaMask;
         wxToolBarToolBase* m_Tool_Tiling;
         wxToolBarToolBase* m_Tool_Filtering;
         //wxToolBarToolBase* m_Tool_PalettePreview;
@@ -111,6 +112,7 @@ class Frame_ImageBrowser : public wxFrame
         void m_ScrolledWin_Preview_OnMouseWheel(wxMouseEvent& event);
         void m_Tool_Save_OnToolClicked(wxCommandEvent& event);
         void m_Tool_Alpha_OnToolClicked(wxCommandEvent& event);
+        void m_Tool_AlphaMask_OnToolClicked(wxCommandEvent& event);
         void m_Tool_Tiling_OnToolClicked(wxCommandEvent& event);
         void m_Tool_Filtering_OnToolClicked(wxCommandEvent& event);
         void m_Tool_PalettePreview_OnToolClicked(wxCommandEvent& event);
