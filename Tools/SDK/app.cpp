@@ -133,8 +133,8 @@ bool App::OnInit()
     Icon_MissingLarge.CopyFromBitmap(tempimg);
 
     // Initialize blank cursor
-    wxBitmap img = wxBitmap(1, 1, 1);
-    wxBitmap mask = wxBitmap(1, 1, 1);
+    wxBitmap img = wxBitmap(16, 16, 1);
+    wxBitmap mask = wxBitmap(16, 16, 1);
     img.SetMask(new wxMask(mask));
     Cursor_Blank = wxCursor(img.ConvertToImage());
     Icon_Blank.CopyFromBitmap(img);

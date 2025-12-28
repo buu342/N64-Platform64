@@ -894,7 +894,6 @@ wxMessageQueue<ThreadWork*>* Panel_AssetDisplay::GetThreadQueue()
                       Asset Display List
 =============================================================*/
 
-
 /*==============================
     Panel_AssetDisplay_List (Constructor)
     Initializes the class
@@ -1080,6 +1079,8 @@ bool Panel_AssetDisplay_List::LoadDirectory(wxFileName path, wxString filter)
     {
         wxIcon icon = this->GetIconFromCache(path.GetPathWithSep() + f + parent->GetAssetExtension(), false);
         wxVector<wxVariant> items;
+        if (icon.IsNull())
+            icon = Icon_Blank;
         items.push_back((wxVariant)wxDataViewIconText(f, icon));
         items.push_back((wxVariant)false);
         this->m_DataViewListCtrl_ObjectList->AppendItem(items);
