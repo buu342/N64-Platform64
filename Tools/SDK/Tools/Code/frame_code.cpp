@@ -32,7 +32,7 @@ Frame_CodeEditor::Frame_CodeEditor( wxWindow* parent, wxWindowID id, const wxStr
     m_ToolBar->AddSeparator();
     m_Tool_UploadUSB = m_ToolBar->AddTool( wxID_ANY, _("tool"), Icon_USBUpload, wxNullBitmap, wxITEM_NORMAL, _("Upload ROM to flashcart"), wxEmptyString, NULL );
     m_ToolBar->Realize();
-    m_mgr.AddPane( m_ToolBar, wxAuiPaneInfo() .Top() .CaptionVisible( false ).CloseButton( false ).PaneBorder( false ).Movable( false ).Dock().Resizable().FloatingSize( wxSize( -1,-1 ) ).DockFixed( true ).BottomDockable( false ).LeftDockable( false ).RightDockable( false ).Floatable( false ) );
+    m_mgr.AddPane( m_ToolBar, wxAuiPaneInfo() .Top() .CaptionVisible( false ).PaneBorder( false ).Movable( false ).Dock().Resizable().FloatingSize( wxSize( -1,-1 ) ).DockFixed( true ).BottomDockable( false ).LeftDockable( false ).RightDockable( false ).Floatable( false ) );
 
     m_Menubar = new wxMenuBar( 0 );
     this->SetMenuBar( m_Menubar );
@@ -41,10 +41,10 @@ Frame_CodeEditor::Frame_CodeEditor( wxWindow* parent, wxWindowID id, const wxStr
     m_Panel_Search->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) );
     m_Panel_Search->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) );
 
-    m_mgr.AddPane( m_Panel_Search, wxAuiPaneInfo() .Left() .CaptionVisible( false ).CloseButton( false ).PaneBorder( false ).Movable( false ).Dock().Resizable().FloatingSize( wxDefaultSize ).BottomDockable( false ).TopDockable( false ).Floatable( false ).BestSize( wxSize( 200,-1 ) ).Layer( 2 ) );
+    m_mgr.AddPane( m_Panel_Search, wxAuiPaneInfo() .Left() .CaptionVisible( false ).PaneBorder( false ).Movable( false ).Dock().Resizable().FloatingSize( wxDefaultSize ).BottomDockable( false ).TopDockable( false ).Floatable( false ).BestSize( wxSize( 200,-1 ) ).Layer( 2 ) );
 
-    m_Notebook_Editor = new wxAuiNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE );
-    m_mgr.AddPane( m_Notebook_Editor, wxAuiPaneInfo() .Center() .CaptionVisible( false ).CloseButton( false ).Dock().Resizable().FloatingSize( wxDefaultSize ).CentrePane().DefaultPane() );
+    m_Notebook_Editor = new wxAuiNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
+    m_mgr.AddPane( m_Notebook_Editor, wxAuiPaneInfo().DefaultPane() .Center() .CaptionVisible( false ).Dock().Resizable().FloatingSize( wxDefaultSize ).CentrePane() );
 
     m_Panel_Page = new wxPanel( m_Notebook_Editor, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
     wxBoxSizer* Sizer_Page;
@@ -87,7 +87,6 @@ Frame_CodeEditor::Frame_CodeEditor( wxWindow* parent, wxWindowID id, const wxStr
     m_Editor->SetSelBackground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) );
     m_Editor->SetSelForeground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHTTEXT ) );
     Sizer_Page->Add( m_Editor, 1, wxEXPAND, 5 );
-
 
     m_Panel_Page->SetSizer( Sizer_Page );
     m_Panel_Page->Layout();
@@ -162,5 +161,4 @@ Frame_CodeEditor::Frame_CodeEditor( wxWindow* parent, wxWindowID id, const wxStr
 Frame_CodeEditor::~Frame_CodeEditor()
 {
     m_mgr.UnInit();
-
 }

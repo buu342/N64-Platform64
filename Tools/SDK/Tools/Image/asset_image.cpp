@@ -493,7 +493,7 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
       2, 6, 1, 7, 3, 5, 0, 8,
       6, 2, 7, 1, 5, 3, 8, 0
     };
-    /* // I originally accidentally used the red threshold only (copy paste mistake), but after fixing that I found the results to be visually worse, so these will remain commented out for the time being
+    // I originally accidentally used the red threshold only (copy paste mistake), but after fixing that I found the results to be visually worse, so these will remain commented out for the time being
     const uint8_t dither_treshold_g[64] = {
       1, 3, 2, 2, 3, 1, 2, 2,
       2, 2, 0, 4, 2, 2, 4, 0,
@@ -513,7 +513,7 @@ void P64Asset_Image::Dither_Ordered(uint8_t* rgb, uint32_t i, uint32_t w, uint32
       2, 6, 1, 7, 3, 5, 0, 8,
       7, 1, 5, 3, 8, 0, 6, 2,
       1, 7, 3, 5, 0, 8, 2, 6
-    };*/
+    };
 
     // Perform the dither
     uint8_t tresshold_id = (((i/w) & 7) << 3) + ((i%w) & 7);
@@ -558,30 +558,32 @@ void P64Asset_Image::Dither_FloydSteinberg(uint8_t* rgb, uint32_t i, uint32_t w,
     if (x+1 < w) // Right
     {
         offset = i+1;
-        rgb[(offset*3)+0] = std::min((rgb[(offset*3)+0] + (((error_r*7)/16))), 255);
-        rgb[(offset*3)+1] = std::min((rgb[(offset*3)+1] + (((error_g*7)/16))), 255);
-        rgb[(offset*3)+2] = std::min((rgb[(offset*3)+2] + (((error_b*7)/16))), 255);
+        rgb[(offset*3)+0] = std::clamp((rgb[(offset*3)+0] + (((error_r*7)/16))), 0, 255);
+        rgb[(offset*3)+1] = std::clamp((rgb[(offset*3)+1] + (((error_g*7)/16))), 0, 255);
+        rgb[(offset*3)+2] = std::clamp((rgb[(offset*3)+2] + (((error_b*7)/16))), 0, 255);
     }
     if (y+1 < h) // Bottom
     {
-        if (x-1 > 0) // Bottom left
+        if (x > 0) // Bottom left
         {
             offset = i + w-1;
-            rgb[(offset*3)+0] = std::min((rgb[(offset*3)+0] + (((error_r*3)/16))), 255);
-            rgb[(offset*3)+1] = std::min((rgb[(offset*3)+1] + (((error_g*3)/16))), 255);
-            rgb[(offset*3)+2] = std::min((rgb[(offset*3)+2] + (((error_b*3)/16))), 255);
+            rgb[(offset*3)+0] = std::clamp((rgb[(offset*3)+0] + (((error_r*3)/16))), 0, 255);
+            rgb[(offset*3)+1] = std::clamp((rgb[(offset*3)+1] + (((error_g*3)/16))), 0, 255);
+            rgb[(offset*3)+2] = std::clamp((rgb[(offset*3)+2] + (((error_b*3)/16))), 0, 255);
         }
+
         // Bottom middle
         offset = i + w;
-        rgb[(offset*3)+0] = std::min((rgb[(offset*3)+0] + (((error_r*5)/16))), 255);
-        rgb[(offset*3)+1] = std::min((rgb[(offset*3)+1] + (((error_g*5)/16))), 255);
-        rgb[(offset*3)+2] = std::min((rgb[(offset*3)+2] + (((error_b*5)/16))), 255);
+        rgb[(offset*3)+0] = std::clamp((rgb[(offset*3)+0] + (((error_r*5)/16))), 0, 255);
+        rgb[(offset*3)+1] = std::clamp((rgb[(offset*3)+1] + (((error_g*5)/16))), 0, 255);
+        rgb[(offset*3)+2] = std::clamp((rgb[(offset*3)+2] + (((error_b*5)/16))), 0, 255);
+
         if (x+1 < w) // Bottom right
         {
             offset = i+1 + w;
-            rgb[(offset*3)+0] = std::min((rgb[(offset*3)+0] + (((error_r*1)/16))), 255);
-            rgb[(offset*3)+1] = std::min((rgb[(offset*3)+1] + (((error_g*1)/16))), 255);
-            rgb[(offset*3)+2] = std::min((rgb[(offset*3)+2] + (((error_b*1)/16))), 255);
+            rgb[(offset*3)+0] = std::clamp((rgb[(offset*3)+0] + (((error_r*1)/16))), 0, 255);
+            rgb[(offset*3)+1] = std::clamp((rgb[(offset*3)+1] + (((error_g*1)/16))), 0, 255);
+            rgb[(offset*3)+2] = std::clamp((rgb[(offset*3)+2] + (((error_b*1)/16))), 0, 255);
         }
     }
 }
